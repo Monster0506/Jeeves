@@ -8,7 +8,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# --- Paste the full Sidebar class here, unchanged --- 
 class Sidebar(ctk.CTkFrame):
     """Sidebar component with thread management."""
     
