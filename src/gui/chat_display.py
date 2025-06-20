@@ -18,35 +18,48 @@ class MessageBubble(ctk.CTkFrame):
         super().__init__(parent, fg_color="transparent", corner_radius=20, **kwargs)
         self.theme = theme
         self.is_user = is_user
-        self.max_width = max_width
         self.font_family = font_family
+        self.sender = sender
+        self.message = message
+        self.timestamp = timestamp
+        self.max_width = max_width
+        self._bubble = None
+        self._msg_frame = None
         self._build_bubble(sender, message, timestamp)
 
     def _build_bubble(self, sender, message, timestamp):
+        if self._bubble:
+            self._bubble.destroy()
         # Bubble color and alignment
         bubble_color = self.theme['bubble_user'] if self.is_user else self.theme['bubble_ai']
         text_color = self.theme['text_primary']
         anchor = 'e' if self.is_user else 'w'
-        padx = (80, 16) if self.is_user else (16, 80)
+        padx = (24, 24)
         # Bubble frame
-        bubble = ctk.CTkFrame(self, fg_color=bubble_color, corner_radius=20)
-        bubble.grid(row=0, column=0, sticky=anchor, padx=padx, pady=2)
-        bubble.grid_columnconfigure(0, weight=1)
+        self._bubble = ctk.CTkFrame(self, fg_color=bubble_color, corner_radius=20)
+        self._bubble.grid(row=0, column=0, sticky=anchor, padx=padx, pady=2)
+        self._bubble.grid_columnconfigure(0, weight=1)
         # Sender/timestamp
-        meta_frame = ctk.CTkFrame(bubble, fg_color="transparent")
+        meta_frame = ctk.CTkFrame(self._bubble, fg_color="transparent")
         meta_frame.grid(row=0, column=0, sticky="w", padx=12, pady=(8, 0))
         sender_label = ctk.CTkLabel(meta_frame, text=sender, font=(self.font_family, 12, "bold"), text_color=text_color)
         sender_label.pack(side="left")
         time_label = ctk.CTkLabel(meta_frame, text=timestamp, font=(self.font_family, 10), text_color=self.theme['text_secondary'])
         time_label.pack(side="left", padx=(8, 0))
         # Markdown message
-        msg_frame = ctk.CTkFrame(bubble, fg_color="transparent")
-        msg_frame.grid(row=1, column=0, sticky="w", padx=12, pady=(2, 8))
-        self._render_markdown(msg_frame, message, text_color)
+        if self._msg_frame:
+            self._msg_frame.destroy()
+        self._msg_frame = ctk.CTkFrame(self._bubble, fg_color="transparent")
+        self._msg_frame.grid(row=1, column=0, sticky="w", padx=12, pady=(2, 8))
+        self._render_markdown(self._msg_frame, message, text_color)
         # Set max width
-        msg_frame.update_idletasks()
-        width = min(msg_frame.winfo_reqwidth(), self.max_width)
-        bubble.configure(width=width)
+        self._msg_frame.update_idletasks()
+        width = min(max(self._msg_frame.winfo_reqwidth(), 320), self.max_width)
+        self._bubble.configure(width=width)
+
+    def update_max_width(self, max_width):
+        self.max_width = max_width
+        self._build_bubble(self.sender, self.message, self.timestamp)
 
     def _render_markdown(self, parent, text, text_color):
         md = MarkdownIt()
@@ -82,6 +95,7 @@ class ChatDisplay(ctk.CTkFrame):
         self.on_search_messages = on_search_messages
         self.theme = COLORS['dark']
         self.font_family = APP_SETTINGS['font_family']
+        self.bubbles = []
         self._setup_ui()
         self._setup_bindings()
 
@@ -94,11 +108,12 @@ class ChatDisplay(ctk.CTkFrame):
         self.scrollbar = tk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
         self.scrollable_frame = ctk.CTkFrame(self, fg_color=self.theme['bg_chat'])
         self.scrollable_frame.bind(
-            "<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+            "<Configure>", lambda e: self._on_frame_configure())
         self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
         self.canvas.grid(row=0, column=0, sticky="nsew")
         self.scrollbar.grid(row=0, column=1, sticky="ns")
+        self.canvas.bind("<Configure>", self._on_canvas_resize)
         # Input area (unchanged)
         self.input_frame = ctk.CTkFrame(self)
         self.input_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=(5, 10))
@@ -179,28 +194,40 @@ class ChatDisplay(ctk.CTkFrame):
 
     def _add_message(self, message: str, sender: str, is_user: bool):
         timestamp = datetime.now().strftime("%H:%M")
-        bubble = MessageBubble(self.scrollable_frame, sender, message, timestamp, is_user, self.theme, self.font_family)
-        bubble.pack(anchor="e" if is_user else "w", pady=8, padx=8, fill=None)
+        max_bubble_width = max(int(self.canvas.winfo_width() * 0.8), 320)
+        bubble = MessageBubble(self.scrollable_frame, sender, message, timestamp, is_user, self.theme, self.font_family, max_width=max_bubble_width)
+        if is_user:
+            bubble.pack(anchor="e", pady=8, padx=(24, 24), fill=None)
+        else:
+            bubble.pack(anchor="w", pady=8, padx=(24, 24), fill=None)
+        self.bubbles.append(bubble)
         self.update_idletasks()
         self.canvas.yview_moveto(1.0)
 
     def load_messages(self, messages: List[Dict]):
         for widget in self.scrollable_frame.winfo_children():
             widget.destroy()
+        self.bubbles.clear()
         for message in messages:
             sender = message.get('sender', 'unknown')
             content = message.get('content', '')
             timestamp = message.get('timestamp', '')
             is_user = sender == "user" or sender == "You"
             display_sender = "You" if is_user else ("Jeeves" if sender == "ai" else sender.title())
-            bubble = MessageBubble(self.scrollable_frame, display_sender, content, timestamp, is_user, self.theme, self.font_family)
-            bubble.pack(anchor="e" if is_user else "w", pady=8, padx=8, fill=None)
+            max_bubble_width = max(int(self.canvas.winfo_width() * 0.8), 320)
+            bubble = MessageBubble(self.scrollable_frame, display_sender, content, timestamp, is_user, self.theme, self.font_family, max_width=max_bubble_width)
+            if is_user:
+                bubble.pack(anchor="e", pady=8, padx=(24, 24), fill=None)
+            else:
+                bubble.pack(anchor="w", pady=8, padx=(24, 24), fill=None)
+            self.bubbles.append(bubble)
         self.update_idletasks()
         self.canvas.yview_moveto(1.0)
 
     def clear_messages(self):
         for widget in self.scrollable_frame.winfo_children():
             widget.destroy()
+        self.bubbles.clear()
 
     def _search_messages(self):
         """Trigger message search."""
@@ -211,4 +238,15 @@ class ChatDisplay(ctk.CTkFrame):
         """Trigger chat export."""
         if self.on_export_chat:
             self.on_export_chat()
+
+    def _on_canvas_resize(self, event):
+        # Make scrollable_frame always match canvas width
+        self.canvas.itemconfig(self.canvas.find_withtag("all")[0], width=event.width)
+        # Update all bubbles' max_width
+        max_bubble_width = max(int(event.width * 0.8), 320)
+        for bubble in self.bubbles:
+            bubble.update_max_width(max_bubble_width)
+
+    def _on_frame_configure(self):
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 

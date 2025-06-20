@@ -95,7 +95,7 @@ class JeevesApp:
 
         # Main content area (below header)
         self.main_frame = ctk.CTkFrame(self.root, fg_color=theme['bg_primary'])
-        self.main_frame.grid(row=1, column=0, sticky="nsew", padx=(10, 5), pady=10)
+        self.main_frame.grid(row=1, column=0, sticky="nsew", padx=(0, 0), pady=10)
         self.main_frame.grid_columnconfigure(0, weight=1)
         self.main_frame.grid_rowconfigure(0, weight=1)
 
@@ -106,7 +106,7 @@ class JeevesApp:
             on_export_chat=self._on_export_chat,
             on_search_messages=self._on_search_messages
         )
-        self.chat_display.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+        self.chat_display.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
 
         # Sidebar
         self.sidebar = Sidebar(
