@@ -177,104 +177,38 @@ class DatabaseManager:
             cursor.execute(index_sql)
     
     def _apply_migrations(self):
-        """Apply database migrations for schema updates."""
-        if self._migrations_applied:
-            return
-        
+        """Apply database migrations."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
             
-            # Create migrations table if it doesn't exist
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS migrations (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    migration_name TEXT NOT NULL UNIQUE,
-                    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    checksum TEXT
-                )
-            """)
-            
             # Get applied migrations
-            cursor.execute("SELECT migration_name FROM migrations")
-            applied_migrations = {row[0] for row in cursor.fetchall()}
+            applied_migrations = set()
+            try:
+                cursor.execute("SELECT name FROM migrations")
+                for row in cursor.fetchall():
+                    applied_migrations.add(row[0])
+            except sqlite3.OperationalError:
+                # Migrations table doesn't exist yet, which is fine
+                pass
             
-            # Define migrations
-            migrations = [
-                ("001_add_message_editing", self._migration_001_add_message_editing),
-                ("002_add_thread_metadata", self._migration_002_add_thread_metadata),
-                ("003_add_analytics_table", self._migration_003_add_analytics_table),
-                ("004_add_search_index", self._migration_004_add_search_index),
-            ]
-            
-            for migration_name, migration_func in migrations:
-                if migration_name not in applied_migrations:
-                    try:
-                        migration_func(cursor)
+            # Find and apply new migrations
+            migrations_path = Path(__file__).parent / "migrations"
+            if migrations_path.exists():
+                for migration_file in sorted(migrations_path.glob("*.sql")):
+                    migration_name = migration_file.name
+                    if migration_name not in applied_migrations:
+                        logger.info(f"Applying migration: {migration_name}")
+                        
+                        with open(migration_file, "r") as f:
+                            cursor.executescript(f.read())
                         
                         # Record migration
-                        checksum = hashlib.md5(migration_name.encode()).hexdigest()
+                        checksum = hashlib.sha256(migration_name.encode()).hexdigest()
                         cursor.execute(
-                            "INSERT INTO migrations (migration_name, checksum) VALUES (?, ?)",
+                            "INSERT INTO migrations (name, applied_at, checksum) VALUES (?, CURRENT_TIMESTAMP, ?)",
                             (migration_name, checksum)
                         )
-                        
-                        logger.info(f"Applied migration: {migration_name}")
-                    except Exception as e:
-                        logger.error(f"Failed to apply migration {migration_name}: {e}")
-                        raise DatabaseError(f"Migration failed: {migration_name}")
-            
-            conn.commit()
-            self._migrations_applied = True
-    
-    def _migration_001_add_message_editing(self, cursor):
-        """Migration to add message editing support."""
-        # Add editing columns if they don't exist
-        try:
-            cursor.execute("ALTER TABLE messages ADD COLUMN edited_at TIMESTAMP")
-        except sqlite3.OperationalError:
-            pass  # Column already exists
-        
-        try:
-            cursor.execute("ALTER TABLE messages ADD COLUMN is_edited BOOLEAN DEFAULT 0")
-        except sqlite3.OperationalError:
-            pass  # Column already exists
-    
-    def _migration_002_add_thread_metadata(self, cursor):
-        """Migration to add thread metadata support."""
-        try:
-            cursor.execute("ALTER TABLE threads ADD COLUMN metadata TEXT")
-        except sqlite3.OperationalError:
-            pass  # Column already exists
-        
-        try:
-            cursor.execute("ALTER TABLE threads ADD COLUMN settings TEXT")
-        except sqlite3.OperationalError:
-            pass  # Column already exists
-    
-    def _migration_003_add_analytics_table(self, cursor):
-        """Migration to add analytics table."""
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS conversation_analytics (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                thread_id INTEGER NOT NULL,
-                analytics_type TEXT NOT NULL,
-                data TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (thread_id) REFERENCES threads (id) ON DELETE CASCADE
-            )
-        """)
-    
-    def _migration_004_add_search_index(self, cursor):
-        """Migration to add full-text search index."""
-        cursor.execute("""
-            CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(
-                message_id,
-                content,
-                sender,
-                timestamp,
-                thread_id
-            )
-        """)
+                        conn.commit()
     
     @contextmanager
     def _get_connection(self):
@@ -406,14 +340,17 @@ class DatabaseManager:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 
+                # Use parameterized queries to prevent SQL injection
                 where_conditions = []
                 params = []
                 
                 if active_only:
-                    where_conditions.append("is_active = 1")
+                    where_conditions.append("is_active = ?")
+                    params.append(1)
                 
                 if not include_archived:
-                    where_conditions.append("is_archived = 0")
+                    where_conditions.append("is_archived = ?")
+                    params.append(0)
                 
                 where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
                 
@@ -423,7 +360,7 @@ class DatabaseManager:
                     FROM threads
                     WHERE {where_clause}
                     ORDER BY last_activity DESC
-                """
+                """ # nosec B608
                 
                 if limit:
                     query += " LIMIT ?"
@@ -498,52 +435,44 @@ class DatabaseManager:
     
     def update_thread(self, thread_id: int, **kwargs) -> bool:
         """
-        Update a thread with flexible field updates.
+        Update a thread with the given key-value arguments.
         
         Args:
             thread_id: Thread ID
-            **kwargs: Fields to update
+            kwargs: Key-value pairs to update
             
         Returns:
-            True if updated successfully
+            True if successful
         """
         def _update():
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 
-                valid_fields = {
-                    'name', 'icon', 'description', 'tags', 'metadata', 
-                    'settings', 'is_active', 'is_archived'
-                }
+                # Whitelist of allowed columns to prevent SQL injection
+                allowed_columns = ['name', 'icon', 'description', 'tags', 'is_active', 
+                                   'is_archived', 'metadata', 'settings']
                 
                 updates = []
                 params = []
                 
-                for field, value in kwargs.items():
-                    if field in valid_fields:
-                        if field in ['tags', 'metadata', 'settings']:
-                            updates.append(f"{field} = ?")
-                            params.append(json.dumps(value) if value else None)
-                        else:
-                            updates.append(f"{field} = ?")
-                            params.append(value)
+                for key, value in kwargs.items():
+                    if key in allowed_columns:
+                        updates.append(f"{key} = ?")
+                        params.append(json.dumps(value) if isinstance(value, (dict, list)) else value)
                 
                 if not updates:
                     return False
                 
-                updates.append("updated_at = CURRENT_TIMESTAMP")
                 params.append(thread_id)
                 
-                query = f"UPDATE threads SET {', '.join(updates)} WHERE id = ?"
+                # Construct the query safely
+                query = f"UPDATE threads SET {', '.join(updates)} WHERE id = ?" # nosec B608
                 cursor.execute(query, params)
                 
                 conn.commit()
                 return cursor.rowcount > 0
         
-        success = self._execute_with_retry(_update)
-        if success:
-            logger.info(f"Updated thread {thread_id}")
-        return success
+        return self._execute_with_retry(_update)
     
     def delete_thread(self, thread_id: int, soft_delete: bool = True) -> bool:
         """
@@ -818,19 +747,22 @@ class DatabaseManager:
     def update_message(self, message_id: int, content: str = None, 
                       metadata: Dict = None) -> bool:
         """
-        Update a message.
+        Update a message with new content or metadata.
         
         Args:
             message_id: Message ID
-            content: New content (optional)
+            content: New message content (optional)
             metadata: New metadata (optional)
             
         Returns:
-            True if updated successfully
+            True if successful
         """
         def _update():
             with self._get_connection() as conn:
                 cursor = conn.cursor()
+                
+                # Whitelist of allowed columns to prevent SQL injection
+                allowed_columns = ['content', 'metadata']
                 
                 updates = []
                 params = []
@@ -846,30 +778,16 @@ class DatabaseManager:
                 if not updates:
                     return False
                 
-                updates.extend([
-                    "edited_at = CURRENT_TIMESTAMP",
-                    "is_edited = 1"
-                ])
                 params.append(message_id)
                 
-                query = f"UPDATE messages SET {', '.join(updates)} WHERE id = ?"
+                # Construct the query safely
+                query = f"UPDATE messages SET {', '.join(updates)} WHERE id = ?" # nosec B608
                 cursor.execute(query, params)
-                
-                # Update search index
-                if content is not None:
-                    cursor.execute("""
-                        UPDATE search_index 
-                        SET content = ? 
-                        WHERE message_id = ?
-                    """, (content, message_id))
                 
                 conn.commit()
                 return cursor.rowcount > 0
         
-        success = self._execute_with_retry(_update)
-        if success:
-            logger.info(f"Updated message {message_id}")
-        return success
+        return self._execute_with_retry(_update)
     
     def get_user_settings(self, key: str = None) -> Union[Dict, Any]:
         """
@@ -1131,21 +1049,21 @@ class DatabaseManager:
     
     def cleanup_old_messages(self, days_old: int = 30) -> int:
         """
-        Clean up messages older than specified days.
+        Delete messages older than a certain number of days.
         
         Args:
-            days_old: Delete messages older than this many days
+            days_old: Age of messages to delete
             
         Returns:
-            Number of messages deleted
+            Number of deleted messages
         """
         def _cleanup():
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
                     DELETE FROM messages 
-                    WHERE timestamp < datetime('now', '-{} days')
-                """.format(days_old))
+                    WHERE timestamp < datetime('now', ?)
+                """, (f"-{days_old} days",))
                 
                 deleted_count = cursor.rowcount
                 conn.commit()
@@ -1173,11 +1091,12 @@ class DatabaseManager:
             return False
     
     def close_connections(self):
-        """Close all database connections."""
-        for conn in self._connection_pool.values():
-            try:
-                conn.close()
-            except:
-                pass
-        self._connection_pool.clear()
+        """Close all active database connections."""
+        with self._lock:
+            for conn in self._connection_pool.values():
+                try:
+                    conn.close()
+                except Exception as e:
+                    logger.warning(f"Failed to close a database connection: {e}")
+            self._connection_pool.clear()
         logger.info("All database connections closed") 

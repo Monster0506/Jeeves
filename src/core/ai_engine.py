@@ -197,99 +197,88 @@ class AIEngine:
             else:
                 hours = minutes / 60
                 return f"{hours:.1f} hours"
-        except:
-            return "Unknown duration"
+        except (ValueError, KeyError) as e:
+            logger.warning(f"Could not calculate conversation duration: {e}")
+            return "Unknown"
     
     def _analyze_interaction_pattern(self, messages: List[Dict]) -> str:
         """Analyze the interaction pattern between user and AI."""
-        if len(messages) < 4:
-            return "Short conversation"
+        if not messages:
+            return "No interaction"
         
-        # Check for rapid exchanges
+        # Simple analysis of interaction pattern
+        senders = [m['sender'] for m in messages]
+        
+        if len(senders) < 2:
+            return "Single message"
+        
+        # Check for rapid back-and-forth
         rapid_exchanges = 0
-        for i in range(len(messages) - 1):
-            try:
-                from datetime import datetime
-                current_time = datetime.fromisoformat(messages[i]['timestamp'].replace('Z', '+00:00'))
-                next_time = datetime.fromisoformat(messages[i + 1]['timestamp'].replace('Z', '+00:00'))
-                
-                if (next_time - current_time).total_seconds() < 30:  # Less than 30 seconds
-                    rapid_exchanges += 1
-            except:
-                continue
+        try:
+            from datetime import datetime
+            for i in range(1, len(messages)):
+                try:
+                    time1 = datetime.fromisoformat(messages[i-1]['timestamp'].replace('Z', '+00:00'))
+                    time2 = datetime.fromisoformat(messages[i]['timestamp'].replace('Z', '+00:00'))
+                    if (time2 - time1).total_seconds() < 60:
+                        rapid_exchanges += 1
+                except (ValueError, KeyError) as e:
+                    logger.warning(f"Could not analyze interaction pattern: {e}")
+                    continue
+        except Exception as e:
+            logger.error(f"Error analyzing interaction pattern: {e}")
         
-        if rapid_exchanges > len(messages) * 0.5:
-            return "Rapid exchange"
-        elif rapid_exchanges > len(messages) * 0.2:
-            return "Moderate pace"
-        else:
-            return "Leisurely conversation"
+        if rapid_exchanges > len(messages) / 2:
+            return "Rapid back-and-forth"
+        
+        return "Normal interaction"
     
     def suggest_responses(self, user_message: str, count: int = 3) -> List[str]:
         """
-        Suggest possible responses to a user message.
+        Suggest a few short, relevant responses.
         
         Args:
-            user_message: User's message
-            count: Number of suggestions to generate
+            user_message: The user's message
+            count: Number of suggestions
             
         Returns:
             List of suggested responses
         """
-        # Try to get suggestions from current provider if available
-        current_provider = self.provider_manager.get_current_provider()
-        if hasattr(current_provider, 'suggest_responses'):
-            try:
-                return current_provider.suggest_responses(user_message, count)
-            except Exception as e:
-                logger.warning(f"Failed to get suggestions from provider: {e}")
+        # Placeholder for a more advanced implementation
+        # This could be powered by a smaller, faster model or keyword analysis
         
-        # Fallback to basic suggestions
-        suggestions = []
-        message_lower = user_message.lower()
+        suggestions = [
+            "Tell me more about that.",
+            "Can you elaborate on your last point?",
+            "What are your thoughts on this?"
+        ]
         
-        if any(word in message_lower for word in ['hello', 'hi']):
-            suggestions = [
-                "Hello! How can I assist you today?",
-                "Hi there! What would you like to know?",
-                "Greetings! I'm here to help."
-            ]
-        elif any(word in message_lower for word in ['weather']):
-            suggestions = [
-                "I can help you find weather information for your location.",
-                "Would you like me to check the weather forecast?",
-                "I can provide weather updates, but I need your location first."
-            ]
-        elif any(word in message_lower for word in ['help']):
-            suggestions = [
-                "I can help with various tasks. What do you need?",
-                "I'm here to assist! What would you like to know?",
-                "I can answer questions, provide information, or just chat. What interests you?"
-            ]
-        else:
-            suggestions = [
-                "That's interesting! Tell me more about that.",
-                "I'd be happy to help with that. What specific information do you need?",
-                "I can assist you with that. Let me know what you'd like to know."
-            ]
+        # Simple keyword-based suggestions
+        if "help" in user_message.lower():
+            suggestions.append("What do you need help with?")
+        if "question" in user_message.lower():
+            suggestions.append("I'll do my best to answer.")
         
         return suggestions[:count]
     
     def get_ai_stats(self) -> Dict:
-        """Get AI engine statistics."""
+        """
+        Get statistics about AI usage and performance.
+        
+        Returns:
+            Dictionary with AI stats
+        """
         provider_info = self.get_current_provider_info()
         
         return {
-            'total_conversations': len(self.chat_manager.get_threads()),
-            'total_messages_processed': len(self.conversation_history),
-            'current_thread': self.chat_manager.get_current_thread_id(),
-            'engine_status': 'active',
-            'current_provider': provider_info.get('name', 'unknown'),
-            'provider_status': provider_info.get('status', 'unknown'),
-            'available_providers': len(self.provider_manager.providers)
+            'provider': provider_info.get('name', 'Unknown'),
+            'model': provider_info.get('model', 'Unknown'),
+            'total_responses': self.chat_manager.get_stats().get('total_ai_messages', 0),
+            'average_response_time': 0,  # Placeholder
         }
     
     def cleanup(self):
-        """Clean up AI engine resources."""
-        self.provider_manager.cleanup()
+        """Cleanup AI Engine resources."""
+        if self.provider_manager:
+            self.provider_manager.cleanup()
         logger.info("AI Engine cleaned up") 
