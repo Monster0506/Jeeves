@@ -33,16 +33,16 @@ class Sidebar(ctk.CTkFrame):
     def _setup_ui(self, theme, font_large, font_normal):
         """Setup the user interface."""
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)  # Give weight to the threads_frame row
         
-        # Sidebar header with enhanced styling
+        # Sidebar header with enhanced styling and consistent spacing
         self.header_frame = ctk.CTkFrame(
             self, 
             fg_color=theme['bg_sidebar'],
             border_width=0,
             corner_radius=0
         )
-        self.header_frame.grid(row=0, column=0, sticky="ew", padx=0, pady=(0, 0))
+        self.header_frame.grid(row=0, column=0, sticky="ew", padx=0, pady=0)
         self.header_frame.grid_columnconfigure(0, weight=1)
         
         self.title_label = ctk.CTkLabel(
@@ -51,29 +51,49 @@ class Sidebar(ctk.CTkFrame):
             font=font_large,
             text_color=theme['accent_primary']
         )
-        self.title_label.grid(row=0, column=0, sticky="w", padx=24, pady=18)
+        self.title_label.grid(row=0, column=0, sticky="w", padx=24, pady=24)  # Increased padding
         
         self.new_thread_button = ctk.CTkButton(
             self.header_frame,
-            text="+ New",
+            text="✨ New Chat",  # Added sparkle icon for better visual appeal
             command=self._create_new_thread,
-            width=120,
-            height=38,
-            font=font_normal,
+            width=140,  # Increased for better proportions with icon
+            height=44,  # Increased for better proportions
+            font=(font_normal[0], 12, "bold"),  # Made bold for primary action
             fg_color=theme['button_primary'],
             text_color=theme['text_inverse'],
             hover_color=theme['button_primary_hover'],
-            corner_radius=19
+            corner_radius=22,  # Increased for modern look
+            border_width=0,  # Clean look without borders
         )
-        self.new_thread_button.grid(row=0, column=1, padx=(0, 18), pady=12)
+        self.new_thread_button.grid(row=0, column=1, padx=(0, 24), pady=16)  # Consistent spacing
         
-        # Threads list with enhanced styling
+        # Add enhanced hover effects to new thread button
+        def on_new_button_enter(event):
+            self.new_thread_button.configure(corner_radius=24)  # Slightly larger radius on hover
+        
+        def on_new_button_leave(event):
+            self.new_thread_button.configure(corner_radius=22)  # Return to normal radius
+        
+        self.new_thread_button.bind("<Enter>", on_new_button_enter)
+        self.new_thread_button.bind("<Leave>", on_new_button_leave)
+        
+        # Add a subtle divider below the header
+        self.header_divider = ctk.CTkFrame(
+            self,
+            fg_color=theme['border_divider'],
+            height=1,
+            corner_radius=0
+        )
+        self.header_divider.grid(row=1, column=0, sticky="ew", padx=16, pady=(0, 0))
+        
+        # Threads list with enhanced styling and consistent spacing
         self.threads_frame = ctk.CTkScrollableFrame(
             self, 
             fg_color=theme['bg_sidebar'],
             corner_radius=0
         )
-        self.threads_frame.grid(row=1, column=0, sticky="nsew", padx=0, pady=(0, 0))
+        self.threads_frame.grid(row=2, column=0, sticky="nsew", padx=0, pady=0)  # Updated row to 2
         self.threads_frame.grid_columnconfigure(0, weight=1)
         self.thread_buttons = []
     
@@ -111,7 +131,7 @@ class Sidebar(ctk.CTkFrame):
                 fg_color=theme['bg_sidebar'],
                 corner_radius=0
             )
-            button_frame.grid(row=index, column=0, sticky="ew", pady=6, padx=18)
+            button_frame.grid(row=index, column=0, sticky="ew", pady=8, padx=16)  # Consistent spacing
             button_frame.grid_columnconfigure(0, weight=1)
             
             is_active = thread['id'] == self.current_thread_id
@@ -133,29 +153,30 @@ class Sidebar(ctk.CTkFrame):
                 text=f"{thread.get('icon', '💬')} {thread.get('name', 'Unknown')}",
                 command=lambda: self._select_thread(thread['id']),
                 anchor="w",
-                height=44,
-                font=font_normal,
+                height=52,  # Increased for better proportions
+                font=(font_normal[0], 12, "bold" if is_active else "normal"),  # Bold for active thread
                 fg_color=thread_color if is_active else theme['button_secondary'],
                 text_color=theme['text_inverse'] if is_active else theme['text_primary'],
                 hover_color=theme['button_primary_hover'] if is_active else theme['button_secondary_hover'],
-                corner_radius=22,
-                border_width=1 if is_active else 0,
-                border_color=theme['border_focus'] if is_active else theme['bg_sidebar']
+                corner_radius=26,  # Increased for modern look
+                border_width=2 if is_active else 1,  # Thicker border for active state
+                border_color=theme['border_focus'] if is_active else theme['border_secondary']
             )
-            button.grid(row=0, column=0, sticky="ew", padx=(0, 8), pady=0)
+            button.grid(row=0, column=0, sticky="ew", padx=(0, 8), pady=0)  # Consistent spacing
             
             menu_button = ctk.CTkButton(
                 button_frame,
                 text="⋮",
                 command=lambda: self._show_thread_menu(thread),
-                width=36,
-                height=36,
-                font=font_normal,
+                width=44,  # Increased for better proportions
+                height=44,  # Increased for better proportions
+                font=(font_normal[0], 14, "bold"),  # Larger, bold font for menu icon
                 fg_color=theme['button_secondary'],
                 text_color=theme['text_secondary'],
                 hover_color=theme['button_secondary_hover'],
-                corner_radius=18,
-                border_width=0
+                corner_radius=22,  # Increased for modern look
+                border_width=1,  # Subtle border for definition
+                border_color=theme['border_secondary']
             )
             menu_button.grid(row=0, column=1, padx=(0, 0), pady=0)
             return button

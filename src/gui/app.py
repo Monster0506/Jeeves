@@ -64,50 +64,71 @@ class JeevesApp:
         self.root.grid_columnconfigure(0, weight=1)
         self.root.grid_columnconfigure(1, weight=0)
 
-        # Header bar with enhanced styling
+        # Header bar with enhanced styling and consistent spacing
         self.header = ctk.CTkFrame(
             self.root, 
             fg_color=theme['bg_header'], 
-            height=56,
+            height=64,  # Increased from 56 for better proportions
             corner_radius=0,
             border_width=0
         )
         self.header.grid(row=0, column=0, columnspan=2, sticky="nsew")
         self.header.grid_columnconfigure(0, weight=1)
         self.header.grid_columnconfigure(1, weight=0)
+        
+        # Add a subtle border at the bottom of the header
+        self.header_border = ctk.CTkFrame(
+            self.root,
+            fg_color=theme['border_divider'],
+            height=1,
+            corner_radius=0
+        )
+        self.header_border.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(63, 0))
 
-        # App name/logo with enhanced styling
+        # App name/logo with enhanced styling and better spacing
         self.header_label = ctk.CTkLabel(
             self.header,
             text="🧑‍💻 Jeeves",
             font=font_large,
             text_color=theme['accent_primary']
         )
-        self.header_label.grid(row=0, column=0, sticky="w", padx=24, pady=8)
+        self.header_label.grid(row=0, column=0, sticky="w", padx=24, pady=16)  # Increased padding
 
-        # Global actions with enhanced styling
+        # Global actions with enhanced styling and consistent spacing
         self.settings_button = ctk.CTkButton(
             self.header,
             text="⚙️",
-            width=40,
-            height=40,
+            width=56,  # Increased for better proportions
+            height=56,  # Increased for better proportions
             fg_color=theme['button_secondary'],
             hover_color=theme['button_secondary_hover'],
-            font=font_normal,
-            corner_radius=20,
+            font=(font_family, 16, "bold"),  # Larger, bold font for icon
+            corner_radius=28,  # Increased for modern look
             text_color=theme['text_primary'],
+            border_width=1,  # Subtle border for definition
+            border_color=theme['border_secondary'],
             command=lambda: show_info("Settings", "Settings coming soon!")
         )
-        self.settings_button.grid(row=0, column=1, sticky="e", padx=(0, 24), pady=8)
+        self.settings_button.grid(row=0, column=1, sticky="e", padx=(0, 24), pady=8)  # Consistent padding
 
-        # Main content area with enhanced styling
+        # Add enhanced hover effects to settings button
+        def on_settings_enter(event):
+            self.settings_button.configure(corner_radius=30)  # Slightly larger radius on hover
+        
+        def on_settings_leave(event):
+            self.settings_button.configure(corner_radius=28)  # Return to normal radius
+        
+        self.settings_button.bind("<Enter>", on_settings_enter)
+        self.settings_button.bind("<Leave>", on_settings_leave)
+
+        # Main content area with enhanced styling and better spacing
         self.main_frame = ctk.CTkFrame(
             self.root, 
             fg_color=theme['bg_primary'],
             corner_radius=0,
             border_width=0
         )
-        self.main_frame.grid(row=1, column=0, sticky="nsew", padx=(0, 0), pady=10)
+        self.main_frame.grid(row=1, column=0, sticky="nsew", padx=16, pady=16)  # Consistent margins
         self.main_frame.grid_columnconfigure(0, weight=1)
         self.main_frame.grid_rowconfigure(0, weight=1)
 
@@ -118,9 +139,9 @@ class JeevesApp:
             on_export_chat=self._on_export_chat,
             on_search_messages=self._on_search_messages
         )
-        self.chat_display.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
+        self.chat_display.grid(row=0, column=0, sticky="nsew", padx=8, pady=8)  # Consistent internal spacing
 
-        # Sidebar
+        # Sidebar with better spacing
         self.sidebar = Sidebar(
             self.root,
             on_thread_select=self._on_thread_select,
@@ -128,22 +149,35 @@ class JeevesApp:
             on_delete_thread=self._on_delete_thread,
             on_rename_thread=self._on_rename_thread
         )
-        self.sidebar.grid(row=1, column=1, sticky="nsew", padx=(5, 10), pady=10)
+        self.sidebar.grid(row=1, column=1, sticky="nsew", padx=(8, 16), pady=16)  # Consistent spacing
 
-        # Sidebar toggle button with enhanced styling
+        # Sidebar toggle button with enhanced styling and better positioning
         self.sidebar_toggle = ctk.CTkButton(
             self.root,
             text="☰",
-            width=40,
-            height=40,
+            width=56,  # Increased for better proportions
+            height=56,  # Increased for better proportions
             command=self._toggle_sidebar,
-            font=font_normal,
+            font=(font_family, 16, "bold"),  # Larger, bold font for icon
             fg_color=theme['button_secondary'],
             hover_color=theme['button_secondary_hover'],
             text_color=theme['text_primary'],
-            corner_radius=20
+            corner_radius=28,  # Increased for modern look
+            border_width=1,  # Subtle border for definition
+            border_color=theme['border_secondary']
         )
-        self.sidebar_toggle.grid(row=1, column=1, sticky="ne", padx=(0, 15), pady=(15, 0))
+        self.sidebar_toggle.grid(row=1, column=1, sticky="ne", padx=(0, 24), pady=(24, 0))  # Better positioning
+        
+        # Add enhanced hover effects to sidebar toggle button
+        def on_toggle_enter(event):
+            self.sidebar_toggle.configure(corner_radius=30)  # Slightly larger radius on hover
+        
+        def on_toggle_leave(event):
+            self.sidebar_toggle.configure(corner_radius=28)  # Return to normal radius
+        
+        self.sidebar_toggle.bind("<Enter>", on_toggle_enter)
+        self.sidebar_toggle.bind("<Leave>", on_toggle_leave)
+        
         self.sidebar.grid_remove()
         self.sidebar_visible = False
     

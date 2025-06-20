@@ -15,7 +15,7 @@ from src.gui.app import JeevesApp
 from src.utils.dialogs import show_error
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler('jeeves.log'),

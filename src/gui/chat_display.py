@@ -60,13 +60,13 @@ class MessageBubble(ctk.CTkFrame):
         )
         text_color = self.theme["text_primary"]
         anchor = "e" if self.is_user else "w"
-        padx = (24, 24)
+        padx = (16, 16)
         # Bubble frame with enhanced styling
         self._bubble = ctk.CTkFrame(
             self, 
             fg_color=bubble_color, 
-            corner_radius=20,
-            border_width=1,
+            corner_radius=24,  # Increased for modern look
+            border_width=2,  # Increased for better definition
             border_color=self.theme.get("border_secondary", self.theme["bg_chat"])
         )
         self._bubble.grid(row=0, column=0, sticky=anchor, padx=padx, pady=2)
@@ -83,7 +83,7 @@ class MessageBubble(ctk.CTkFrame):
         
         # Sender/timestamp with improved styling
         meta_frame = ctk.CTkFrame(self._bubble, fg_color=bubble_color)
-        meta_frame.grid(row=0, column=0, sticky="w", padx=12, pady=(8, 0))
+        meta_frame.grid(row=0, column=0, sticky="w", padx=16, pady=(8, 0))
         sender_label = ctk.CTkLabel(
             meta_frame,
             text=sender,
@@ -102,7 +102,7 @@ class MessageBubble(ctk.CTkFrame):
         if self._msg_frame:
             self._msg_frame.destroy()
         self._msg_frame = ctk.CTkFrame(self._bubble, fg_color=bubble_color)
-        self._msg_frame.grid(row=1, column=0, sticky="nsew", padx=12, pady=(2, 8))
+        self._msg_frame.grid(row=1, column=0, sticky="nsew", padx=16, pady=(2, 8))
         self._msg_frame.grid_columnconfigure(0, weight=1)
         self._render_markdown(self._msg_frame, message, text_color)
         # Set max width
@@ -120,7 +120,7 @@ class MessageBubble(ctk.CTkFrame):
         # Use a Textbox for better markdown rendering with styles
         md_text = ctk.CTkTextbox(
             parent,
-            fg_color=bubble_color,
+            fg_color=self.theme["bubble_ai"] if not self.is_user else self.theme["bubble_user"],
             text_color=text_color,
             font=(self.font_family, 13),
             wrap="word",
@@ -131,7 +131,7 @@ class MessageBubble(ctk.CTkFrame):
             spacing2=5,
             spacing3=5,
             border_width=0,
-            width=self.max_width - 48,  # account for padding
+            width=self.max_width - 32,  # account for padding (16px * 2)
         )
         md_text.grid(row=0, column=0, sticky="ew")
 
@@ -461,94 +461,141 @@ class ChatDisplay(ctk.CTkFrame):
         self.canvas.bind("<Button-4>", self._on_mousewheel)
         self.canvas.bind("<Button-5>", self._on_mousewheel)
         
-        # Input area with enhanced styling
+        # Input area with enhanced styling and consistent spacing
         self.input_frame = ctk.CTkFrame(
             self, 
             fg_color=self.theme["bg_secondary"],
-            corner_radius=12,
-            border_width=1,
+            corner_radius=16,  # Increased for modern look
+            border_width=2,  # Increased for better definition
             border_color=self.theme["border_primary"]
         )
-        self.input_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=(5, 10))
+        self.input_frame.grid(row=1, column=0, sticky="ew", padx=16, pady=(16, 16))  # Consistent spacing
         self.input_frame.grid_columnconfigure(0, weight=1)
         self.input_field = ctk.CTkEntry(
             self.input_frame,
             placeholder_text="Type your message here...",
-            font=(self.font_family, 12),
-            height=40,
+            font=(self.font_family, 13),  # Slightly larger font for better readability
+            height=48,  # Increased from 40 for better proportions
             fg_color=self.theme["bg_input"],
             text_color=self.theme["text_primary"],
             placeholder_text_color=self.theme["text_secondary"],
             border_color=self.theme["border_secondary"],
             border_width=1,
-            corner_radius=8
+            corner_radius=12,  # Increased to match button styling
         )
-        self.input_field.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+        self.input_field.grid(row=0, column=0, sticky="ew", padx=(16, 16), pady=16)  # Consistent internal spacing
         self.send_button = ctk.CTkButton(
             self.input_frame,
-            text="Send",
+            text="➤ Send",  # Added arrow icon for better visual appeal
             command=self._send_message,
-            width=80,
-            height=40,
-            font=(self.font_family, 12),
+            width=104,  # Increased for better proportions with icon
+            height=48,  # Increased from 40 for better proportions
+            font=(self.font_family, 12, "bold"),  # Made bold for primary action
             fg_color=self.theme["button_primary"],
             hover_color=self.theme["button_primary_hover"],
             text_color=self.theme["text_inverse"],
-            corner_radius=8
+            corner_radius=12,  # Increased for modern look
+            border_width=0,  # Clean look without borders
+            # Add subtle shadow effect through color
         )
-        self.send_button.grid(row=0, column=1)
-        # Toolbar with enhanced styling
+        self.send_button.grid(row=0, column=1, padx=(0, 16), pady=16)  # Consistent spacing
+        
+        # Toolbar with enhanced styling and consistent spacing
         self.toolbar_frame = ctk.CTkFrame(
             self, 
             fg_color=self.theme["bg_secondary"],
-            corner_radius=8,
-            border_width=1,
+            corner_radius=12,  # Increased for modern look
+            border_width=2,  # Increased for better definition
             border_color=self.theme["border_secondary"]
         )
-        self.toolbar_frame.grid(row=2, column=0, sticky="ew", padx=10, pady=(0, 10))
+        self.toolbar_frame.grid(row=2, column=0, sticky="ew", padx=16, pady=(0, 16))  # Consistent spacing
+        
         self.search_button = ctk.CTkButton(
             self.toolbar_frame,
             text="🔍 Search",
             command=self._search_messages,
-            width=100,
-            height=30,
-            font=(self.font_family, 10),
+            width=120,  # Increased for better proportions
+            height=40,  # Increased for better proportions
+            font=(self.font_family, 11, "bold"),  # Made bold for better visibility
             fg_color=self.theme["button_secondary"],
             hover_color=self.theme["button_secondary_hover"],
             text_color=self.theme["text_primary"],
-            corner_radius=6
+            corner_radius=10,  # Increased for modern look
+            border_width=1,  # Subtle border for definition
+            border_color=self.theme["border_secondary"]
         )
-        self.search_button.pack(side="left", padx=(0, 10))
+        self.search_button.pack(side="left", padx=16, pady=12)  # Increased padding
+        
         self.export_button = ctk.CTkButton(
             self.toolbar_frame,
             text="📤 Export",
             command=self._export_chat,
-            width=100,
-            height=30,
-            font=(self.font_family, 10),
+            width=120,  # Increased for better proportions
+            height=40,  # Increased for better proportions
+            font=(self.font_family, 11, "bold"),  # Made bold for better visibility
             fg_color=self.theme["button_secondary"],
             hover_color=self.theme["button_secondary_hover"],
             text_color=self.theme["text_primary"],
-            corner_radius=6
+            corner_radius=10,  # Increased for modern look
+            border_width=1,  # Subtle border for definition
+            border_color=self.theme["border_secondary"]
         )
-        self.export_button.pack(side="left", padx=(0, 10))
+        self.export_button.pack(side="left", padx=(0, 16), pady=12)  # Increased padding
+        
         self.clear_button = ctk.CTkButton(
             self.toolbar_frame,
             text="🗑️ Clear",
             command=self.clear_messages,
-            width=100,
-            height=30,
-            font=(self.font_family, 10),
+            width=120,  # Increased for better proportions
+            height=40,  # Increased for better proportions
+            font=(self.font_family, 11, "bold"),  # Made bold for better visibility
             fg_color=self.theme["button_danger"],
             hover_color=self.theme["button_danger_hover"],
             text_color=self.theme["text_inverse"],
-            corner_radius=6
+            corner_radius=10,  # Increased for modern look
+            border_width=0,  # No border for danger button
         )
-        self.clear_button.pack(side="left")
+        self.clear_button.pack(side="left", padx=(0, 16), pady=12)  # Increased padding
 
     def _setup_bindings(self):
         self.input_field.bind("<Return>", lambda e: self._send_message())
         self.input_field.bind("<Shift-Return>", lambda e: self._insert_newline())
+        
+        # Add enhanced focus effects to input field
+        def on_input_focus_in(event):
+            self.input_field.configure(border_color=self.theme["border_focus"])
+        
+        def on_input_focus_out(event):
+            self.input_field.configure(border_color=self.theme["border_secondary"])
+        
+        self.input_field.bind("<FocusIn>", on_input_focus_in)
+        self.input_field.bind("<FocusOut>", on_input_focus_out)
+        
+        # Add enhanced hover effects to buttons
+        self._setup_button_hover_effects()
+
+    def _setup_button_hover_effects(self):
+        """Setup enhanced hover effects for buttons."""
+        # Send button hover effect
+        def on_send_enter(event):
+            self.send_button.configure(corner_radius=14)  # Slightly larger radius on hover
+        
+        def on_send_leave(event):
+            self.send_button.configure(corner_radius=12)  # Return to normal radius
+        
+        self.send_button.bind("<Enter>", on_send_enter)
+        self.send_button.bind("<Leave>", on_send_leave)
+        
+        # Toolbar buttons hover effects
+        for button in [self.search_button, self.export_button, self.clear_button]:
+            def on_toolbar_enter(event, btn=button):
+                btn.configure(corner_radius=12)  # Slightly larger radius on hover
+            
+            def on_toolbar_leave(event, btn=button):
+                btn.configure(corner_radius=10)  # Return to normal radius
+            
+            button.bind("<Enter>", on_toolbar_enter)
+            button.bind("<Leave>", on_toolbar_leave)
 
     def _send_message(self):
         message = self.input_field.get().strip()
@@ -575,7 +622,7 @@ class ChatDisplay(ctk.CTkFrame):
 
     def _add_message(self, message: str, sender: str, is_user: bool):
         timestamp = datetime.now().strftime("%H:%M")
-        max_bubble_width = max(int(self.canvas.winfo_width() * 0.8), 320)
+        max_bubble_width = max(int(self.canvas.winfo_width() * 0.95), 600)
         bubble = MessageBubble(
             self.scrollable_frame,
             sender,
@@ -587,9 +634,9 @@ class ChatDisplay(ctk.CTkFrame):
             max_width=max_bubble_width,
         )
         if is_user:
-            bubble.pack(anchor="e", pady=8, padx=(24, 24), fill=None)
+            bubble.pack(anchor="e", pady=8, padx=(16, 16), fill=None)  # Consistent spacing
         else:
-            bubble.pack(anchor="w", pady=8, padx=(24, 24), fill=None)
+            bubble.pack(anchor="w", pady=8, padx=(16, 16), fill=None)  # Consistent spacing
         self.bubbles.append(bubble)
         self.update_idletasks()
         self.canvas.yview_moveto(1.0)
@@ -606,7 +653,7 @@ class ChatDisplay(ctk.CTkFrame):
             display_sender = (
                 "You" if is_user else ("Jeeves" if sender == "ai" else sender.title())
             )
-            max_bubble_width = max(int(self.canvas.winfo_width() * 0.8), 320)
+            max_bubble_width = max(int(self.canvas.winfo_width() * 0.95), 600)
             bubble = MessageBubble(
                 self.scrollable_frame,
                 display_sender,
@@ -618,9 +665,9 @@ class ChatDisplay(ctk.CTkFrame):
                 max_width=max_bubble_width,
             )
             if is_user:
-                bubble.pack(anchor="e", pady=8, padx=(24, 24), fill=None)
+                bubble.pack(anchor="e", pady=8, padx=(16, 16), fill=None)  # Consistent spacing
             else:
-                bubble.pack(anchor="w", pady=8, padx=(24, 24), fill=None)
+                bubble.pack(anchor="w", pady=8, padx=(16, 16), fill=None)  # Consistent spacing
             self.bubbles.append(bubble)
         self.update_idletasks()
         self.canvas.yview_moveto(1.0)
@@ -644,7 +691,7 @@ class ChatDisplay(ctk.CTkFrame):
         # Make scrollable_frame always match canvas width
         self.canvas.itemconfig(self.canvas.find_withtag("all")[0], width=event.width)
         # Update all bubbles' max_width
-        max_bubble_width = max(int(event.width * 0.8), 320)
+        max_bubble_width = max(int(event.width * 0.95), 600)
         for bubble in self.bubbles:
             bubble.update_max_width(max_bubble_width)
 
