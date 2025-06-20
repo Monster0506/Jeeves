@@ -17,7 +17,8 @@ class AIEngine:
     
     def __init__(self, chat_manager: ChatManager):
         self.chat_manager = chat_manager
-        self.conversation_history: List[Dict] = []
+        # Remove in-memory conversation_history to avoid context mixing
+        # self.conversation_history: List[Dict] = []
         
         # Initialize AI provider manager
         self.provider_manager = AIProviderManager()
@@ -42,14 +43,13 @@ class AIEngine:
     
     def _on_message_added(self, message: Dict):
         """Callback when a new message is added to the conversation."""
-        self.conversation_history.append(message)
-        logger.debug(f"Message added to history: {message['sender']}")
+        # No longer needed: self.conversation_history.append(message)
+        pass
     
     def _on_thread_changed(self, thread: Dict):
         """Callback when thread changes."""
-        # Clear conversation history when switching threads
-        self.conversation_history = []
-        logger.debug(f"Switched to thread: {thread['name']}")
+        # No longer needed: self.conversation_history = []
+        pass
     
     def generate_response(self, user_message: str) -> str:
         """
@@ -67,6 +67,13 @@ class AIEngine:
         # Get conversation context
         context = self.get_conversation_context()
         
+        # Log the context being sent to the AI
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("--- Sending context to AI ---")
+            for msg in context:
+                logger.debug(f"  [{msg.get('sender', 'unknown')}]: {msg.get('content', '')}")
+            logger.debug("-----------------------------")
+
         # Generate response using the current AI provider
         response = self.provider_manager.generate_response(user_message, context)
         

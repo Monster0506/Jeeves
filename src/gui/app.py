@@ -12,7 +12,7 @@ from .components import ChatDisplay, Sidebar
 from ..utils.dialogs import show_error, show_info
 
 logger = logging.getLogger(__name__)
-
+ctk.deactivate_automatic_dpi_awareness()
 
 class JeevesApp:
     """Main application class for Jeeves AI Assistant."""
@@ -131,6 +131,7 @@ class JeevesApp:
         """Handle thread selection."""
         try:
             if self.chat_manager.switch_thread(thread_id):
+                self.chat_display.clear_messages()  # Clear chat before loading new thread
                 self._load_thread_messages(thread_id)
                 self.sidebar.set_current_thread(thread_id)
                 logger.info(f"Switched to thread {thread_id}")
@@ -219,6 +220,7 @@ class JeevesApp:
         # Update sidebar if needed
         threads = self.chat_manager.get_threads()
         self.sidebar.load_threads(threads)
+        self.chat_display.clear_messages()  # Also clear chat on programmatic thread change
     
     def _load_thread_messages(self, thread_id: int):
         """Load messages for a specific thread."""
