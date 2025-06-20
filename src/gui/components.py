@@ -5,13 +5,15 @@ import customtkinter as ctk
 import threading
 from datetime import datetime, timedelta
 from typing import Callable, List, Dict, Optional
-from ..config.settings import ICONS, APP_SETTINGS, DEFAULT_THREADS
+from markdown_it import MarkdownIt
+import tkinter as tk
+from ..config.settings import ICONS, APP_SETTINGS, DEFAULT_THREADS, COLORS
 import logging
 import time
 
 logger = logging.getLogger(__name__)
 
-
+logging.getLogger("markdown_it").setLevel(logging.WARNING)
 class ChatDisplay(ctk.CTkFrame):
     """Chat display component for showing messages."""
     
@@ -22,9 +24,13 @@ class ChatDisplay(ctk.CTkFrame):
         self.on_send_message = on_send_message
         self.on_export_chat = on_export_chat
         self.on_search_messages = on_search_messages
+
+        # Initialize markdown parser
+        self.md = MarkdownIt()
         
         self._setup_ui()
         self._setup_bindings()
+        self._configure_markdown_styles()
     
     def _setup_ui(self):
         """Setup the user interface."""
@@ -33,23 +39,28 @@ class ChatDisplay(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=0)
         
-        # Create chat area
+        # Create chat area frame
         self.chat_frame = ctk.CTkFrame(self)
         self.chat_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=(10, 5))
         self.chat_frame.grid_columnconfigure(0, weight=1)
         self.chat_frame.grid_rowconfigure(0, weight=1)
         
-        # Create text widget for messages
-        self.chat_text = ctk.CTkTextbox(
+        # Create standard tkinter Text widget for messages
+        self.chat_text = tk.Text(
             self.chat_frame,
             font=("Fira Code", 12),
             wrap="word",
-            state="disabled"
+            state="disabled",
+            bg=COLORS['dark']['bg_primary'],
+            fg="#FFFFFF",
+            insertbackground="#FFFFFF",
+            relief="flat",
+            borderwidth=0
         )
         self.chat_text.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
         
-        # Create scrollbar
-        self.scrollbar = ctk.CTkScrollbar(
+        # Create standard tkinter Scrollbar
+        self.scrollbar = tk.Scrollbar(
             self.chat_frame,
             command=self.chat_text.yview
         )
@@ -116,6 +127,12 @@ class ChatDisplay(ctk.CTkFrame):
         )
         self.clear_button.pack(side="left")
     
+    def _get_ctk_color(self, color):
+        # Helper to get a color string from CTk color tuple or string
+        if isinstance(color, (tuple, list)):
+            return color[0]
+        return color
+    
     def _setup_bindings(self):
         """Setup keyboard bindings."""
         self.input_field.bind("<Return>", lambda e: self._send_message())
@@ -147,6 +164,102 @@ class ChatDisplay(ctk.CTkFrame):
         if self.on_export_chat:
             self.on_export_chat()
     
+    def _configure_markdown_styles(self):
+        """Configure styles for markdown rendering."""
+        # Fonts
+        self.bold_font = ("Fira Code", 12, "bold")
+        self.italic_font = ("Fira Code", 12, "italic")
+        self.code_font = ("Courier New", 12)
+        self.h1_font = ("Fira Code", 18, "bold")
+        self.h2_font = ("Fira Code", 16, "bold")
+        self.h3_font = ("Fira Code", 14, "bold")
+
+        # Tags
+        self.chat_text.tag_config("bold", font=self.bold_font)
+        self.chat_text.tag_config("italic", font=self.italic_font)
+        self.chat_text.tag_config("code", font=self.code_font, background="#2E2E2E", lmargin1=10, lmargin2=10, rmargin=10)
+        self.chat_text.tag_config("h1", font=self.h1_font, foreground="#FFD700")
+        self.chat_text.tag_config("h2", font=self.h2_font, foreground="#FFA500")
+        self.chat_text.tag_config("h3", font=self.h3_font, foreground="#87CEEB")
+        self.chat_text.tag_config("user", foreground="#4CAF50")
+        self.chat_text.tag_config("ai", foreground="#2196F3")
+        self.chat_text.tag_config("system", foreground="#FF9800")
+        self.chat_text.tag_config("other", foreground="#9E9E9E")
+
+    def _render_markdown(self, text: str, initial_tag: str):
+        """Render markdown text to the chat widget."""
+        tokens = self.md.parse(text)
+        
+        active_tags = []
+
+        for token in tokens:
+            if token.type == "paragraph_open":
+                continue
+            if token.type == "paragraph_close":
+                self.chat_text.insert("end", "\n")
+                continue
+
+            if token.type.endswith("_open"):
+                tag_name = token.tag
+                if token.tag == "em":
+                    tag_name = "italic"
+                elif token.tag == "strong":
+                    tag_name = "bold"
+                elif token.tag == "code_inline":
+                    tag_name = "code"
+                elif token.tag in ["h1", "h2", "h3"]:
+                    tag_name = token.tag
+                
+                active_tags.append(tag_name)
+
+            elif token.type.endswith("_close"):
+                active_tags.pop()
+
+            elif token.type == "text":
+                tags_to_apply = tuple([initial_tag] + active_tags)
+                self.chat_text.insert("end", token.content, tags_to_apply)
+            
+            elif token.type == "code_fence":
+                tags_to_apply = tuple([initial_tag, "code"])
+                self.chat_text.insert("end", token.content, tags_to_apply)
+
+            elif token.type == "bullet_list_open":
+                continue
+            elif token.type == "bullet_list_close":
+                continue
+            elif token.type == "list_item_open":
+                self.chat_text.insert("end", "  • ", initial_tag)
+            elif token.type == "list_item_close":
+                self.chat_text.insert("end", "\n")
+                
+            elif token.type == "heading_open":
+                active_tags.append(token.tag)
+            elif token.type == "heading_close":
+                active_tags.pop()
+                self.chat_text.insert("end", "\n")
+                
+            elif token.type == "inline":
+                self._render_markdown_inline(token.children, initial_tag)
+
+    def _render_markdown_inline(self, tokens: List, initial_tag: str):
+        """Render inline markdown tokens."""
+        active_tags = []
+        for token in tokens:
+            if token.type.endswith("_open"):
+                tag_name = token.tag
+                if token.tag == "em":
+                    tag_name = "italic"
+                elif token.tag == "strong":
+                    tag_name = "bold"
+                elif token.tag == "code_inline":
+                    tag_name = "code"
+                active_tags.append(tag_name)
+            elif token.type.endswith("_close"):
+                active_tags.pop()
+            elif token.type == "text":
+                tags_to_apply = tuple([initial_tag] + active_tags)
+                self.chat_text.insert("end", token.content, tags_to_apply)
+
     def add_user_message(self, message: str):
         """Add a user message to the chat."""
         self._add_message(message, "user")
@@ -169,21 +282,22 @@ class ChatDisplay(ctk.CTkFrame):
             
             # Format message based on sender
             if sender == "user":
-                prefix = f"[{timestamp}] 👤 You: "
+                prefix = f"[{timestamp}] 👤 You:\n"
                 tag = "user"
             elif sender == "ai":
-                prefix = f"[{timestamp}] 🤖 Jeeves: "
+                prefix = f"[{timestamp}] 🤖 Jeeves:\n"
                 tag = "ai"
             elif sender == "system":
-                prefix = f"[{timestamp}] ⚙️ System: "
+                prefix = f"[{timestamp}] ⚙️ System:\n"
                 tag = "system"
             else:
-                prefix = f"[{timestamp}] 💬 {sender.title()}: "
+                prefix = f"[{timestamp}] 💬 {sender.title()}:\n"
                 tag = "other"
             
             # Insert message
             self.chat_text.insert("end", prefix, tag)
-            self.chat_text.insert("end", message + "\n\n")
+            self._render_markdown(message, tag)
+            self.chat_text.insert("end", "\n\n")
             
             # Configure tags for styling
             self.chat_text.tag_config("user", foreground="#4CAF50")
@@ -227,20 +341,21 @@ class ChatDisplay(ctk.CTkFrame):
                 self.chat_text.configure(state="normal")
                 
                 if sender == "user":
-                    prefix = f"[{formatted_time}] 👤 You: "
+                    prefix = f"[{formatted_time}] 👤 You:\n"
                     tag = "user"
                 elif sender == "ai":
-                    prefix = f"[{formatted_time}] 🤖 Jeeves: "
+                    prefix = f"[{formatted_time}] 🤖 Jeeves:\n"
                     tag = "ai"
                 elif sender == "system":
-                    prefix = f"[{formatted_time}] ⚙️ System: "
+                    prefix = f"[{formatted_time}] ⚙️ System:\n"
                     tag = "system"
                 else:
-                    prefix = f"[{formatted_time}] 💬 {sender.title()}: "
+                    prefix = f"[{formatted_time}] 💬 {sender.title()}:\n"
                     tag = "other"
                 
                 self.chat_text.insert("end", prefix, tag)
-                self.chat_text.insert("end", content + "\n\n")
+                self._render_markdown(content, tag)
+                self.chat_text.insert("end", "\n\n")
                 
                 # Configure tags
                 self.chat_text.tag_config("user", foreground="#4CAF50")
@@ -254,7 +369,7 @@ class ChatDisplay(ctk.CTkFrame):
             self.chat_text.see("end")
             
         except Exception as e:
-            logger.error(f"Error loading messages: {e}")
+            logger.error(f"Failed to load messages: {e}")
     
     def clear_messages(self):
         """Clear all messages from the chat display."""
