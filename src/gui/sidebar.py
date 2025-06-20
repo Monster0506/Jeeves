@@ -35,8 +35,13 @@ class Sidebar(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
         
-        # Sidebar header
-        self.header_frame = ctk.CTkFrame(self, fg_color=theme['bg_sidebar'])
+        # Sidebar header with enhanced styling
+        self.header_frame = ctk.CTkFrame(
+            self, 
+            fg_color=theme['bg_sidebar'],
+            border_width=0,
+            corner_radius=0
+        )
         self.header_frame.grid(row=0, column=0, sticky="ew", padx=0, pady=(0, 0))
         self.header_frame.grid_columnconfigure(0, weight=1)
         
@@ -44,7 +49,7 @@ class Sidebar(ctk.CTkFrame):
             self.header_frame,
             text="Conversations",
             font=font_large,
-            text_color=theme['accent']
+            text_color=theme['accent_primary']
         )
         self.title_label.grid(row=0, column=0, sticky="w", padx=24, pady=18)
         
@@ -55,15 +60,19 @@ class Sidebar(ctk.CTkFrame):
             width=120,
             height=38,
             font=font_normal,
-            fg_color=theme['accent'],
-            text_color=theme['bg_primary'],
-            hover_color=theme['accent_alt'],
+            fg_color=theme['button_primary'],
+            text_color=theme['text_inverse'],
+            hover_color=theme['button_primary_hover'],
             corner_radius=19
         )
         self.new_thread_button.grid(row=0, column=1, padx=(0, 18), pady=12)
         
-        # Threads list
-        self.threads_frame = ctk.CTkScrollableFrame(self, fg_color=theme['bg_sidebar'])
+        # Threads list with enhanced styling
+        self.threads_frame = ctk.CTkScrollableFrame(
+            self, 
+            fg_color=theme['bg_sidebar'],
+            corner_radius=0
+        )
         self.threads_frame.grid(row=1, column=0, sticky="nsew", padx=0, pady=(0, 0))
         self.threads_frame.grid_columnconfigure(0, weight=1)
         self.thread_buttons = []
@@ -97,10 +106,28 @@ class Sidebar(ctk.CTkFrame):
     
     def _create_thread_button(self, thread: Dict, index: int, theme, font_normal) -> ctk.CTkButton:
         try:
-            button_frame = ctk.CTkFrame(self.threads_frame, fg_color=theme['bg_sidebar'])
+            button_frame = ctk.CTkFrame(
+                self.threads_frame, 
+                fg_color=theme['bg_sidebar'],
+                corner_radius=0
+            )
             button_frame.grid(row=index, column=0, sticky="ew", pady=6, padx=18)
             button_frame.grid_columnconfigure(0, weight=1)
+            
             is_active = thread['id'] == self.current_thread_id
+            
+            # Determine thread color based on type
+            thread_type = thread.get('type', 'general')
+            thread_color_map = {
+                'general': theme.get('thread_general', theme['accent_primary']),
+                'code': theme.get('thread_code', theme['success']),
+                'planning': theme.get('thread_planning', theme['warning']),
+                'creative': theme.get('thread_creative', theme['accent_primary']),
+                'support': theme.get('thread_support', theme['error']),
+                'docs': theme.get('thread_docs', theme['info'])
+            }
+            thread_color = thread_color_map.get(thread_type, theme['accent_primary'])
+            
             button = ctk.CTkButton(
                 button_frame,
                 text=f"{thread.get('icon', '💬')} {thread.get('name', 'Unknown')}",
@@ -108,13 +135,15 @@ class Sidebar(ctk.CTkFrame):
                 anchor="w",
                 height=44,
                 font=font_normal,
-                fg_color=theme['accent'] if is_active else theme['bubble_ai'],
-                text_color=theme['bg_primary'] if is_active else theme['text_primary'],
-                hover_color=theme['accent_alt'] if is_active else theme['bubble_user'],
+                fg_color=thread_color if is_active else theme['button_secondary'],
+                text_color=theme['text_inverse'] if is_active else theme['text_primary'],
+                hover_color=theme['button_primary_hover'] if is_active else theme['button_secondary_hover'],
                 corner_radius=22,
-                border_width=0
+                border_width=1 if is_active else 0,
+                border_color=theme['border_focus'] if is_active else theme['bg_sidebar']
             )
             button.grid(row=0, column=0, sticky="ew", padx=(0, 8), pady=0)
+            
             menu_button = ctk.CTkButton(
                 button_frame,
                 text="⋮",
@@ -122,9 +151,9 @@ class Sidebar(ctk.CTkFrame):
                 width=36,
                 height=36,
                 font=font_normal,
-                fg_color=theme['bubble_ai'],
+                fg_color=theme['button_secondary'],
                 text_color=theme['text_secondary'],
-                hover_color=theme['bubble_user'],
+                hover_color=theme['button_secondary_hover'],
                 corner_radius=18,
                 border_width=0
             )

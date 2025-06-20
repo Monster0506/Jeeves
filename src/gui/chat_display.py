@@ -34,7 +34,7 @@ class MessageBubble(ctk.CTkFrame):
         max_width=600,
         **kwargs,
     ):
-        super().__init__(parent, fg_color="transparent", corner_radius=20, **kwargs)
+        super().__init__(parent, fg_color=theme["bg_chat"], corner_radius=20, **kwargs)
         self.theme = theme
         self.is_user = is_user
         self.font_family = font_family
@@ -55,15 +55,34 @@ class MessageBubble(ctk.CTkFrame):
         bubble_color = (
             self.theme["bubble_user"] if self.is_user else self.theme["bubble_ai"]
         )
+        bubble_hover_color = (
+            self.theme["bubble_user_hover"] if self.is_user else self.theme["bubble_ai_hover"]
+        )
         text_color = self.theme["text_primary"]
         anchor = "e" if self.is_user else "w"
         padx = (24, 24)
-        # Bubble frame
-        self._bubble = ctk.CTkFrame(self, fg_color=bubble_color, corner_radius=20)
+        # Bubble frame with enhanced styling
+        self._bubble = ctk.CTkFrame(
+            self, 
+            fg_color=bubble_color, 
+            corner_radius=20,
+            border_width=1,
+            border_color=self.theme.get("border_secondary", self.theme["bg_chat"])
+        )
         self._bubble.grid(row=0, column=0, sticky=anchor, padx=padx, pady=2)
         self._bubble.grid_columnconfigure(0, weight=1)
-        # Sender/timestamp
-        meta_frame = ctk.CTkFrame(self._bubble, fg_color="transparent")
+        
+        # Add hover effect
+        def on_enter(event):
+            self._bubble.configure(fg_color=bubble_hover_color)
+        def on_leave(event):
+            self._bubble.configure(fg_color=bubble_color)
+        
+        self._bubble.bind("<Enter>", on_enter)
+        self._bubble.bind("<Leave>", on_leave)
+        
+        # Sender/timestamp with improved styling
+        meta_frame = ctk.CTkFrame(self._bubble, fg_color=bubble_color)
         meta_frame.grid(row=0, column=0, sticky="w", padx=12, pady=(8, 0))
         sender_label = ctk.CTkLabel(
             meta_frame,
@@ -82,7 +101,7 @@ class MessageBubble(ctk.CTkFrame):
         # Markdown message
         if self._msg_frame:
             self._msg_frame.destroy()
-        self._msg_frame = ctk.CTkFrame(self._bubble, fg_color="transparent")
+        self._msg_frame = ctk.CTkFrame(self._bubble, fg_color=bubble_color)
         self._msg_frame.grid(row=1, column=0, sticky="nsew", padx=12, pady=(2, 8))
         self._msg_frame.grid_columnconfigure(0, weight=1)
         self._render_markdown(self._msg_frame, message, text_color)
@@ -101,7 +120,7 @@ class MessageBubble(ctk.CTkFrame):
         # Use a Textbox for better markdown rendering with styles
         md_text = ctk.CTkTextbox(
             parent,
-            fg_color="transparent",
+            fg_color=bubble_color,
             text_color=text_color,
             font=(self.font_family, 13),
             wrap="word",
@@ -125,16 +144,16 @@ class MessageBubble(ctk.CTkFrame):
 
         md_text.tag_config(
             "code_inline",
-            background="#23272F",
-            foreground=self.theme["accent"],
+            background=self.theme.get("bg_tertiary", "#23272F"),
+            foreground=self.theme.get("accent_primary", "#3b82f6"),
             rmargin=4,
             lmargin1=4,
             lmargin2=4,
         )
         md_text.tag_config(
             "code_block",
-            background="#23272F",
-            foreground=self.theme["accent"],
+            background=self.theme.get("bg_tertiary", "#23272F"),
+            foreground=self.theme.get("accent_primary", "#3b82f6"),
             lmargin1=10,
             lmargin2=10,
             rmargin=10,
@@ -148,11 +167,12 @@ class MessageBubble(ctk.CTkFrame):
             lmargin2=20,
             foreground=self.theme["text_secondary"],
         )
-        md_text.tag_config("link", foreground="royal blue", underline=True)
-        md_text.tag_config("footnote_ref", foreground="royal blue", underline=True)
+        md_text.tag_config("link", foreground=self.theme.get("link", "royal blue"), underline=True)
+        md_text.tag_config("link_hover", foreground=self.theme.get("link_hover", "light blue"), underline=True)
+        md_text.tag_config("footnote_ref", foreground=self.theme.get("link", "royal blue"), underline=True)
         
-        md_text.tag_config("math_inline", background="#343A40", foreground="#E9ECEF", rmargin=4, lmargin1=4, lmargin2=4)
-        md_text.tag_config("math_block", background="#343A40", foreground="#E9ECEF", lmargin1=10, lmargin2=10, rmargin=10, spacing1=8, spacing3=8)
+        md_text.tag_config("math_inline", background=self.theme.get("bg_tertiary", "#343A40"), foreground=self.theme.get("text_primary", "#E9ECEF"), rmargin=4, lmargin1=4, lmargin2=4)
+        md_text.tag_config("math_block", background=self.theme.get("bg_tertiary", "#343A40"), foreground=self.theme.get("text_primary", "#E9ECEF"), lmargin1=10, lmargin2=10, rmargin=10, spacing1=8, spacing3=8)
 
         md_text.tag_config(
             "footnote_anchor",
@@ -412,12 +432,21 @@ class ChatDisplay(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=0)
-        # Scrollable chat area
+        # Scrollable chat area with enhanced styling
         self.canvas = tk.Canvas(
-            self, bg=self.theme["bg_chat"], highlightthickness=0, borderwidth=0
+            self, 
+            bg=self.theme["bg_chat"], 
+            highlightthickness=0, 
+            borderwidth=0,
+            selectbackground=self.theme.get("selection", "#3b82f6")
         )
         self.scrollbar = tk.Scrollbar(
-            self, orient="vertical", command=self.canvas.yview
+            self, 
+            orient="vertical", 
+            command=self.canvas.yview,
+            bg=self.theme["bg_secondary"],
+            troughcolor=self.theme["bg_primary"],
+            activebackground=self.theme["accent_primary"]
         )
         self.scrollable_frame = ctk.CTkFrame(self, fg_color=self.theme["bg_chat"])
         self.scrollable_frame.bind("<Configure>", lambda e: self._on_frame_configure())
@@ -432,8 +461,14 @@ class ChatDisplay(ctk.CTkFrame):
         self.canvas.bind("<Button-4>", self._on_mousewheel)
         self.canvas.bind("<Button-5>", self._on_mousewheel)
         
-        # Input area (unchanged)
-        self.input_frame = ctk.CTkFrame(self)
+        # Input area with enhanced styling
+        self.input_frame = ctk.CTkFrame(
+            self, 
+            fg_color=self.theme["bg_secondary"],
+            corner_radius=12,
+            border_width=1,
+            border_color=self.theme["border_primary"]
+        )
         self.input_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=(5, 10))
         self.input_frame.grid_columnconfigure(0, weight=1)
         self.input_field = ctk.CTkEntry(
@@ -441,6 +476,12 @@ class ChatDisplay(ctk.CTkFrame):
             placeholder_text="Type your message here...",
             font=(self.font_family, 12),
             height=40,
+            fg_color=self.theme["bg_input"],
+            text_color=self.theme["text_primary"],
+            placeholder_text_color=self.theme["text_secondary"],
+            border_color=self.theme["border_secondary"],
+            border_width=1,
+            corner_radius=8
         )
         self.input_field.grid(row=0, column=0, sticky="ew", padx=(0, 10))
         self.send_button = ctk.CTkButton(
@@ -450,10 +491,20 @@ class ChatDisplay(ctk.CTkFrame):
             width=80,
             height=40,
             font=(self.font_family, 12),
+            fg_color=self.theme["button_primary"],
+            hover_color=self.theme["button_primary_hover"],
+            text_color=self.theme["text_inverse"],
+            corner_radius=8
         )
         self.send_button.grid(row=0, column=1)
-        # Toolbar (unchanged)
-        self.toolbar_frame = ctk.CTkFrame(self)
+        # Toolbar with enhanced styling
+        self.toolbar_frame = ctk.CTkFrame(
+            self, 
+            fg_color=self.theme["bg_secondary"],
+            corner_radius=8,
+            border_width=1,
+            border_color=self.theme["border_secondary"]
+        )
         self.toolbar_frame.grid(row=2, column=0, sticky="ew", padx=10, pady=(0, 10))
         self.search_button = ctk.CTkButton(
             self.toolbar_frame,
@@ -462,6 +513,10 @@ class ChatDisplay(ctk.CTkFrame):
             width=100,
             height=30,
             font=(self.font_family, 10),
+            fg_color=self.theme["button_secondary"],
+            hover_color=self.theme["button_secondary_hover"],
+            text_color=self.theme["text_primary"],
+            corner_radius=6
         )
         self.search_button.pack(side="left", padx=(0, 10))
         self.export_button = ctk.CTkButton(
@@ -471,6 +526,10 @@ class ChatDisplay(ctk.CTkFrame):
             width=100,
             height=30,
             font=(self.font_family, 10),
+            fg_color=self.theme["button_secondary"],
+            hover_color=self.theme["button_secondary_hover"],
+            text_color=self.theme["text_primary"],
+            corner_radius=6
         )
         self.export_button.pack(side="left", padx=(0, 10))
         self.clear_button = ctk.CTkButton(
@@ -480,6 +539,10 @@ class ChatDisplay(ctk.CTkFrame):
             width=100,
             height=30,
             font=(self.font_family, 10),
+            fg_color=self.theme["button_danger"],
+            hover_color=self.theme["button_danger_hover"],
+            text_color=self.theme["text_inverse"],
+            corner_radius=6
         )
         self.clear_button.pack(side="left")
 

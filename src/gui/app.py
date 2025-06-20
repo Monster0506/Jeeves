@@ -64,37 +64,49 @@ class JeevesApp:
         self.root.grid_columnconfigure(0, weight=1)
         self.root.grid_columnconfigure(1, weight=0)
 
-        # Header bar
-        self.header = ctk.CTkFrame(self.root, fg_color=theme['bg_header'], height=56)
+        # Header bar with enhanced styling
+        self.header = ctk.CTkFrame(
+            self.root, 
+            fg_color=theme['bg_header'], 
+            height=56,
+            corner_radius=0,
+            border_width=0
+        )
         self.header.grid(row=0, column=0, columnspan=2, sticky="nsew")
         self.header.grid_columnconfigure(0, weight=1)
         self.header.grid_columnconfigure(1, weight=0)
 
-        # App name/logo
+        # App name/logo with enhanced styling
         self.header_label = ctk.CTkLabel(
             self.header,
             text="🧑‍💻 Jeeves",
             font=font_large,
-            text_color=theme['accent']
+            text_color=theme['accent_primary']
         )
         self.header_label.grid(row=0, column=0, sticky="w", padx=24, pady=8)
 
-        # Global actions (settings, theme switch)
+        # Global actions with enhanced styling
         self.settings_button = ctk.CTkButton(
             self.header,
             text="⚙️",
             width=40,
             height=40,
-            fg_color=theme['bg_secondary'],
-            hover_color=theme['accent'],
+            fg_color=theme['button_secondary'],
+            hover_color=theme['button_secondary_hover'],
             font=font_normal,
             corner_radius=20,
+            text_color=theme['text_primary'],
             command=lambda: show_info("Settings", "Settings coming soon!")
         )
         self.settings_button.grid(row=0, column=1, sticky="e", padx=(0, 24), pady=8)
 
-        # Main content area (below header)
-        self.main_frame = ctk.CTkFrame(self.root, fg_color=theme['bg_primary'])
+        # Main content area with enhanced styling
+        self.main_frame = ctk.CTkFrame(
+            self.root, 
+            fg_color=theme['bg_primary'],
+            corner_radius=0,
+            border_width=0
+        )
         self.main_frame.grid(row=1, column=0, sticky="nsew", padx=(0, 0), pady=10)
         self.main_frame.grid_columnconfigure(0, weight=1)
         self.main_frame.grid_rowconfigure(0, weight=1)
@@ -118,14 +130,18 @@ class JeevesApp:
         )
         self.sidebar.grid(row=1, column=1, sticky="nsew", padx=(5, 10), pady=10)
 
-        # Sidebar toggle button (optional, can be moved to header later)
+        # Sidebar toggle button with enhanced styling
         self.sidebar_toggle = ctk.CTkButton(
             self.root,
             text="☰",
             width=40,
             height=40,
             command=self._toggle_sidebar,
-            font=font_normal
+            font=font_normal,
+            fg_color=theme['button_secondary'],
+            hover_color=theme['button_secondary_hover'],
+            text_color=theme['text_primary'],
+            corner_radius=20
         )
         self.sidebar_toggle.grid(row=1, column=1, sticky="ne", padx=(0, 15), pady=(15, 0))
         self.sidebar.grid_remove()
