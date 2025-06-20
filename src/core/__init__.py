@@ -1,0 +1,1 @@
+# Core package - Business logic and data persistence 

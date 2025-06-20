@@ -1,0 +1,233 @@
+"""
+AI Provider Manager for Jeeves AI Assistant.
+Manages multiple AI providers and handles switching between them.
+"""
+import logging
+from typing import Dict, List, Optional, Any, Type
+from .ai_providers import BaseAIProvider, GeminiProvider, PlaceholderProvider
+
+logger = logging.getLogger(__name__)
+
+
+class AIProviderManager:
+    """Manages multiple AI providers and handles provider switching."""
+    
+    def __init__(self):
+        """Initialize the AI provider manager."""
+        self.providers: Dict[str, BaseAIProvider] = {}
+        self.current_provider: Optional[BaseAIProvider] = None
+        self.provider_order = ['gemini', 'placeholder']  # Priority order
+        
+        # Register available providers
+        self._register_providers()
+    
+    def _register_providers(self):
+        """Register all available AI providers."""
+        try:
+            # Register Gemini provider
+            gemini_config = self._get_gemini_config()
+            self.providers['gemini'] = GeminiProvider(gemini_config)
+            logger.info("Registered Gemini provider")
+        except Exception as e:
+            logger.warning(f"Failed to register Gemini provider: {e}")
+        
+        # Register placeholder provider (always available)
+        self.providers['placeholder'] = PlaceholderProvider()
+        logger.info("Registered Placeholder provider")
+    
+    def _get_gemini_config(self) -> Dict[str, Any]:
+        """Get Gemini provider configuration."""
+        return {
+            'model': 'gemini-2.0-flash',
+            'max_output_tokens': 2048,
+            'temperature': 0.7,
+            'top_p': 0.95,
+            'top_k': 40,
+            'system_instruction': None  # Use default
+        }
+    
+    def initialize(self) -> bool:
+        """
+        Initialize the AI provider manager and select the best available provider.
+        
+        Returns:
+            True if at least one provider was initialized successfully
+        """
+        logger.info("Initializing AI provider manager...")
+        
+        # Try to initialize providers in priority order
+        for provider_name in self.provider_order:
+            if provider_name in self.providers:
+                provider = self.providers[provider_name]
+                
+                logger.info(f"Attempting to initialize {provider_name} provider...")
+                if provider.initialize():
+                    self.current_provider = provider
+                    logger.info(f"Successfully initialized {provider_name} provider")
+                    return True
+                else:
+                    logger.warning(f"Failed to initialize {provider_name} provider")
+        
+        # If no provider was initialized, use placeholder as fallback
+        if 'placeholder' in self.providers:
+            self.current_provider = self.providers['placeholder']
+            logger.info("Using placeholder provider as fallback")
+            return True
+        
+        logger.error("No AI providers could be initialized")
+        return False
+    
+    def get_current_provider(self) -> Optional[BaseAIProvider]:
+        """
+        Get the currently active AI provider.
+        
+        Returns:
+            Current AI provider or None if none is available
+        """
+        return self.current_provider
+    
+    def switch_provider(self, provider_name: str) -> bool:
+        """
+        Switch to a different AI provider.
+        
+        Args:
+            provider_name: Name of the provider to switch to
+            
+        Returns:
+            True if the switch was successful, False otherwise
+        """
+        if provider_name not in self.providers:
+            logger.error(f"Provider '{provider_name}' not found")
+            return False
+        
+        provider = self.providers[provider_name]
+        
+        if not provider.initialize():
+            logger.error(f"Failed to initialize provider '{provider_name}'")
+            return False
+        
+        # Clean up current provider
+        if self.current_provider:
+            self.current_provider.cleanup()
+        
+        self.current_provider = provider
+        logger.info(f"Switched to {provider_name} provider")
+        return True
+    
+    def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
+        """
+        Generate a response using the current AI provider.
+        
+        Args:
+            user_message: The user's input message
+            context: Optional conversation context
+            
+        Returns:
+            Generated AI response
+        """
+        if not self.current_provider:
+            return "Sorry, no AI provider is currently available."
+        
+        try:
+            return self.current_provider.generate_response(user_message, context)
+        except Exception as e:
+            logger.error(f"Error generating response: {e}")
+            return f"Sorry, I encountered an error: {str(e)}"
+    
+    def get_available_providers(self) -> List[Dict[str, Any]]:
+        """
+        Get information about all available providers.
+        
+        Returns:
+            List of provider information dictionaries
+        """
+        providers_info = []
+        
+        for name, provider in self.providers.items():
+            info = provider.get_provider_info()
+            info['name'] = name
+            info['is_current'] = (provider == self.current_provider)
+            providers_info.append(info)
+        
+        return providers_info
+    
+    def get_provider_status(self) -> Dict[str, Any]:
+        """
+        Get the status of the current provider.
+        
+        Returns:
+            Dictionary containing current provider status
+        """
+        if not self.current_provider:
+            return {
+                'provider': None,
+                'status': 'no_provider',
+                'available': False
+            }
+        
+        info = self.current_provider.get_provider_info()
+        info['status'] = 'active' if self.current_provider.is_available() else 'unavailable'
+        return info
+    
+    def add_provider(self, name: str, provider: BaseAIProvider) -> bool:
+        """
+        Add a custom AI provider.
+        
+        Args:
+            name: Name for the provider
+            provider: Provider instance
+            
+        Returns:
+            True if provider was added successfully
+        """
+        if name in self.providers:
+            logger.warning(f"Provider '{name}' already exists, overwriting")
+        
+        self.providers[name] = provider
+        logger.info(f"Added custom provider: {name}")
+        return True
+    
+    def remove_provider(self, name: str) -> bool:
+        """
+        Remove an AI provider.
+        
+        Args:
+            name: Name of the provider to remove
+            
+        Returns:
+            True if provider was removed successfully
+        """
+        if name not in self.providers:
+            logger.warning(f"Provider '{name}' not found")
+            return False
+        
+        provider = self.providers[name]
+        
+        # Don't remove if it's the current provider
+        if provider == self.current_provider:
+            logger.error(f"Cannot remove current provider '{name}'")
+            return False
+        
+        provider.cleanup()
+        del self.providers[name]
+        logger.info(f"Removed provider: {name}")
+        return True
+    
+    def cleanup(self):
+        """Clean up all providers."""
+        for name, provider in self.providers.items():
+            try:
+                provider.cleanup()
+                logger.info(f"Cleaned up {name} provider")
+            except Exception as e:
+                logger.error(f"Error cleaning up {name} provider: {e}")
+        
+        self.current_provider = None
+        logger.info("AI provider manager cleaned up")
+    
+    def __str__(self) -> str:
+        current = self.current_provider.provider_name if self.current_provider else "None"
+        return f"AIProviderManager(current={current}, providers={list(self.providers.keys())})"
+    
+    def __repr__(self) -> str:
+        return self.__str__() 
