@@ -32,24 +32,34 @@ ICONS = {
 # Color schemes
 COLORS = {
     'light': {
-        'bg_primary': 'gray90',
-        'bg_secondary': 'gray85',
-        'bg_sidebar': 'gray85',
-        'text_primary': 'gray10',
-        'text_secondary': 'gray30',
-        'accent_blue': '#3b82f6',
-        'accent_green': '#10b981',
-        'accent_purple': '#8b5cf6',
+        'bg_primary': '#F5F6FA',
+        'bg_secondary': '#FFFFFF',
+        'bg_sidebar': '#F0F1F5',
+        'bg_header': '#FFFFFF',
+        'bg_chat': '#F5F6FA',
+        'bubble_user': '#E3F2FD',
+        'bubble_ai': '#E8EAF6',
+        'bubble_border': '#E0E0E0',
+        'text_primary': '#181A20',
+        'text_secondary': '#555A64',
+        'accent': '#3B82F6',
+        'accent_alt': '#6366F1',
+        'danger': '#EF4444',
     },
     'dark': {
-        'bg_primary': 'gray13',
-        'bg_secondary': 'gray17',
-        'bg_sidebar': 'gray17',
-        'text_primary': 'gray90',
-        'text_secondary': 'gray70',
-        'accent_blue': '#3b82f6',
-        'accent_green': '#10b981',
-        'accent_purple': '#8b5cf6',
+        'bg_primary': '#181A20',
+        'bg_secondary': '#23272F',
+        'bg_sidebar': '#20232A',
+        'bg_header': '#23272F',
+        'bg_chat': '#181A20',
+        'bubble_user': '#1E293B',
+        'bubble_ai': '#23272F',
+        'bubble_border': '#22242B',
+        'text_primary': '#F5F6FA',
+        'text_secondary': '#A0A4AE',
+        'accent': '#3B82F6',
+        'accent_alt': '#6366F1',
+        'danger': '#EF4444',
     }
 }
 
@@ -61,13 +71,13 @@ APP_SETTINGS = {
     'min_width': 800,
     'min_height': 600,
     'sidebar_width': 300,
-    'font_family': 'Fira Code',
+    'font_family': 'Inter, Segoe UI, Fira Code, Arial, sans-serif',
     'font_sizes': {
-        'small': 9,
-        'normal': 12,
-        'medium': 14,
-        'large': 16,
-        'xlarge': 18
+        'small': 10,
+        'normal': 13,
+        'medium': 15,
+        'large': 18,
+        'xlarge': 22
     }
 }
 

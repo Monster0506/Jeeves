@@ -387,7 +387,11 @@ class Sidebar(ctk.CTkFrame):
     def __init__(self, parent, on_thread_select: Callable = None, 
                  on_new_thread: Callable = None, on_delete_thread: Callable = None,
                  on_rename_thread: Callable = None):
-        super().__init__(parent, width=300)
+        theme = COLORS['dark']
+        font_family = APP_SETTINGS['font_family']
+        font_large = (font_family, APP_SETTINGS['font_sizes']['large'], 'bold')
+        font_normal = (font_family, APP_SETTINGS['font_sizes']['normal'])
+        super().__init__(parent, width=300, fg_color=theme['bg_sidebar'])
         
         self.on_thread_select = on_thread_select
         self.on_new_thread = on_new_thread
@@ -397,44 +401,44 @@ class Sidebar(ctk.CTkFrame):
         self.threads = []
         self.current_thread_id = None
         
-        self._setup_ui()
+        self._setup_ui(theme, font_large, font_normal)
     
-    def _setup_ui(self):
+    def _setup_ui(self, theme, font_large, font_normal):
         """Setup the user interface."""
-        # Configure grid
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
         
-        # Create header
-        self.header_frame = ctk.CTkFrame(self)
-        self.header_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 5))
+        # Sidebar header
+        self.header_frame = ctk.CTkFrame(self, fg_color=theme['bg_sidebar'])
+        self.header_frame.grid(row=0, column=0, sticky="ew", padx=0, pady=(0, 0))
         self.header_frame.grid_columnconfigure(0, weight=1)
         
-        # Create title
         self.title_label = ctk.CTkLabel(
             self.header_frame,
             text="Conversations",
-            font=("Fira Code", 16, "bold")
+            font=font_large,
+            text_color=theme['accent']
         )
-        self.title_label.grid(row=0, column=0, sticky="w", padx=10, pady=10)
+        self.title_label.grid(row=0, column=0, sticky="w", padx=24, pady=18)
         
-        # Create new thread button
         self.new_thread_button = ctk.CTkButton(
             self.header_frame,
             text="+ New",
             command=self._create_new_thread,
-            width=80,
-            height=30,
-            font=("Fira Code", 12)
+            width=120,
+            height=38,
+            font=font_normal,
+            fg_color=theme['accent'],
+            text_color=theme['bg_primary'],
+            hover_color=theme['accent_alt'],
+            corner_radius=19
         )
-        self.new_thread_button.grid(row=0, column=1, padx=(0, 10), pady=10)
+        self.new_thread_button.grid(row=0, column=1, padx=(0, 18), pady=12)
         
-        # Create threads list
-        self.threads_frame = ctk.CTkScrollableFrame(self)
-        self.threads_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(5, 10))
+        # Threads list
+        self.threads_frame = ctk.CTkScrollableFrame(self, fg_color=theme['bg_sidebar'])
+        self.threads_frame.grid(row=1, column=0, sticky="nsew", padx=0, pady=(0, 0))
         self.threads_frame.grid_columnconfigure(0, weight=1)
-        
-        # Create thread buttons list
         self.thread_buttons = []
     
     def _create_new_thread(self):
@@ -451,57 +455,54 @@ class Sidebar(ctk.CTkFrame):
             logger.error(f"Error loading threads: {e}")
     
     def _update_thread_buttons(self):
-        """Update the thread buttons display."""
         try:
-            # Clear existing buttons
             for button in self.thread_buttons:
                 button.destroy()
             self.thread_buttons.clear()
-            
-            # Create new buttons
+            theme = COLORS['dark']
+            font_family = APP_SETTINGS['font_family']
+            font_normal = (font_family, APP_SETTINGS['font_sizes']['normal'])
             for i, thread in enumerate(self.threads):
-                button = self._create_thread_button(thread, i)
+                button = self._create_thread_button(thread, i, theme, font_normal)
                 self.thread_buttons.append(button)
-                
         except Exception as e:
             logger.error(f"Error updating thread buttons: {e}")
     
-    def _create_thread_button(self, thread: Dict, index: int) -> ctk.CTkButton:
-        """Create a button for a thread."""
+    def _create_thread_button(self, thread: Dict, index: int, theme, font_normal) -> ctk.CTkButton:
         try:
-            # Create button frame
-            button_frame = ctk.CTkFrame(self.threads_frame)
-            button_frame.grid(row=index, column=0, sticky="ew", pady=2)
+            button_frame = ctk.CTkFrame(self.threads_frame, fg_color=theme['bg_sidebar'])
+            button_frame.grid(row=index, column=0, sticky="ew", pady=6, padx=18)
             button_frame.grid_columnconfigure(0, weight=1)
-            
-            # Create main button
+            is_active = thread['id'] == self.current_thread_id
             button = ctk.CTkButton(
                 button_frame,
                 text=f"{thread.get('icon', '💬')} {thread.get('name', 'Unknown')}",
                 command=lambda: self._select_thread(thread['id']),
                 anchor="w",
-                height=40,
-                font=("Fira Code", 12)
+                height=44,
+                font=font_normal,
+                fg_color=theme['accent'] if is_active else theme['bubble_ai'],
+                text_color=theme['bg_primary'] if is_active else theme['text_primary'],
+                hover_color=theme['accent_alt'] if is_active else theme['bubble_user'],
+                corner_radius=22,
+                border_width=0
             )
-            button.grid(row=0, column=0, sticky="ew", padx=(5, 0), pady=5)
-            
-            # Create context menu button
+            button.grid(row=0, column=0, sticky="ew", padx=(0, 8), pady=0)
             menu_button = ctk.CTkButton(
                 button_frame,
                 text="⋮",
                 command=lambda: self._show_thread_menu(thread),
-                width=30,
-                height=30,
-                font=("Fira Code", 14)
+                width=36,
+                height=36,
+                font=font_normal,
+                fg_color=theme['bubble_ai'],
+                text_color=theme['text_secondary'],
+                hover_color=theme['bubble_user'],
+                corner_radius=18,
+                border_width=0
             )
-            menu_button.grid(row=0, column=1, padx=(5, 5), pady=5)
-            
-            # Highlight current thread
-            if thread['id'] == self.current_thread_id:
-                button.configure(fg_color="#2196F3")
-            
+            menu_button.grid(row=0, column=1, padx=(0, 0), pady=0)
             return button
-            
         except Exception as e:
             logger.error(f"Error creating thread button: {e}")
             return None
