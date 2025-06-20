@@ -10,6 +10,8 @@ dependencies = [
     "customtkinter>=5.2.0",
     "google-genai>=1.21.1",
     "markdown-it-py",
+    "linkify-it-py>=2.0.3",
+    "mdit-py-plugins>=0.4.2",
 ]
 
 [project.optional-dependencies]
