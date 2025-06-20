@@ -2,9 +2,10 @@
 Gemini AI Provider for Jeeves AI Assistant.
 Uses Google's Gemini API via the google-genai SDK.
 """
+
 import os
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Any
 from .base_provider import BaseAIProvider
 from datetime import datetime
 
@@ -13,11 +14,11 @@ logger = logging.getLogger(__name__)
 
 class GeminiProvider(BaseAIProvider):
     """Gemini AI provider using Google's Generative AI API."""
-    
-    def __init__(self, config: Dict[str, Any] = None):
+
+    def __init__(self, config: Dict[str, Any] | None = None):
         """
         Initialize the Gemini provider.
-        
+
         Args:
             config: Configuration dictionary with the following keys:
                 - api_key: Gemini API key (optional, can use GOOGLE_API_KEY env var)
@@ -28,25 +29,26 @@ class GeminiProvider(BaseAIProvider):
                 - top_k: Top-k sampling parameter (default: 40)
                 - system_instruction: System instruction for the AI
         """
-        super().__init__(config)
+        super().__init__(config if config else {})
         self.client = None
-        self.model_name = self.config.get('model', 'gemini-2.0-flash')
-        self.max_output_tokens = self.config.get('max_output_tokens', 2048)
-        self.temperature = self.config.get('temperature', 0.7)
-        self.top_p = self.config.get('top_p', 0.95)
-        self.top_k = self.config.get('top_k', 40)
-        self.system_instruction = self.config.get('system_instruction', self._get_default_system_prompt())
-        
+        self.model_name = self.config.get("model", "gemini-2.0-flash")
+        self.max_output_tokens = self.config.get("max_output_tokens", 2048)
+        self.temperature = self.config.get("temperature", 0.7)
+        self.top_p = self.config.get("top_p", 0.95)
+        self.top_k = self.config.get("top_k", 40)
+        self.system_instruction = self.config.get(
+            "system_instruction", self._get_default_system_prompt()
+        )
+
         # Default configuration
         self.default_config = {
-            'model': 'gemini-2.0-flash',
-            'max_output_tokens': 2048,
-            'temperature': 0.7,
-            'top_p': 0.95,
-            'top_k': 40,
-            'system_instruction': self._get_default_system_prompt()
+            "model": "gemini-2.0-flash",
+            "max_output_tokens": 2048,
+            "temperature": 0.7,
+            "top_p": 0.95,
+            "top_k": 40,
+            "system_instruction": self._get_default_system_prompt(),
         }
-    
 
     def _get_default_system_prompt(self) -> str:
         """
@@ -102,11 +104,11 @@ class GeminiProvider(BaseAIProvider):
 
     You are Jeeves. Efficient, knowledgeable, and always at the user's service.
     """
-    
+
     def initialize(self) -> bool:
         """
         Initialize the Gemini client.
-        
+
         Returns:
             True if initialization was successful, False otherwise
         """
@@ -114,21 +116,25 @@ class GeminiProvider(BaseAIProvider):
             # Import the Google Gen AI SDK
             from google import genai
             from google.genai import types
-            
+
             # Get API key from config or environment variable
-            api_key = self.config.get('api_key') or os.getenv('GOOGLE_API_KEY')
-            
+            api_key = self.config.get("api_key") or os.getenv("GOOGLE_API_KEY")
+
             if not api_key:
-                logger.error("No Gemini API key provided. Set GOOGLE_API_KEY environment variable or provide api_key in config.")
+                logger.error(
+                    "No Gemini API key provided. Set GOOGLE_API_KEY environment variable or provide api_key in config."
+                )
                 return False
-            
+
             # Create the client
             self.client = genai.Client(api_key=api_key)
-            
+
             # Test the connection by listing models
             try:
                 models = list(self.client.models.list())
-                logger.info(f"Successfully connected to Gemini API. Available models: {len(models)}")
+                logger.info(
+                    f"Successfully connected to Gemini API. Available models: {len(models)}"
+                )
                 self.is_initialized = True
                 return True
             except Exception as e:
@@ -139,151 +145,166 @@ class GeminiProvider(BaseAIProvider):
                     self.is_initialized = True
                     return True
                 return False
-                
+
         except ImportError:
-            logger.error("Google Gen AI SDK not installed. Install with: pip install google-genai")
+            logger.error(
+                "Google Gen AI SDK not installed. Install with: pip install google-genai"
+            )
             return False
         except Exception as e:
             logger.error(f"Failed to initialize Gemini provider: {e}")
             return False
-    
+
     def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
         """
         Generate a response using Gemini AI.
-        
+
         Args:
             user_message: The user's input message
             context: Optional conversation context (list of previous messages)
-            
+
         Returns:
             Generated AI response
         """
         if not self.is_available():
             return "Sorry, I'm not available right now. Please check your API key and internet connection."
-        
+
         try:
             from google.genai import types
-            
+
             # Build the conversation history
             contents = []
-            
+
             # Add conversation context
             if context:
                 for message in context[-10:]:  # Limit to last 10 messages for context
-                    role = 'user' if message.get('sender') == 'user' else 'model'
-                    contents.append(types.Content(
-                        role=role,
-                        parts=[types.Part.from_text(text=message.get('content', ''))]
-                    ))
-            
+                    role = "user" if message.get("sender") == "user" else "model"
+                    contents.append(
+                        types.Content(
+                            role=role,
+                            parts=[
+                                types.Part.from_text(text=message.get("content", ""))
+                            ],
+                        )
+                    )
+
             # Add the current user message
-            contents.append(types.Content(
-                role='user',
-                parts=[types.Part.from_text(text=user_message)]
-            ))
-            
+            contents.append(
+                types.Content(
+                    role="user", parts=[types.Part.from_text(text=user_message)]
+                )
+            )
+
             # Create generation config with all parameters
             generation_config = types.GenerateContentConfig(
                 system_instruction=self.system_instruction,
                 max_output_tokens=self.max_output_tokens,
                 temperature=self.temperature,
                 top_p=self.top_p,
-                top_k=self.top_k
+                top_k=self.top_k,
             )
-            
+
             # Generate response with proper config structure
             response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=contents,
-                config=generation_config
+                model=self.model_name, contents=contents, config=generation_config
             )
-            
+
             if response.text:
                 return response.text
             else:
                 logger.warning("Gemini returned empty response")
-                return "I apologize, but I couldn't generate a response. Please try again."
-                
+                return (
+                    "I apologize, but I couldn't generate a response. Please try again."
+                )
+
         except Exception as e:
             logger.error(f"Error generating Gemini response: {e}")
-            return f"Sorry, I encountered an error while processing your request: {str(e)}"
-    
+            return (
+                f"Sorry, I encountered an error while processing your request: {str(e)}"
+            )
+
     def is_available(self) -> bool:
         """
         Check if the Gemini provider is available.
-        
+
         Returns:
             True if the provider is initialized and ready, False otherwise
         """
         return self.is_initialized and self.client is not None
-    
+
     def validate_config(self) -> bool:
         """
         Validate the Gemini provider configuration.
-        
+
         Returns:
             True if configuration is valid, False otherwise
         """
         # Check for required API key
-        api_key = self.config.get('api_key') or os.getenv('GOOGLE_API_KEY')
+        api_key = self.config.get("api_key") or os.getenv("GOOGLE_API_KEY")
         if not api_key:
             logger.error("Gemini API key is required")
             return False
-        
+
         # Validate temperature range
-        temperature = self.config.get('temperature', 0.7)
+        temperature = self.config.get("temperature", 0.7)
         if not (0.0 <= temperature <= 1.0):
             logger.error("Temperature must be between 0.0 and 1.0")
             return False
-        
+
         # Validate top_p range
-        top_p = self.config.get('top_p', 0.95)
+        top_p = self.config.get("top_p", 0.95)
         if not (0.0 <= top_p <= 1.0):
             logger.error("top_p must be between 0.0 and 1.0")
             return False
-        
+
         # Validate top_k
-        top_k = self.config.get('top_k', 40)
+        top_k = self.config.get("top_k", 40)
         if top_k <= 0:
             logger.error("top_k must be positive")
             return False
-        
+
         # Validate max_output_tokens
-        max_output_tokens = self.config.get('max_output_tokens', 2048)
+        max_output_tokens = self.config.get("max_output_tokens", 2048)
         if max_output_tokens <= 0:
             logger.error("max_output_tokens must be positive")
             return False
-        
+
         return True
-    
+
     def get_provider_info(self) -> Dict[str, Any]:
         """
         Get detailed information about the Gemini provider.
-        
+
         Returns:
             Dictionary containing provider information
         """
         info = super().get_provider_info()
-        info.update({
-            'model_name': self.model_name,
-            'max_output_tokens': self.max_output_tokens,
-            'temperature': self.temperature,
-            'top_p': self.top_p,
-            'top_k': self.top_k,
-            'has_api_key': bool(self.config.get('api_key') or os.getenv('GOOGLE_API_KEY')),
-            'sdk_version': self._get_sdk_version()
-        })
+        info.update(
+            {
+                "model_name": self.model_name,
+                "max_output_tokens": self.max_output_tokens,
+                "temperature": self.temperature,
+                "top_p": self.top_p,
+                "top_k": self.top_k,
+                "has_api_key": bool(
+                    self.config.get("api_key") or os.getenv("GOOGLE_API_KEY")
+                ),
+                "sdk_version": self._get_sdk_version(),
+            }
+        )
         return info
-    
+
     def _get_sdk_version(self) -> str:
         """Get the Google Gen AI SDK version."""
         try:
             import google.genai
-            return getattr(google.genai, '__version__', 'unknown')
+
+            return getattr(google.genai, "__version__", "unknown")
         except ImportError:
-            return 'not installed'
-    
+            return "not installed"
+
     def cleanup(self):
         """Clean up Gemini provider resources."""
         super().cleanup()
-        self.client = None 
+        self.client = None
+

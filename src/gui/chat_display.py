@@ -1,20 +1,39 @@
 """
 Chat display component for Jeeves GUI.
 """
+
 import customtkinter as ctk
 import tkinter as tk
 from typing import Callable, List, Dict
-from datetime import datetime, timedelta
+from datetime import datetime
 from markdown_it import MarkdownIt
+import webbrowser
+
+from mdit_py_plugins.footnote import footnote_plugin
+from mdit_py_plugins.deflist import deflist_plugin
+from mdit_py_plugins.dollarmath import dollarmath_plugin
 import logging
 from ..config.settings import COLORS, APP_SETTINGS
 import tkinter.font as tkfont
+from customtkinter import CTkFont
 
 logger = logging.getLogger(__name__)
 logging.getLogger("markdown_it").setLevel(logging.WARNING)
 
+
 class MessageBubble(ctk.CTkFrame):
-    def __init__(self, parent, sender, message, timestamp, is_user, theme, font_family, max_width=600, **kwargs):
+    def __init__(
+        self,
+        parent,
+        sender,
+        message,
+        timestamp,
+        is_user,
+        theme,
+        font_family,
+        max_width=600,
+        **kwargs,
+    ):
         super().__init__(parent, fg_color="transparent", corner_radius=20, **kwargs)
         self.theme = theme
         self.is_user = is_user
@@ -25,15 +44,19 @@ class MessageBubble(ctk.CTkFrame):
         self.max_width = max_width
         self._bubble = None
         self._msg_frame = None
+        self._link_counter = 0
+        self._footnote_anchors = {}
         self._build_bubble(sender, message, timestamp)
 
     def _build_bubble(self, sender, message, timestamp):
         if self._bubble:
             self._bubble.destroy()
         # Bubble color and alignment
-        bubble_color = self.theme['bubble_user'] if self.is_user else self.theme['bubble_ai']
-        text_color = self.theme['text_primary']
-        anchor = 'e' if self.is_user else 'w'
+        bubble_color = (
+            self.theme["bubble_user"] if self.is_user else self.theme["bubble_ai"]
+        )
+        text_color = self.theme["text_primary"]
+        anchor = "e" if self.is_user else "w"
         padx = (24, 24)
         # Bubble frame
         self._bubble = ctk.CTkFrame(self, fg_color=bubble_color, corner_radius=20)
@@ -42,15 +65,26 @@ class MessageBubble(ctk.CTkFrame):
         # Sender/timestamp
         meta_frame = ctk.CTkFrame(self._bubble, fg_color="transparent")
         meta_frame.grid(row=0, column=0, sticky="w", padx=12, pady=(8, 0))
-        sender_label = ctk.CTkLabel(meta_frame, text=sender, font=(self.font_family, 12, "bold"), text_color=text_color)
+        sender_label = ctk.CTkLabel(
+            meta_frame,
+            text=sender,
+            font=(self.font_family, 12, "bold"),
+            text_color=text_color,
+        )
         sender_label.pack(side="left")
-        time_label = ctk.CTkLabel(meta_frame, text=timestamp, font=(self.font_family, 10), text_color=self.theme['text_secondary'])
+        time_label = ctk.CTkLabel(
+            meta_frame,
+            text=timestamp,
+            font=(self.font_family, 10),
+            text_color=self.theme["text_secondary"],
+        )
         time_label.pack(side="left", padx=(8, 0))
         # Markdown message
         if self._msg_frame:
             self._msg_frame.destroy()
         self._msg_frame = ctk.CTkFrame(self._bubble, fg_color="transparent")
-        self._msg_frame.grid(row=1, column=0, sticky="w", padx=12, pady=(2, 8))
+        self._msg_frame.grid(row=1, column=0, sticky="nsew", padx=12, pady=(2, 8))
+        self._msg_frame.grid_columnconfigure(0, weight=1)
         self._render_markdown(self._msg_frame, message, text_color)
         # Set max width
         self._msg_frame.update_idletasks()
@@ -59,42 +93,317 @@ class MessageBubble(ctk.CTkFrame):
 
     def update_max_width(self, max_width):
         self.max_width = max_width
-        self._build_bubble(self.sender, self.message, self.timestamp)
+        self._msg_frame.configure(width=max_width - 24)  # Update wraplength container
+        # No need to rebuild the whole bubble, just update wraplength if possible
+        # For now, let's see if we can avoid rebuilding. With CTkTextbox, wrap is handled.
 
     def _render_markdown(self, parent, text, text_color):
-        md = MarkdownIt()
+        # Use a Textbox for better markdown rendering with styles
+        md_text = ctk.CTkTextbox(
+            parent,
+            fg_color="transparent",
+            text_color=text_color,
+            font=(self.font_family, 13),
+            wrap="word",
+            activate_scrollbars=False,
+            padx=0,
+            pady=0,
+            spacing1=0,
+            spacing2=5,
+            spacing3=5,
+            border_width=0,
+            width=self.max_width - 48,  # account for padding
+        )
+        md_text.grid(row=0, column=0, sticky="ew")
+
+        # Configure tags for markdown styling
+        md_text.tag_config("h1", spacing1=10, spacing3=10)
+        md_text.tag_config("h2", spacing1=8, spacing3=8)
+        md_text.tag_config("h3", spacing1=5, spacing3=5)
+        # md_text.tag_config("bold") # No visual change without font
+        # md_text.tag_config("italic") # No visual change without font
+
+        md_text.tag_config(
+            "code_inline",
+            background="#23272F",
+            foreground=self.theme["accent"],
+            rmargin=4,
+            lmargin1=4,
+            lmargin2=4,
+        )
+        md_text.tag_config(
+            "code_block",
+            background="#23272F",
+            foreground=self.theme["accent"],
+            lmargin1=10,
+            lmargin2=10,
+            rmargin=10,
+            spacing1=8,
+            spacing3=8,
+        )
+
+        md_text.tag_config(
+            "blockquote",
+            lmargin1=20,
+            lmargin2=20,
+            foreground=self.theme["text_secondary"],
+        )
+        md_text.tag_config("link", foreground="royal blue", underline=True)
+        md_text.tag_config("footnote_ref", foreground="royal blue", underline=True)
+        
+        md_text.tag_config("math_inline", background="#343A40", foreground="#E9ECEF", rmargin=4, lmargin1=4, lmargin2=4)
+        md_text.tag_config("math_block", background="#343A40", foreground="#E9ECEF", lmargin1=10, lmargin2=10, rmargin=10, spacing1=8, spacing3=8)
+
+        md_text.tag_config(
+            "footnote_anchor",
+            lmargin1=20,
+            lmargin2=20,
+            foreground=self.theme["text_secondary"],
+        )
+        md_text.tag_config("math_inline", background="#343A40", foreground="#E9ECEF", rmargin=4, lmargin1=4, lmargin2=4)
+        md_text.tag_config("math_block", background="#343A40", foreground="#E9ECEF", lmargin1=10, lmargin2=10, rmargin=10, spacing1=8, spacing3=8)
+
+        md = (
+            MarkdownIt("gfm-like")
+            .enable("table")
+            .use(footnote_plugin)
+            .use(deflist_plugin)
+            .use(dollarmath_plugin)
+        )
         tokens = md.parse(text)
-        # Simple markdown rendering: only bold, italic, code, headings, lists, blockquote
-        row = 0
-        for token in tokens:
-            if token.type == "paragraph_open":
+
+        def open_link(url):
+            try:
+                webbrowser.open(url, new=2)
+            except Exception as e:
+                logger.error(f"Failed to open link {url}: {e}")
+
+        def scroll_to_footnote(footnote_id):
+            anchor_tag = f"fn-anchor-{footnote_id}"
+            if anchor_tag in md_text.tag_names():
+                md_text._textbox.see(f"{anchor_tag}.first")
+
+        tag_stack = []
+
+        def apply_tags(content, token_tags):
+            all_tags = tag_stack + token_tags
+            md_text.insert("end", content, tuple(all_tags))
+
+        def _render_table_to_text(table_tokens):
+            header = []
+            rows = []
+            current_row = []
+            in_header = False
+
+            for i, token in enumerate(table_tokens):
+                if token.type == "thead_open":
+                    in_header = True
+                elif token.type == "thead_close":
+                    in_header = False
+                elif token.type == "tr_open":
+                    current_row = []
+                elif token.type == "tr_close":
+                    if in_header:
+                        header = current_row
+                    else:
+                        rows.append(current_row)
+                elif token.type == "inline":
+                    current_row.append(token.content.strip())
+
+            if not header and not rows:
+                return ""
+            num_cols = len(header) if header else (len(rows[0]) if rows else 0)
+            if num_cols == 0:
+                return ""
+            col_widths = [0] * num_cols
+
+            while len(header) < num_cols:
+                header.append("")
+            for i in range(num_cols):
+                col_widths[i] = len(header[i])
+
+            for row in rows:
+                while len(row) < num_cols:
+                    row.append("")
+                for i in range(num_cols):
+                    col_widths[i] = max(col_widths[i], len(row[i]))
+
+            def format_row(row_data, widths, is_header=False):
+                return " | ".join(
+                    f"{cell:<{widths[i]}}" for i, cell in enumerate(row_data)
+                )
+
+            output = []
+            if header:
+                output.append(format_row(header, col_widths, is_header=True))
+                output.append("-|-".join("-" * w for w in col_widths))
+            for row in rows:
+                output.append(format_row(row, col_widths))
+
+            return "\n".join(output)
+
+        md_text.configure(state="normal")
+        md_text.delete("1.0", "end")
+
+        i = 0
+        while i < len(tokens):
+            token = tokens[i]
+
+            # Handle tables
+            if token.type == "table_open":
+                table_end_index = -1
+                for j in range(i + 1, len(tokens)):
+                    if tokens[j].type == "table_close":
+                        table_end_index = j
+                        break
+
+                if table_end_index != -1:
+                    table_tokens = tokens[i + 1 : table_end_index]
+                    table_text = _render_table_to_text(table_tokens)
+                    if table_text:
+                        apply_tags(table_text + "\n", ["code_block"])
+                    i = table_end_index
+                i += 1
                 continue
-            if token.type == "paragraph_close":
-                row += 1
-                continue
-            if token.type == "inline":
-                label = ctk.CTkLabel(parent, text=token.content, font=(self.font_family, 13), text_color=text_color, wraplength=self.max_width-32, anchor="w", justify="left")
-                label.grid(row=row, column=0, sticky="w", pady=0)
-                row += 1
-            if token.type == "fence" or token.type == "code_block":
-                code = ctk.CTkLabel(parent, text=token.content, font=("Fira Mono", 12), text_color=self.theme['accent'], fg_color="#23272F", corner_radius=12, padx=8, pady=4, wraplength=self.max_width-32, anchor="w", justify="left")
-                code.grid(row=row, column=0, sticky="w", pady=2)
-                row += 1
-            if token.type == "blockquote_open":
-                # Blockquote background
-                quote = ctk.CTkLabel(parent, text=token.map, font=(self.font_family, 13, "italic"), text_color=self.theme['text_secondary'], fg_color="#23272F", corner_radius=12, padx=8, pady=4, wraplength=self.max_width-32, anchor="w", justify="left")
-                quote.grid(row=row, column=0, sticky="w", pady=2)
-                row += 1
+
+            if token.type.endswith("_open"):
+                tag = token.tag if token.tag else token.type.split("_")[0]
+                
+                if token.type == 'list_item_open':
+                    tag_stack.append('li')
+                    
+                    indent = "  " * (len([t for t in tag_stack if t == 'li']) - 1)
+                    apply_tags(indent, [])
+                    
+                    if 'ol' in tag_stack:
+                        bullet = f"{getattr(token, 'info', '')}. "
+                        apply_tags(bullet, [])
+                    else:
+                        apply_tags("• ", [])
+                
+                elif tag:
+                    tag_stack.append(tag)
+
+            elif token.type.endswith("_close"):
+                if token.type == 'list_item_close':
+                    while tag_stack and tag_stack[-1] != 'li':
+                        tag_stack.pop()
+                    if tag_stack:
+                        tag_stack.pop() # Pop the 'li'
+                elif tag_stack:
+                    tag_stack.pop()
+                
+                if token.type in [
+                    "heading_close", "paragraph_close", "blockquote_close",
+                    "footnote_close", "footnote_block_close"
+                ]:
+                    apply_tags("\n", [])
+
+            elif token.type == "inline" and token.children:
+                for child in token.children:
+                    if child.type == "link_open":
+                        href = child.attrs.get('href', '')
+                        link_id = f"link-{self._link_counter}"
+                        self._link_counter += 1
+                        
+                        md_text.tag_bind(link_id, "<Button-1>", lambda e, url=href: open_link(url))
+                        md_text.tag_bind(link_id, "<Enter>", lambda e: md_text.configure(cursor="hand2"))
+                        md_text.tag_bind(link_id, "<Leave>", lambda e: md_text.configure(cursor=""))
+                        
+                        tag_stack.append(link_id)
+                        tag_stack.append('link')
+
+                    elif child.type == "link_close":
+                        if 'link' in tag_stack:
+                             tag_stack.pop(tag_stack.index('link'))
+                        link_id_to_pop = next((t for t in tag_stack if t.startswith('link-')), None)
+                        if link_id_to_pop:
+                            tag_stack.pop(tag_stack.index(link_id_to_pop))
+
+                    elif child.type.endswith("_open"):
+                        tag = child.tag if child.tag else child.type.split("_")[0]
+                        if tag == "em": tag = 'italic'
+                        if tag == "strong": tag = 'bold'
+                        tag_stack.append(tag)
+
+                    elif child.type.endswith("_close"):
+                        if tag_stack:
+                            tag_stack.pop()
+                    elif child.type == "text":
+                        apply_tags(child.content, [])
+                    elif child.type == "code_inline":
+                        apply_tags(child.content, ["code_inline"])
+                    elif child.type == "softbreak":
+                        apply_tags("\n", [])
+                    elif child.type == "hardbreak":
+                        apply_tags("\n\n", [])
+                    elif child.type == "footnote_ref":
+                        ref_id = child.meta['id']
+                        fn_id = f"footnote-{ref_id}"
+                        md_text.tag_bind(fn_id, "<Button-1>", lambda e, f_id=ref_id: scroll_to_footnote(f_id))
+                        md_text.tag_bind(fn_id, "<Enter>", lambda e: md_text.configure(cursor="hand2"))
+                        md_text.tag_bind(fn_id, "<Leave>", lambda e: md_text.configure(cursor=""))
+                        apply_tags(f"[{ref_id}]", ['footnote_ref', fn_id])
+
+            elif token.type == "fence":
+                apply_tags(f"{token.content.strip()}\n", ["code_block"])
+
+            elif token.type == "hr":
+                apply_tags("─" * 20 + "\n", [])
+
+            elif token.type == "text":
+                apply_tags(token.content, [])
+            
+            elif token.type == "footnote_anchor":
+                anchor_id = token.meta['id']
+                anchor_tag = f"fn-anchor-{anchor_id}"
+                apply_tags(f"[{anchor_id}]: ", [anchor_tag])
+            
+            elif token.type == "math_inline":
+                apply_tags(token.content, ["math_inline"])
+
+            elif token.type == "math_block":
+                apply_tags(token.content + "\n", ["math_block"])
+
+            i += 1
+
+        md_text.configure(state="disabled")
+
+        # Auto-adjust height of the textbox
+        md_text.update_idletasks()
+        try:
+            # A bit of a hack to get the used height of the text
+            # Use the underlying tkinter Text widget to count displayed lines
+            lines = md_text._textbox.count("1.0", "end", "displaylines")[0]
+
+            # Font is a tuple, e.g., ("Fira Code", 12), get size from index 1
+            font_tuple = md_text.cget("font")
+            font_size = font_tuple[1]
+
+            # Add some padding
+            height = lines * (font_size + 9)
+            md_text.configure(height=height)
+        except Exception:
+            # If height calculation fails, just leave it, it's not critical
+            pass
+
 
 class ChatDisplay(ctk.CTkFrame):
     """Modern chat display with bubble design and markdown support."""
-    def __init__(self, parent, on_send_message: Callable = None, on_export_chat: Callable = None, on_search_messages: Callable = None):
+
+    def __init__(
+        self,
+        parent,
+        on_send_message: Callable = None,
+        on_export_chat: Callable = None,
+        on_search_messages: Callable = None,
+    ):
         super().__init__(parent)
         self.on_send_message = on_send_message
         self.on_export_chat = on_export_chat
         self.on_search_messages = on_search_messages
-        self.theme = COLORS['dark']
-        self.font_family = APP_SETTINGS['font_family']
+        self.theme = COLORS["dark"]
+        self.font_family = APP_SETTINGS["font_family"]
         self.bubbles = []
         self._setup_ui()
         self._setup_bindings()
@@ -104,16 +413,25 @@ class ChatDisplay(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=0)
         # Scrollable chat area
-        self.canvas = tk.Canvas(self, bg=self.theme['bg_chat'], highlightthickness=0, borderwidth=0)
-        self.scrollbar = tk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
-        self.scrollable_frame = ctk.CTkFrame(self, fg_color=self.theme['bg_chat'])
-        self.scrollable_frame.bind(
-            "<Configure>", lambda e: self._on_frame_configure())
+        self.canvas = tk.Canvas(
+            self, bg=self.theme["bg_chat"], highlightthickness=0, borderwidth=0
+        )
+        self.scrollbar = tk.Scrollbar(
+            self, orient="vertical", command=self.canvas.yview
+        )
+        self.scrollable_frame = ctk.CTkFrame(self, fg_color=self.theme["bg_chat"])
+        self.scrollable_frame.bind("<Configure>", lambda e: self._on_frame_configure())
         self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
         self.canvas.grid(row=0, column=0, sticky="nsew")
         self.scrollbar.grid(row=0, column=1, sticky="ns")
         self.canvas.bind("<Configure>", self._on_canvas_resize)
+        
+        # Add mouse wheel scrolling
+        self.canvas.bind("<MouseWheel>", self._on_mousewheel)
+        self.canvas.bind("<Button-4>", self._on_mousewheel)
+        self.canvas.bind("<Button-5>", self._on_mousewheel)
+        
         # Input area (unchanged)
         self.input_frame = ctk.CTkFrame(self)
         self.input_frame.grid(row=1, column=0, sticky="ew", padx=10, pady=(5, 10))
@@ -122,7 +440,7 @@ class ChatDisplay(ctk.CTkFrame):
             self.input_frame,
             placeholder_text="Type your message here...",
             font=(self.font_family, 12),
-            height=40
+            height=40,
         )
         self.input_field.grid(row=0, column=0, sticky="ew", padx=(0, 10))
         self.send_button = ctk.CTkButton(
@@ -131,7 +449,7 @@ class ChatDisplay(ctk.CTkFrame):
             command=self._send_message,
             width=80,
             height=40,
-            font=(self.font_family, 12)
+            font=(self.font_family, 12),
         )
         self.send_button.grid(row=0, column=1)
         # Toolbar (unchanged)
@@ -143,7 +461,7 @@ class ChatDisplay(ctk.CTkFrame):
             command=self._search_messages,
             width=100,
             height=30,
-            font=(self.font_family, 10)
+            font=(self.font_family, 10),
         )
         self.search_button.pack(side="left", padx=(0, 10))
         self.export_button = ctk.CTkButton(
@@ -152,7 +470,7 @@ class ChatDisplay(ctk.CTkFrame):
             command=self._export_chat,
             width=100,
             height=30,
-            font=(self.font_family, 10)
+            font=(self.font_family, 10),
         )
         self.export_button.pack(side="left", padx=(0, 10))
         self.clear_button = ctk.CTkButton(
@@ -161,7 +479,7 @@ class ChatDisplay(ctk.CTkFrame):
             command=self.clear_messages,
             width=100,
             height=30,
-            font=(self.font_family, 10)
+            font=(self.font_family, 10),
         )
         self.clear_button.pack(side="left")
 
@@ -195,7 +513,16 @@ class ChatDisplay(ctk.CTkFrame):
     def _add_message(self, message: str, sender: str, is_user: bool):
         timestamp = datetime.now().strftime("%H:%M")
         max_bubble_width = max(int(self.canvas.winfo_width() * 0.8), 320)
-        bubble = MessageBubble(self.scrollable_frame, sender, message, timestamp, is_user, self.theme, self.font_family, max_width=max_bubble_width)
+        bubble = MessageBubble(
+            self.scrollable_frame,
+            sender,
+            message,
+            timestamp,
+            is_user,
+            self.theme,
+            self.font_family,
+            max_width=max_bubble_width,
+        )
         if is_user:
             bubble.pack(anchor="e", pady=8, padx=(24, 24), fill=None)
         else:
@@ -209,13 +536,24 @@ class ChatDisplay(ctk.CTkFrame):
             widget.destroy()
         self.bubbles.clear()
         for message in messages:
-            sender = message.get('sender', 'unknown')
-            content = message.get('content', '')
-            timestamp = message.get('timestamp', '')
+            sender = message.get("sender", "unknown")
+            content = message.get("content", "")
+            timestamp = message.get("timestamp", "")
             is_user = sender == "user" or sender == "You"
-            display_sender = "You" if is_user else ("Jeeves" if sender == "ai" else sender.title())
+            display_sender = (
+                "You" if is_user else ("Jeeves" if sender == "ai" else sender.title())
+            )
             max_bubble_width = max(int(self.canvas.winfo_width() * 0.8), 320)
-            bubble = MessageBubble(self.scrollable_frame, display_sender, content, timestamp, is_user, self.theme, self.font_family, max_width=max_bubble_width)
+            bubble = MessageBubble(
+                self.scrollable_frame,
+                display_sender,
+                content,
+                timestamp,
+                is_user,
+                self.theme,
+                self.font_family,
+                max_width=max_bubble_width,
+            )
             if is_user:
                 bubble.pack(anchor="e", pady=8, padx=(24, 24), fill=None)
             else:
@@ -233,7 +571,7 @@ class ChatDisplay(ctk.CTkFrame):
         """Trigger message search."""
         if self.on_search_messages:
             self.on_search_messages()
-    
+
     def _export_chat(self):
         """Trigger chat export."""
         if self.on_export_chat:
@@ -250,3 +588,11 @@ class ChatDisplay(ctk.CTkFrame):
     def _on_frame_configure(self):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
+    def _on_mousewheel(self, event):
+        """Handle mouse wheel scrolling."""
+        if event.num == 4:  # Linux scroll up
+            self.canvas.yview_scroll(-1, "units")
+        elif event.num == 5:  # Linux scroll down
+            self.canvas.yview_scroll(1, "units")
+        else:  # Windows/Mac
+            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")

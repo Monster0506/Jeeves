@@ -5,8 +5,7 @@ Now uses a modular provider system for different AI backends.
 """
 
 import logging
-import time
-from typing import Dict, List, Optional
+from typing import Dict, List
 from .chat_manager import ChatManager
 from .ai_provider_manager import AIProviderManager
 
@@ -311,4 +310,3 @@ class AIEngine:
         if self.provider_manager:
             self.provider_manager.cleanup()
         logger.info("AI Engine cleaned up")
-
