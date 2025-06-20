@@ -35,7 +35,7 @@ class GeminiProvider(BaseAIProvider):
         self.temperature = self.config.get('temperature', 0.7)
         self.top_p = self.config.get('top_p', 0.95)
         self.top_k = self.config.get('top_k', 40)
-        self.system_instruction = self.config.get('system_instruction', self._get_default_system_prompt())
+        self.system_instruction = self.config.get('system_instruction') or self._get_default_system_prompt()
         
         # Default configuration
         self.default_config = {
@@ -191,6 +191,12 @@ class GeminiProvider(BaseAIProvider):
                 top_k=self.top_k
             )
             
+            # Log the system prompt being sent
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("--- System prompt sent to Gemini ---")
+                logger.debug(self.system_instruction)
+                logger.debug("-------------------------------------")
+
             # Generate response with proper config structure
             response = self.client.models.generate_content(
                 model=self.model_name,

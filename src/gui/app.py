@@ -10,6 +10,7 @@ from ..core.chat_manager import ChatManager
 from ..core.ai_engine import AIEngine
 from .components import ChatDisplay, Sidebar
 from ..utils.dialogs import show_error, show_info
+from ..config.settings import APP_SETTINGS, COLORS
 
 logger = logging.getLogger(__name__)
 ctk.deactivate_automatic_dpi_awareness()
@@ -52,13 +53,53 @@ class JeevesApp:
     
     def _setup_ui(self):
         """Setup the user interface components."""
-        # Create main content area
-        self.main_frame = ctk.CTkFrame(self.root)
-        self.main_frame.grid(row=0, column=0, sticky="nsew", padx=(10, 5), pady=10)
+        theme = COLORS['dark']
+        font_family = APP_SETTINGS['font_family']
+        font_large = (font_family, APP_SETTINGS['font_sizes']['large'], 'bold')
+        font_normal = (font_family, APP_SETTINGS['font_sizes']['normal'])
+
+        # Configure grid for header, sidebar, and main content
+        self.root.grid_rowconfigure(0, weight=0)  # Header
+        self.root.grid_rowconfigure(1, weight=1)  # Main content
+        self.root.grid_columnconfigure(0, weight=1)
+        self.root.grid_columnconfigure(1, weight=0)
+
+        # Header bar
+        self.header = ctk.CTkFrame(self.root, fg_color=theme['bg_header'], height=56)
+        self.header.grid(row=0, column=0, columnspan=2, sticky="nsew")
+        self.header.grid_columnconfigure(0, weight=1)
+        self.header.grid_columnconfigure(1, weight=0)
+
+        # App name/logo
+        self.header_label = ctk.CTkLabel(
+            self.header,
+            text="🧑‍💻 Jeeves",
+            font=font_large,
+            text_color=theme['accent']
+        )
+        self.header_label.grid(row=0, column=0, sticky="w", padx=24, pady=8)
+
+        # Global actions (settings, theme switch)
+        self.settings_button = ctk.CTkButton(
+            self.header,
+            text="⚙️",
+            width=40,
+            height=40,
+            fg_color=theme['bg_secondary'],
+            hover_color=theme['accent'],
+            font=font_normal,
+            corner_radius=20,
+            command=lambda: show_info("Settings", "Settings coming soon!")
+        )
+        self.settings_button.grid(row=0, column=1, sticky="e", padx=(0, 24), pady=8)
+
+        # Main content area (below header)
+        self.main_frame = ctk.CTkFrame(self.root, fg_color=theme['bg_primary'])
+        self.main_frame.grid(row=1, column=0, sticky="nsew", padx=(10, 5), pady=10)
         self.main_frame.grid_columnconfigure(0, weight=1)
         self.main_frame.grid_rowconfigure(0, weight=1)
-        
-        # Create chat display
+
+        # Chat display
         self.chat_display = ChatDisplay(
             self.main_frame,
             on_send_message=self._on_send_message,
@@ -66,8 +107,8 @@ class JeevesApp:
             on_search_messages=self._on_search_messages
         )
         self.chat_display.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
-        
-        # Create sidebar
+
+        # Sidebar
         self.sidebar = Sidebar(
             self.root,
             on_thread_select=self._on_thread_select,
@@ -75,20 +116,18 @@ class JeevesApp:
             on_delete_thread=self._on_delete_thread,
             on_rename_thread=self._on_rename_thread
         )
-        self.sidebar.grid(row=0, column=1, sticky="nsew", padx=(5, 10), pady=10)
-        
-        # Create sidebar toggle button
+        self.sidebar.grid(row=1, column=1, sticky="nsew", padx=(5, 10), pady=10)
+
+        # Sidebar toggle button (optional, can be moved to header later)
         self.sidebar_toggle = ctk.CTkButton(
             self.root,
             text="☰",
             width=40,
             height=40,
             command=self._toggle_sidebar,
-            font=("Fira Code", 16)
+            font=font_normal
         )
-        self.sidebar_toggle.grid(row=0, column=1, sticky="ne", padx=(0, 15), pady=(15, 0))
-        
-        # Initially hide sidebar
+        self.sidebar_toggle.grid(row=1, column=1, sticky="ne", padx=(0, 15), pady=(15, 0))
         self.sidebar.grid_remove()
         self.sidebar_visible = False
     
@@ -143,6 +182,7 @@ class JeevesApp:
         """Handle new thread creation."""
         try:
             thread_id = self.chat_manager.create_thread("New Chat", "💬")
+            self.chat_manager.switch_thread(thread_id)  # Ensure backend switches to new thread
             threads = self.chat_manager.get_threads()
             self.sidebar.load_threads(threads)
             self.sidebar.set_current_thread(thread_id)
