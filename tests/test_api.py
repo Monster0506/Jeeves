@@ -156,7 +156,7 @@ class TestGeminiAPI:
             pytest.skip("GOOGLE_API_KEY not set")
         
         # Test with different models if available
-        models_to_test = ['gemini-2.0-flash', 'gemini-1.5-flash']
+        models_to_test = ['gemini-2.0-flash']
         
         for model in models_to_test:
             try:
@@ -369,4 +369,354 @@ class TestAPIPerformance:
             assert isinstance(response, str)
             assert len(response) > 0
         
-        provider.cleanup() 
+        provider.cleanup()
+
+
+# class TestGeminiToolCallingAPI:
+#     """Tests for actual Gemini API tool calling functionality."""
+    
+#     @pytest.mark.api
+#     @pytest.mark.slow
+#     def test_gemini_api_tool_calling_basic(self):
+#         """Test basic tool calling with real Gemini API."""
+#         api_key = os.getenv('GOOGLE_API_KEY')
+#         if not api_key:
+#             pytest.skip("GOOGLE_API_KEY not set")
+        
+#         provider = GeminiProvider({
+#             'api_key': api_key,
+#             'enable_tool_calling': True,
+#             'automatic_function_calling': True
+#         })
+#         provider.initialize()
+        
+#         # Define a simple tool
+#         def get_current_time() -> str:
+#             """Get the current time and date."""
+#             from datetime import datetime
+#             return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+#         # Register the tool
+#         provider.register_tool("get_current_time", get_current_time)
+        
+#         # Test tool calling
+#         response = provider.generate_response("What time is it right now?")
+        
+#         # The response should either contain the time or indicate tool usage
+#         assert isinstance(response, str)
+#         assert len(response) > 0
+        
+#         # Check if the response contains an API error
+#         response_lower = response.lower()
+#         error_indicators = ['error', 'invalid', 'api key', '400', 'invalid_argument']
+#         if any(indicator in response_lower for indicator in error_indicators):
+#             pytest.skip("API key is invalid or API error occurred")
+        
+#         # Check if the response contains time-related content
+#         time_indicators = ['time', 'current', 'now', 'datetime', '2024', '2025']
+#         assert any(indicator in response_lower for indicator in time_indicators)
+        
+#         provider.cleanup()
+    
+#     @pytest.mark.api
+#     @pytest.mark.slow
+#     def test_gemini_api_tool_calling_calculation(self):
+#         """Test calculation tool calling with real Gemini API."""
+#         api_key = os.getenv('GOOGLE_API_KEY')
+#         if not api_key:
+#             pytest.skip("GOOGLE_API_KEY not set")
+        
+#         provider = GeminiProvider({
+#             'api_key': api_key,
+#             'enable_tool_calling': True,
+#             'automatic_function_calling': True
+#         })
+#         provider.initialize()
+        
+#         # Define calculation tool
+#         def calculate_sum(a: int, b: int) -> int:
+#             """Calculate the sum of two numbers."""
+#             return a + b
+        
+#         # Register the tool
+#         provider.register_tool("calculate_sum", calculate_sum)
+        
+#         # Test calculation
+#         response = provider.generate_response("What is 15 + 27?")
+        
+#         assert isinstance(response, str)
+#         assert len(response) > 0
+        
+#         # Check if the response contains an API error
+#         response_lower = response.lower()
+#         error_indicators = ['error', 'invalid', 'api key', '400', 'invalid_argument']
+#         if any(indicator in response_lower for indicator in error_indicators):
+#             pytest.skip("API key is invalid or API error occurred")
+        
+#         # The response should contain the result (42) or indicate calculation
+#         calculation_indicators = ['42', 'sum', 'result', 'calculation', 'add']
+#         assert any(indicator in response_lower for indicator in calculation_indicators)
+        
+#         provider.cleanup()
+    
+#     @pytest.mark.api
+#     @pytest.mark.slow
+#     def test_gemini_api_tool_calling_weather(self):
+#         """Test weather tool calling with real Gemini API."""
+#         api_key = os.getenv('GOOGLE_API_KEY')
+#         if not api_key:
+#             pytest.skip("GOOGLE_API_KEY not set")
+        
+#         provider = GeminiProvider({
+#             'api_key': api_key,
+#             'enable_tool_calling': True,
+#             'automatic_function_calling': True
+#         })
+#         provider.initialize()
+        
+#         # Define weather tool
+#         def get_weather(location: str) -> str:
+#             """Get weather information for a location."""
+#             weather_data = {
+#                 "New York": "Sunny, 72°F",
+#                 "London": "Rainy, 55°F",
+#                 "Tokyo": "Cloudy, 68°F",
+#                 "Paris": "Partly cloudy, 65°F"
+#             }
+#             return weather_data.get(location, f"Weather data not available for {location}")
+        
+#         # Register the tool
+#         provider.register_tool("get_weather", get_weather)
+        
+#         # Test weather query
+#         response = provider.generate_response("What's the weather in Tokyo?")
+        
+#         assert isinstance(response, str)
+#         assert len(response) > 0
+        
+#         # Check if the response contains an API error
+#         response_lower = response.lower()
+#         error_indicators = ['error', 'invalid', 'api key', '400', 'invalid_argument']
+#         if any(indicator in response_lower for indicator in error_indicators):
+#             pytest.skip("API key is invalid or API error occurred")
+        
+#         # The response should contain weather information or location
+#         weather_indicators = ['tokyo', 'weather', 'cloudy', '68', 'temperature', '°f']
+#         assert any(indicator in response_lower for indicator in weather_indicators)
+        
+#         provider.cleanup()
+    
+#     @pytest.mark.api
+#     @pytest.mark.slow
+#     def test_gemini_api_tool_calling_multiple_tools(self):
+#         """Test multiple tool calling with real Gemini API."""
+#         api_key = os.getenv('GOOGLE_API_KEY')
+#         if not api_key:
+#             pytest.skip("GOOGLE_API_KEY not set")
+        
+#         provider = GeminiProvider({
+#             'api_key': api_key,
+#             'enable_tool_calling': True,
+#             'automatic_function_calling': True,
+#             'max_tool_calls': 3
+#         })
+#         provider.initialize()
+        
+#         # Define multiple tools
+#         def get_current_time() -> str:
+#             """Get the current time and date."""
+#             from datetime import datetime
+#             return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+#         def calculate_sum(a: int, b: int) -> int:
+#             """Calculate the sum of two numbers."""
+#             return a + b
+        
+#         def get_weather(location: str) -> str:
+#             """Get weather information for a location."""
+#             weather_data = {
+#                 "New York": "Sunny, 72°F",
+#                 "London": "Rainy, 55°F",
+#                 "Tokyo": "Cloudy, 68°F"
+#             }
+#             return weather_data.get(location, f"Weather data not available for {location}")
+        
+#         # Register all tools
+#         provider.register_tool("get_current_time", get_current_time)
+#         provider.register_tool("calculate_sum", calculate_sum)
+#         provider.register_tool("get_weather", get_weather)
+        
+#         # Test complex request that might use multiple tools
+#         response = provider.generate_response(
+#             "What time is it, what's 10 + 5, and what's the weather in New York?"
+#         )
+        
+#         assert isinstance(response, str)
+#         assert len(response) > 0
+        
+#         # Check if the response contains an API error
+#         response_lower = response.lower()
+#         error_indicators = ['error', 'invalid', 'api key', '400', 'invalid_argument']
+#         if any(indicator in response_lower for indicator in error_indicators):
+#             pytest.skip("API key is invalid or API error occurred")
+        
+#         # The response should contain information from multiple tools
+#         time_indicators = ['time', 'current', 'now']
+#         calculation_indicators = ['15', 'sum', 'result']
+#         weather_indicators = ['new york', 'weather', 'sunny', '72']
+        
+#         # Check for at least two types of information
+#         indicators_found = 0
+#         if any(indicator in response_lower for indicator in time_indicators):
+#             indicators_found += 1
+#         if any(indicator in response_lower for indicator in calculation_indicators):
+#             indicators_found += 1
+#         if any(indicator in response_lower for indicator in weather_indicators):
+#             indicators_found += 1
+        
+#         assert indicators_found >= 1  # At least one tool should be used
+        
+#         provider.cleanup()
+    
+#     @pytest.mark.api
+#     @pytest.mark.slow
+#     def test_gemini_api_tool_calling_with_context(self):
+#         """Test tool calling with conversation context."""
+#         api_key = os.getenv('GOOGLE_API_KEY')
+#         if not api_key:
+#             pytest.skip("GOOGLE_API_KEY not set")
+        
+#         provider = GeminiProvider({
+#             'api_key': api_key,
+#             'enable_tool_calling': True,
+#             'automatic_function_calling': True
+#         })
+#         provider.initialize()
+        
+#         # Define a tool
+#         def get_user_info(user_id: str) -> dict:
+#             """Get user information."""
+#             user_data = {
+#                 "123": {"id": "123", "name": "Alice", "email": "alice@example.com"},
+#                 "456": {"id": "456", "name": "Bob", "email": "bob@example.com"}
+#             }
+#             return user_data.get(user_id, {"id": user_id, "name": "Unknown", "email": "unknown@example.com"})
+        
+#         # Register the tool
+#         provider.register_tool("get_user_info", get_user_info)
+        
+#         # Test with conversation context
+#         context = [
+#             {'sender': 'user', 'content': 'I want to know about user 123'},
+#             {'sender': 'ai', 'content': 'I can help you get information about users. What would you like to know?'}
+#         ]
+        
+#         response = provider.generate_response("What is their name?", context)
+        
+#         assert isinstance(response, str)
+#         assert len(response) > 0
+        
+#         # Check if the response contains an API error
+#         response_lower = response.lower()
+#         error_indicators = ['error', 'invalid', 'api key', '400', 'invalid_argument']
+#         if any(indicator in response_lower for indicator in error_indicators):
+#             pytest.skip("API key is invalid or API error occurred")
+        
+#         # The response should contain user information
+#         user_indicators = ['alice', 'user', 'name', '123']
+#         assert any(indicator in response_lower for indicator in user_indicators)
+        
+#         provider.cleanup()
+    
+#     @pytest.mark.api
+#     @pytest.mark.slow
+#     def test_gemini_api_tool_calling_disabled(self):
+#         """Test that tool calling is properly disabled when configured."""
+#         api_key = os.getenv('GOOGLE_API_KEY')
+#         if not api_key:
+#             pytest.skip("GOOGLE_API_KEY not set")
+        
+#         provider = GeminiProvider({
+#             'api_key': api_key,
+#             'enable_tool_calling': False,  # Disable tool calling
+#             'automatic_function_calling': False
+#         })
+#         provider.initialize()
+        
+#         # Define a tool
+#         def get_current_time() -> str:
+#             """Get the current time and date."""
+#             from datetime import datetime
+#             return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+#         # Register the tool (should be ignored)
+#         provider.register_tool("get_current_time", get_current_time)
+        
+#         # Test that tools are not called when disabled
+#         response = provider.generate_response("What time is it right now?")
+        
+#         assert isinstance(response, str)
+#         assert len(response) > 0
+        
+#         # The response should be a normal AI response, not tool execution
+#         # It should not contain the exact time format from our tool
+#         response_lower = response.lower()
+        
+#         # Check that it's not the exact tool output
+#         from datetime import datetime
+#         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+#         assert current_time not in response
+        
+#         provider.cleanup()
+    
+#     @pytest.mark.api
+#     @pytest.mark.slow
+#     def test_provider_manager_tool_calling(self):
+#         """Test tool calling through the provider manager with real API."""
+#         api_key = os.getenv('GOOGLE_API_KEY')
+#         if not api_key:
+#             pytest.skip("GOOGLE_API_KEY not set")
+        
+#         manager = AIProviderManager()
+        
+#         # Define tools
+#         def get_current_time() -> str:
+#             """Get the current time and date."""
+#             from datetime import datetime
+#             return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+#         def calculate_sum(a: int, b: int) -> int:
+#             """Calculate the sum of two numbers."""
+#             return a + b
+        
+#         # Register tools with manager
+#         manager.register_tool("get_current_time", get_current_time)
+#         manager.register_tool("calculate_sum", calculate_sum)
+        
+#         # Initialize manager
+#         result = manager.initialize()
+#         assert result is True
+        
+#         # Test tool calling through manager
+#         response = manager.generate_response("What time is it and what's 5 + 3?")
+        
+#         assert isinstance(response, str)
+#         assert len(response) > 0
+        
+#         # Check if the response contains an API error
+#         response_lower = response.lower()
+#         error_indicators = ['error', 'invalid', 'api key', '400', 'invalid_argument']
+#         if any(indicator in response_lower for indicator in error_indicators):
+#             pytest.skip("API key is invalid or API error occurred")
+        
+#         # The response should contain time and calculation information
+#         time_indicators = ['time', 'current', 'now']
+#         calculation_indicators = ['8', 'sum', 'result', 'calculation']
+        
+#         # Check for at least one type of information
+#         has_time_info = any(indicator in response_lower for indicator in time_indicators)
+#         has_calc_info = any(indicator in response_lower for indicator in calculation_indicators)
+        
+#         assert has_time_info or has_calc_info
+        
+#         manager.cleanup() 

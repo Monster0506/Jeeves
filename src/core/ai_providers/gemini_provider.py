@@ -174,102 +174,22 @@ class GeminiProvider(BaseAIProvider):
             logger.error(f"Failed to initialize Gemini provider: {e}")
             return False
 
-    def _create_function_declaration(self, name: str, func: Callable, description: str = None) -> Any:
-        """
-        Create a FunctionDeclaration for a registered tool.
-        
-        Args:
-            name: Name of the function
-            func: The callable function
-            description: Optional description
-            
-        Returns:
-            FunctionDeclaration object
-        """
-        try:
-            from google.genai import types
-            
-            # Get function signature
-            sig = inspect.signature(func)
-            parameters = {}
-            required = []
-            
-            # Build parameter schema
-            for param_name, param in sig.parameters.items():
-                if param_name == 'self':
-                    continue
-                    
-                param_type = param.annotation
-                param_desc = f"Parameter {param_name}"
-                
-                # Map Python types to JSON schema types
-                if param_type == str or param_type == inspect.Parameter.empty:
-                    param_type_str = "STRING"
-                elif param_type == int:
-                    param_type_str = "INTEGER"
-                elif param_type == float:
-                    param_type_str = "NUMBER"
-                elif param_type == bool:
-                    param_type_str = "BOOLEAN"
-                elif param_type == list:
-                    param_type_str = "ARRAY"
-                elif param_type == dict:
-                    param_type_str = "OBJECT"
-                else:
-                    param_type_str = "STRING"
-                
-                parameters[param_name] = types.Schema(
-                    type=param_type_str,
-                    description=param_desc
-                )
-                
-                if param.default == inspect.Parameter.empty:
-                    required.append(param_name)
-            
-            # Create function declaration
-            func_desc = description or f"Function {name}"
-            if func.__doc__:
-                func_desc = func.__doc__.strip()
-            
-            return types.FunctionDeclaration(
-                name=name,
-                description=func_desc,
-                parameters=types.Schema(
-                    type="OBJECT",
-                    properties=parameters,
-                    required=required
-                )
-            )
-            
-        except Exception as e:
-            logger.error(f"Failed to create function declaration for {name}: {e}")
-            return None
-
     def _build_tools_config(self) -> List[Any]:
         """
-        Build tools configuration for Gemini API.
+        Build the tools configuration for Gemini.
         
         Returns:
-            List of Tool objects
+            List of tools for the generation config
         """
-        try:
-            from google.genai import types
-            
-            if not self.registered_tools:
-                return []
-            
-            tools = []
-            for name, func in self.registered_tools.items():
-                func_decl = self._create_function_declaration(name, func)
-                if func_decl:
-                    tool = types.Tool(function_declarations=[func_decl])
-                    tools.append(tool)
-            
-            return tools
-            
-        except Exception as e:
-            logger.error(f"Failed to build tools config: {e}")
+        if not self.registered_tools:
             return []
+        
+        # For automatic function calling, we can pass Python functions directly
+        tools = []
+        for name, func in self.registered_tools.items():
+            tools.append(func)
+        
+        return tools
 
     def _build_automatic_function_calling_config(self) -> Any:
         """
@@ -292,7 +212,7 @@ class GeminiProvider(BaseAIProvider):
 
     def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
         """
-        Generate a response using Gemini AI with optional tool calling.
+        Generate a response using Gemini AI with automatic tool calling.
 
         Args:
             user_message: The user's input message
@@ -316,34 +236,8 @@ class GeminiProvider(BaseAIProvider):
                     role = "user" if message.get("sender") == "user" else "model"
                     content = message.get("content", "")
                     
-                    # Handle tool responses in context
-                    if message.get("tool_calls"):
-                        # Add tool calls as model content
-                        tool_call_parts = []
-                        for tool_call in message["tool_calls"]:
-                            tool_call_parts.append(
-                                types.Part.from_function_call(
-                                    name=tool_call["name"],
-                                    args=tool_call["args"]
-                                )
-                            )
-                        contents.append(
-                            types.Content(role="model", parts=tool_call_parts)
-                        )
-                    
-                    # Add tool responses as tool content
-                    if message.get("tool_responses"):
-                        for tool_response in message["tool_responses"]:
-                            response_part = types.Part.from_function_response(
-                                name=tool_response["name"],
-                                response=tool_response["response"]
-                            )
-                            contents.append(
-                                types.Content(role="tool", parts=[response_part])
-                            )
-                    
                     # Add regular text content
-                    if content and not message.get("tool_calls") and not message.get("tool_responses"):
+                    if content:
                         contents.append(
                             types.Content(
                                 role=role,
@@ -384,16 +278,6 @@ class GeminiProvider(BaseAIProvider):
                 model=self.model_name, contents=contents, config=generation_config
             )
 
-            # Handle function calls if present
-            if (hasattr(response, 'function_calls') and 
-                response.function_calls is not None):
-                try:
-                    if len(response.function_calls) > 0:
-                        return self._handle_function_calls(response, user_message, context)
-                except (TypeError, AttributeError):
-                    # Mock objects or objects without __len__ method
-                    pass
-
             if response.text:
                 return response.text
             else:
@@ -407,115 +291,6 @@ class GeminiProvider(BaseAIProvider):
             return (
                 f"Sorry, I encountered an error while processing your request: {str(e)}"
             )
-
-    def _handle_function_calls(self, response: Any, user_message: str, context: List[Dict] = None) -> str:
-        """
-        Handle function calls from the model response.
-        
-        Args:
-            response: The model response containing function calls
-            user_message: Original user message
-            context: Conversation context
-            
-        Returns:
-            Final response after executing function calls
-        """
-        try:
-            from google.genai import types
-            
-            # Execute function calls
-            function_responses = []
-            for func_call in response.function_calls:
-                try:
-                    # Execute the function
-                    result = self.execute_tool(func_call.name, func_call.function_call.args)
-                    function_responses.append({
-                        "name": func_call.name,
-                        "response": {"result": result}
-                    })
-                except Exception as e:
-                    logger.error(f"Failed to execute function {func_call.name}: {e}")
-                    function_responses.append({
-                        "name": func_call.name,
-                        "response": {"error": str(e)}
-                    })
-
-            # If we have function responses, continue the conversation
-            if function_responses:
-                # Build conversation with function calls and responses
-                contents = []
-                
-                # Add original context
-                if context:
-                    for message in context[-5:]:  # Limit context for function call continuation
-                        role = "user" if message.get("sender") == "user" else "model"
-                        content = message.get("content", "")
-                        if content:
-                            contents.append(
-                                types.Content(
-                                    role=role,
-                                    parts=[types.Part.from_text(text=content)]
-                                )
-                            )
-
-                # Add user message
-                contents.append(
-                    types.Content(
-                        role="user", parts=[types.Part.from_text(text=user_message)]
-                    )
-                )
-
-                # Add function calls
-                for func_call in response.function_calls:
-                    contents.append(
-                        types.Content(
-                            role="model",
-                            parts=[
-                                types.Part.from_function_call(
-                                    name=func_call.name,
-                                    args=func_call.function_call.args
-                                )
-                            ]
-                        )
-                    )
-
-                # Add function responses
-                for func_response in function_responses:
-                    contents.append(
-                        types.Content(
-                            role="tool",
-                            parts=[
-                                types.Part.from_function_response(
-                                    name=func_response["name"],
-                                    response=func_response["response"]
-                                )
-                            ]
-                        )
-                    )
-
-                # Generate final response
-                generation_config = types.GenerateContentConfig(
-                    system_instruction=self.system_instruction,
-                    max_output_tokens=self.max_output_tokens,
-                    temperature=self.temperature,
-                    top_p=self.top_p,
-                    top_k=self.top_k,
-                )
-
-                final_response = self.client.models.generate_content(
-                    model=self.model_name, contents=contents, config=generation_config
-                )
-
-                if final_response.text:
-                    return final_response.text
-                else:
-                    return "I've executed the requested actions, but couldn't generate a response summary."
-
-            return response.text if response.text else "Function calls executed successfully."
-
-        except Exception as e:
-            logger.error(f"Error handling function calls: {e}")
-            return f"Error executing function calls: {str(e)}"
 
     def is_available(self) -> bool:
         """

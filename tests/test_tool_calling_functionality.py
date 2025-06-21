@@ -281,51 +281,6 @@ class TestGeminiProviderToolCalling:
         assert "test_tool" in provider.registered_tools
     
     @patch('google.genai.Client')
-    def test_gemini_provider_create_function_declaration(self, mock_client_class):
-        """Test function declaration creation."""
-        # Mock the client
-        mock_client = Mock()
-        mock_client_class.return_value = mock_client
-        mock_models = [Mock(), Mock()]
-        mock_client.models.list.return_value = mock_models
-        
-        provider = GeminiProvider({'api_key': 'test_key'})
-        provider.initialize()
-        
-        # Test function declaration creation
-        func_decl = provider._create_function_declaration("calculate_sum", calculate_sum)
-        
-        assert func_decl is not None
-        assert func_decl.name == "calculate_sum"
-        assert func_decl.description == "Calculate the sum of two numbers."
-        assert func_decl.parameters.type == "OBJECT"
-        assert "a" in func_decl.parameters.properties
-        assert "b" in func_decl.parameters.properties
-        assert "a" in func_decl.parameters.required
-        assert "b" in func_decl.parameters.required
-    
-    @patch('google.genai.Client')
-    def test_gemini_provider_create_function_declaration_with_optional_params(self, mock_client_class):
-        """Test function declaration creation with optional parameters."""
-        # Mock the client
-        mock_client = Mock()
-        mock_client_class.return_value = mock_client
-        mock_models = [Mock(), Mock()]
-        mock_client.models.list.return_value = mock_models
-        
-        provider = GeminiProvider({'api_key': 'test_key'})
-        provider.initialize()
-        
-        # Test function declaration creation with optional parameters
-        func_decl = provider._create_function_declaration("complex_tool", complex_tool)
-        
-        assert func_decl is not None
-        assert func_decl.name == "complex_tool"
-        assert "param1" in func_decl.parameters.required
-        assert "param2" in func_decl.parameters.required
-        assert "optional_param" not in func_decl.parameters.required  # Optional parameter
-    
-    @patch('google.genai.Client')
     def test_gemini_provider_build_tools_config(self, mock_client_class):
         """Test tools configuration building."""
         # Mock the client
@@ -344,7 +299,9 @@ class TestGeminiProviderToolCalling:
         tools_config = provider._build_tools_config()
         
         assert len(tools_config) == 2
-        assert all(hasattr(tool, 'function_declarations') for tool in tools_config)
+        # Current implementation returns Python functions directly
+        assert calculate_sum in tools_config
+        assert get_weather in tools_config
     
     @patch('google.genai.Client')
     def test_gemini_provider_build_automatic_function_calling_config(self, mock_client_class):
@@ -432,20 +389,12 @@ class TestGeminiProviderToolCalling:
         mock_models = [Mock(), Mock()]
         mock_client.models.list.return_value = mock_models
         
-        # Mock function call response
-        mock_function_call = Mock()
-        mock_function_call.name = "calculate_sum"
-        mock_function_call.function_call.args = {"a": 5, "b": 3}
-        
+        # With automatic function calling, Gemini handles tool execution internally
+        # and returns the final response directly
         mock_response = Mock()
-        mock_response.function_calls = [mock_function_call]
-        mock_response.text = None
+        mock_response.text = "The sum of 5 and 3 is 8"
         
-        # Mock final response after function execution
-        mock_final_response = Mock()
-        mock_final_response.text = "The sum of 5 and 3 is 8"
-        
-        mock_client.models.generate_content.side_effect = [mock_response, mock_final_response]
+        mock_client.models.generate_content.return_value = mock_response
         
         provider = GeminiProvider({
             'api_key': 'test_key',
@@ -459,8 +408,8 @@ class TestGeminiProviderToolCalling:
         response = provider.generate_response("What is 5 + 3?")
         
         assert "The sum of 5 and 3 is 8" in response
-        # Verify that generate_content was called twice (initial + after function call)
-        assert mock_client.models.generate_content.call_count == 2
+        # Verify that generate_content was called once (automatic function calling)
+        assert mock_client.models.generate_content.call_count == 1
     
     @patch('google.genai.Client')
     def test_gemini_provider_generate_response_tool_calling_disabled(self, mock_client_class):
@@ -503,20 +452,12 @@ class TestGeminiProviderToolCalling:
         mock_models = [Mock(), Mock()]
         mock_client.models.list.return_value = mock_models
         
-        # Mock function call response
-        mock_function_call = Mock()
-        mock_function_call.name = "error_tool"
-        mock_function_call.function_call.args = {}
-        
+        # With automatic function calling, Gemini handles tool execution internally
+        # and returns the final response directly, even when tools fail
         mock_response = Mock()
-        mock_response.function_calls = [mock_function_call]
-        mock_response.text = None
+        mock_response.text = "There was an error executing the tool"
         
-        # Mock final response after function execution
-        mock_final_response = Mock()
-        mock_final_response.text = "There was an error executing the tool"
-        
-        mock_client.models.generate_content.side_effect = [mock_response, mock_final_response]
+        mock_client.models.generate_content.return_value = mock_response
         
         provider = GeminiProvider({
             'api_key': 'test_key',
@@ -756,20 +697,12 @@ class TestToolCallingIntegration:
         mock_models = [Mock(), Mock()]
         mock_client.models.list.return_value = mock_models
         
-        # Mock function call response
-        mock_function_call = Mock()
-        mock_function_call.name = "calculate_sum"
-        mock_function_call.function_call.args = {"a": 10, "b": 20}
-        
+        # With automatic function calling, Gemini handles tool execution internally
+        # and returns the final response directly
         mock_response = Mock()
-        mock_response.function_calls = [mock_function_call]
-        mock_response.text = None
+        mock_response.text = "The sum of 10 and 20 is 30"
         
-        # Mock final response after function execution
-        mock_final_response = Mock()
-        mock_final_response.text = "The sum of 10 and 20 is 30"
-        
-        mock_client.models.generate_content.side_effect = [mock_response, mock_final_response]
+        mock_client.models.generate_content.return_value = mock_response
         
         # Create manager and register tools
         manager = AIProviderManager()
@@ -785,7 +718,7 @@ class TestToolCallingIntegration:
         response = manager.generate_response("What is 10 + 20?")
         
         assert "The sum of 10 and 20 is 30" in response
-        assert mock_client.models.generate_content.call_count == 2
+        assert mock_client.models.generate_content.call_count == 1
     
     @patch('google.genai.Client')
     def test_multiple_tool_calls_in_single_request(self, mock_client_class):
@@ -796,24 +729,12 @@ class TestToolCallingIntegration:
         mock_models = [Mock(), Mock()]
         mock_client.models.list.return_value = mock_models
         
-        # Mock multiple function calls
-        mock_function_call1 = Mock()
-        mock_function_call1.name = "calculate_sum"
-        mock_function_call1.function_call.args = {"a": 5, "b": 3}
-        
-        mock_function_call2 = Mock()
-        mock_function_call2.name = "get_current_time"
-        mock_function_call2.function_call.args = {}
-        
+        # With automatic function calling, Gemini handles multiple tool calls internally
+        # and returns the final response directly
         mock_response = Mock()
-        mock_response.function_calls = [mock_function_call1, mock_function_call2]
-        mock_response.text = None
+        mock_response.text = "The sum is 8 and the current time is 2024-01-01 12:00:00"
         
-        # Mock final response after function execution
-        mock_final_response = Mock()
-        mock_final_response.text = "The sum is 8 and the current time is 2024-01-01 12:00:00"
-        
-        mock_client.models.generate_content.side_effect = [mock_response, mock_final_response]
+        mock_client.models.generate_content.return_value = mock_response
         
         # Create manager and register tools
         manager = AIProviderManager()
@@ -828,7 +749,7 @@ class TestToolCallingIntegration:
         
         assert "The sum is 8" in response
         assert "current time" in response
-        assert mock_client.models.generate_content.call_count == 2
+        assert mock_client.models.generate_content.call_count == 1
     
     @patch('google.genai.Client')
     def test_tool_calling_with_context(self, mock_client_class):
@@ -839,20 +760,12 @@ class TestToolCallingIntegration:
         mock_models = [Mock(), Mock()]
         mock_client.models.list.return_value = mock_models
         
-        # Mock function call response
-        mock_function_call = Mock()
-        mock_function_call.name = "get_weather"
-        mock_function_call.function_call.args = {"location": "New York"}
-        
+        # With automatic function calling, Gemini handles tool execution internally
+        # and returns the final response directly
         mock_response = Mock()
-        mock_response.function_calls = [mock_function_call]
-        mock_response.text = None
+        mock_response.text = "The weather in New York is Sunny, 72°F"
         
-        # Mock final response after function execution
-        mock_final_response = Mock()
-        mock_final_response.text = "The weather in New York is Sunny, 72°F"
-        
-        mock_client.models.generate_content.side_effect = [mock_response, mock_final_response]
+        mock_client.models.generate_content.return_value = mock_response
         
         # Create manager and register tools
         manager = AIProviderManager()
@@ -870,7 +783,7 @@ class TestToolCallingIntegration:
         response = manager.generate_response("New York", context)
         
         assert "The weather in New York is Sunny, 72°F" in response
-        assert mock_client.models.generate_content.call_count == 2
+        assert mock_client.models.generate_content.call_count == 1
     
     def test_tool_calling_error_handling(self):
         """Test error handling in tool calling."""
