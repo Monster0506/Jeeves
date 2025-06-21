@@ -228,6 +228,7 @@ class JeevesTools:
                 )
 
             logger.debug(f"Formatted {len(formatted_results)} search results")
+            logger.debug(formatted_results)
             return f"Found {len(results)} messages matching '{query}':\n" + "\n".join(
                 formatted_results
             )
