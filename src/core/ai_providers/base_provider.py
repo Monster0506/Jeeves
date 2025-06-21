@@ -61,7 +61,7 @@ class BaseAIProvider(ABC):
     
     def register_tool(self, name: str, function: Callable, description: str = None) -> bool:
         """
-        Register a tool/function that can be called by the AI.
+        Register a tool/function that can be used by the provider.
         
         Args:
             name: Name of the tool
@@ -73,15 +73,17 @@ class BaseAIProvider(ABC):
         """
         try:
             self.registered_tools[name] = function
+            if description:
+                self.tool_config[name] = {"description": description}
             logger.info(f"Registered tool '{name}' with {self.provider_name}")
             return True
         except Exception as e:
-            logger.error(f"Failed to register tool '{name}': {e}")
+            logger.error(f"Failed to register tool '{name}' with {self.provider_name}: {e}")
             return False
     
     def unregister_tool(self, name: str) -> bool:
         """
-        Unregister a tool/function.
+        Unregister a tool/function from the provider.
         
         Args:
             name: Name of the tool to unregister
@@ -92,11 +94,12 @@ class BaseAIProvider(ABC):
         try:
             if name in self.registered_tools:
                 del self.registered_tools[name]
-                logger.info(f"Unregistered tool '{name}' from {self.provider_name}")
-                return True
-            return False
+            if name in self.tool_config:
+                del self.tool_config[name]
+            logger.info(f"Unregistered tool '{name}' from {self.provider_name}")
+            return True
         except Exception as e:
-            logger.error(f"Failed to unregister tool '{name}': {e}")
+            logger.error(f"Failed to unregister tool '{name}' from {self.provider_name}: {e}")
             return False
     
     def get_registered_tools(self) -> Dict[str, Callable]:
@@ -104,7 +107,7 @@ class BaseAIProvider(ABC):
         Get all registered tools.
         
         Returns:
-            Dictionary of registered tool names and their functions
+            Dictionary of registered tools
         """
         return self.registered_tools.copy()
     
@@ -155,18 +158,17 @@ class BaseAIProvider(ABC):
     
     def get_provider_info(self) -> Dict[str, Any]:
         """
-        Get information about the AI provider.
+        Get detailed information about the provider.
         
         Returns:
             Dictionary containing provider information
         """
         return {
-            'name': self.provider_name,
-            'is_initialized': self.is_initialized,
-            'is_available': self.is_available(),
-            'config': self.config,
-            'registered_tools': list(self.registered_tools.keys()),
-            'tool_config': self.tool_config
+            "provider_name": self.provider_name,
+            "is_initialized": self.is_initialized,
+            "is_available": self.is_available(),
+            "registered_tools_count": len(self.registered_tools),
+            "config": self.config.copy() if self.config else {}
         }
     
     def validate_config(self) -> bool:
@@ -176,14 +178,53 @@ class BaseAIProvider(ABC):
         Returns:
             True if configuration is valid, False otherwise
         """
+        # Base implementation - can be overridden by subclasses
         return True
     
     def cleanup(self):
-        """Clean up resources used by the provider."""
-        self.is_initialized = False
+        """Clean up provider resources."""
         self.registered_tools.clear()
         self.tool_config.clear()
-        logger.info(f"Cleaned up {self.provider_name}")
+        self.is_initialized = False
+        logger.info(f"{self.provider_name} cleaned up")
+    
+    def refresh_memory(self) -> bool:
+        """
+        Refresh memory content and update system instruction if needed.
+        Base implementation - can be overridden by subclasses that support memory.
+        
+        Returns:
+            True if memory was refreshed successfully, False otherwise
+        """
+        # Base implementation does nothing - subclasses can override
+        logger.debug(f"{self.provider_name} does not support memory refresh")
+        return True
+    
+    def update_system_instruction(self, new_instruction: str) -> bool:
+        """
+        Update the system instruction.
+        Base implementation - can be overridden by subclasses.
+        
+        Args:
+            new_instruction: New system instruction
+            
+        Returns:
+            True if successful
+        """
+        # Base implementation does nothing - subclasses can override
+        logger.debug(f"{self.provider_name} does not support system instruction updates")
+        return True
+    
+    def get_system_instruction(self) -> str:
+        """
+        Get the current system instruction.
+        Base implementation - can be overridden by subclasses.
+        
+        Returns:
+            Current system instruction or empty string
+        """
+        # Base implementation returns empty string - subclasses can override
+        return ""
     
     def __str__(self) -> str:
         return f"{self.provider_name}(initialized={self.is_initialized}, available={self.is_available()}, tools={len(self.registered_tools)})"

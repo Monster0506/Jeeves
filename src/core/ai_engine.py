@@ -92,6 +92,9 @@ class AIEngine:
         """
         message_id = self.chat_manager.add_user_message(user_message)
 
+        # Refresh memory at the beginning of each chat session
+        self._refresh_memory_if_needed()
+
         context = self.get_conversation_context()
         response = self.provider_manager.generate_response(user_message, context)
 
@@ -110,6 +113,39 @@ class AIEngine:
             f"Generated response for message {message_id} using {self.provider_manager.get_current_provider().provider_name}"
         )
         return response
+
+    def _refresh_memory_if_needed(self):
+        """
+        Refresh memory content if the current provider supports it.
+        This ensures the AI has the latest memory content for each conversation.
+        """
+        try:
+            success = self.provider_manager.refresh_memory()
+            if success:
+                logger.debug("Memory refreshed successfully")
+            else:
+                logger.warning("Failed to refresh memory")
+        except Exception as e:
+            logger.error(f"Error refreshing memory: {e}")
+
+    def refresh_memory(self) -> bool:
+        """
+        Manually refresh memory content.
+        This can be called when memory is updated externally.
+        
+        Returns:
+            True if memory was refreshed successfully, False otherwise
+        """
+        try:
+            success = self.provider_manager.refresh_memory()
+            if success:
+                logger.info("Memory refreshed successfully")
+            else:
+                logger.warning("Failed to refresh memory")
+            return success
+        except Exception as e:
+            logger.error(f"Error refreshing memory: {e}")
+            return False
 
     def get_conversation_context(self, thread_id: int = None) -> List[Dict]:
         """

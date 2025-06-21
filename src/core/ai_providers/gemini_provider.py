@@ -9,6 +9,7 @@ import inspect
 from typing import Dict, List, Any, Callable, Optional
 from .base_provider import BaseAIProvider
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class GeminiProvider(BaseAIProvider):
                 - system_instruction: System instruction for the AI
                 - enable_tool_calling: Enable automatic tool calling (default: True)
                 - max_tool_calls: Maximum number of tool calls per response (default: 5)
+                - memory_file_path: Path to memory file (default: '~/.jeeves/MEMORY.md')
         """
         super().__init__(config if config else {})
         self.client = None
@@ -39,6 +41,15 @@ class GeminiProvider(BaseAIProvider):
         self.temperature = self.config.get("temperature", 0.7)
         self.top_p = self.config.get("top_p", 0.95)
         self.top_k = self.config.get("top_k", 40)
+        
+        # Memory configuration
+        self.memory_file_path = self.config.get("memory_file_path", "~/.jeeves/MEMORY.md")
+        self.memory_content = ""
+        
+        # Load memory content
+        self._load_memory_content()
+        
+        # Get system instruction with memory integrated
         self.system_instruction = self.config.get(
             "system_instruction", self._get_default_system_prompt()
         )
@@ -64,7 +75,34 @@ class GeminiProvider(BaseAIProvider):
             "enable_tool_calling": True,
             "max_tool_calls": 5,
             "automatic_function_calling": True,
+            "memory_file_path": "~/.jeeves/MEMORY.md",
         }
+
+    def _load_memory_content(self) -> str:
+        """
+        Load memory content from the memory file.
+        
+        Returns:
+            Memory content as string, empty string if file doesn't exist or can't be read
+        """
+        try:
+            memory_path = Path(self.memory_file_path).expanduser().resolve()
+            
+            if memory_path.exists() and memory_path.is_file():
+                with open(memory_path, "r", encoding="utf-8") as f:
+                    content = f.read().strip()
+                    self.memory_content = content
+                    logger.info(f"Loaded memory content: {len(content)} characters from {memory_path}")
+                    return content
+            else:
+                logger.debug(f"Memory file not found: {memory_path}")
+                self.memory_content = ""
+                return ""
+                
+        except Exception as e:
+            logger.error(f"Failed to load memory content from {self.memory_file_path}: {e}")
+            self.memory_content = ""
+            return ""
 
     def _get_default_system_prompt(self) -> str:
         """
@@ -75,19 +113,30 @@ class GeminiProvider(BaseAIProvider):
         the current date/time and the persistent memory file content.
         """
         current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        # NOTE: The '{{currentDateTime}}' and content from 'memory.md' will be
-        # dynamically inserted into this string by the calling script before
-        # sending it to the model.
-        # The self.memory_file_path is a placeholder for where the actual memory
-        # content would be injected by your script.
-        # current_memory_content = ""
-        # if os.path.exists(self.memory_file_path):
-        #     with open(self.memory_file_path, "r", encoding="utf-8") as f:
-        #         current_memory_content = f.read()
+        
+        # Load current memory content
+        memory_content = self._load_memory_content()
+        
+        # Build memory section for system prompt
+        memory_section = ""
+        if memory_content:
+            memory_section = f"""
+
+**PERSISTENT MEMORY:**
+{memory_content}
+
+"""
+        else:
+            memory_section = """
+
+**PERSISTENT MEMORY:**
+No persistent memory entries found.
+
+"""
 
         return f"""You are Jeeves, a dedicated, knowledgeable, and highly sophisticated AI assistant. You were created by the user to operate as a local desktop companion, assisting with various computer tasks, managing information, and engaging in intelligent, helpful conversation.
 
-The current date and time is {current_date_time}.
+The current date and time is {current_date_time}.{memory_section}
 
 **Core Principles & Persona:**
 
@@ -104,7 +153,7 @@ The current date and time is {current_date_time}.
     *   When providing structured information, summaries, or steps for tasks, you may use markdown formatting (like bullet points or headers) if it significantly enhances readability and organization.
 
 6.  **Contextual Awareness & Memory:**
-    *   Actively utilize the long-term persistent memory provided (which the system will prepend to your context) to recall user preferences, past actions, and relevant information for ongoing continuity.
+    *   Actively utilize the long-term persistent memory provided above to recall user preferences, past actions, and relevant information for ongoing continuity.
     *   Refer to the current conversation thread's history (managed by the system in SQLite) to maintain coherent dialogue and provide contextually relevant responses.
     *   For any complex request, multi-step task, or when determining a sequence of tool calls, you must first utilize the scratchpad_logger tool to outline your thought process, plan of action, and reasoning. This internal planning should guide your subsequent actions.
     *   Your scratchpad entries should clearly articulate your 'Thought:' (reasoning for an approach), 'Plan:' (sequential steps or tool calls), and 'Decision:' (final determination before executing or responding).
@@ -139,6 +188,30 @@ The current date and time is {current_date_time}.
 
 You are Jeeves. Efficient, knowledgeable, and always at the user's service.
     """
+
+    def refresh_memory(self) -> bool:
+        """
+        Refresh memory content and update system instruction.
+        
+        Returns:
+            True if memory was refreshed successfully
+        """
+        try:
+            old_content = self.memory_content
+            new_content = self._load_memory_content()
+            
+            if old_content != new_content:
+                logger.info("Memory content changed, updating system instruction")
+                # Update system instruction with new memory content
+                self.system_instruction = self._get_default_system_prompt()
+                return True
+            else:
+                logger.debug("Memory content unchanged")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Failed to refresh memory: {e}")
+            return False
 
     def initialize(self) -> bool:
         """

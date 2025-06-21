@@ -253,6 +253,32 @@ class AIProviderManager:
             logger.error(f"Error generating response: {e}")
             return f"Sorry, I encountered an error: {str(e)}"
     
+    def refresh_memory(self) -> bool:
+        """
+        Refresh memory content for the current provider.
+        
+        Returns:
+            True if memory was refreshed successfully, False otherwise
+        """
+        if not self.current_provider:
+            logger.warning("No current provider to refresh memory for")
+            return False
+        
+        try:
+            if hasattr(self.current_provider, 'refresh_memory'):
+                success = self.current_provider.refresh_memory()
+                if success:
+                    logger.info("Memory refreshed successfully for current provider")
+                else:
+                    logger.warning("Failed to refresh memory for current provider")
+                return success
+            else:
+                logger.debug("Current provider does not support memory refresh")
+                return True
+        except Exception as e:
+            logger.error(f"Error refreshing memory: {e}")
+            return False
+    
     def get_available_providers(self) -> List[Dict[str, Any]]:
         """
         Get information about all available providers.
