@@ -232,7 +232,7 @@ class GeminiProvider(BaseAIProvider):
 
             # Add conversation context
             if context:
-                for message in context[-10:]:  # Limit to last 10 messages for context
+                for message in context:  # Use all messages for context
                     role = "user" if message.get("sender") == "user" else "model"
                     content = message.get("content", "")
                     

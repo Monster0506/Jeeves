@@ -97,7 +97,7 @@ class AIEngine:
             thread_id: Thread ID (uses current thread if None)
 
         Returns:
-            List of recent messages for context
+            List of all messages for context
         """
         if thread_id is None:
             thread_id = self.chat_manager.get_current_thread_id()
@@ -105,8 +105,8 @@ class AIEngine:
         if thread_id is None:
             return []
 
-        # Get last 10 messages for context
-        messages = self.chat_manager.get_messages(thread_id, limit=10)
+        # Get all messages for context
+        messages = self.chat_manager.get_messages(thread_id)
         return messages
 
     def switch_ai_provider(self, provider_name: str) -> bool:
