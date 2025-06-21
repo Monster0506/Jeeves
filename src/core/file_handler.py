@@ -2087,14 +2087,26 @@ class JeevesFileHandler:
             # Use zipfile or tarfile directly for fine-grained control
             if zipfile.is_zipfile(abs_archive_path):
                 with zipfile.ZipFile(abs_archive_path, "r") as zip_ref:
-                    for member in zip_ref.namelist():
-                        _check_extraction_path(member)  # Pre-validate all members
-                    zip_ref.extractall(abs_extract_to_path)
+                    for member_name in zip_ref.namelist():
+                        # Validate the member path
+                        safe_path = _check_extraction_path(member_name)
+                        # Extract individual member to safe path
+                        zip_ref.extract(member_name, abs_extract_to_path)
+                        # Move to correct location if needed
+                        extracted_path = abs_extract_to_path / member_name
+                        if extracted_path != safe_path:
+                            extracted_path.rename(safe_path)
             elif tarfile.is_tarfile(abs_archive_path):
                 with tarfile.open(abs_archive_path, "r") as tar_ref:
-                    for member in tar_ref.getnames():
-                        _check_extraction_path(member)  # Pre-validate all members
-                    tar_ref.extractall(abs_extract_to_path)
+                    for member in tar_ref.getmembers():
+                        # Validate the member path
+                        safe_path = _check_extraction_path(member.name)
+                        # Extract individual member to safe path
+                        tar_ref.extract(member, abs_extract_to_path)
+                        # Move to correct location if needed
+                        extracted_path = abs_extract_to_path / member.name
+                        if extracted_path != safe_path:
+                            extracted_path.rename(safe_path)
             else:
                 logger.error(
                     f"Unsupported archive format for {archive_relative_path}. Must be zip or tar-based."
