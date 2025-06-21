@@ -101,6 +101,23 @@ class ChatManager:
             logger.error(f"Failed to get thread {thread_id}: {e}")
             return None
     
+    def find_threads_by_name(self, name: str, active_only: bool = True) -> List[Dict]:
+        """
+        Find threads by name (case-insensitive partial match).
+        
+        Args:
+            name: Thread name to search for
+            active_only: Only search active threads
+            
+        Returns:
+            List of matching thread dictionaries
+        """
+        try:
+            return self.db.find_threads_by_name(name, active_only)
+        except DatabaseError as e:
+            logger.error(f"Failed to find threads by name '{name}': {e}")
+            return []
+    
     def switch_thread(self, thread_id: int) -> bool:
         """
         Switch to a different thread.

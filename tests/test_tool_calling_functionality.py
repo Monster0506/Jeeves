@@ -9,6 +9,9 @@ from typing import Dict, List, Any
 
 from core.ai_providers import GeminiProvider, PlaceholderProvider, BaseAIProvider
 from core.ai_provider_manager import AIProviderManager
+from core.tools import JeevesTools
+from core.chat_manager import ChatManager
+from core.database import DatabaseManager
 
 
 # Test tool functions
@@ -50,6 +53,307 @@ def complex_tool(param1: str, param2: int, optional_param: bool = False) -> dict
 def tool_with_error() -> str:
     """A tool that raises an exception."""
     raise ValueError("This is a test error")
+
+
+class TestThreadIdentifierResolution:
+    """Test thread identifier resolution functionality."""
+    
+    @pytest.fixture
+    def setup_tools(self, tmp_path):
+        """Set up tools with test database."""
+        db_path = tmp_path / "test.db"
+        db_manager = DatabaseManager(str(db_path))
+        chat_manager = ChatManager(db_manager)
+        tools = JeevesTools(chat_manager)
+        
+        yield tools, chat_manager, db_manager
+        
+        # Cleanup: close database connections
+        try:
+            db_manager.close_connections()
+        except:
+            pass
+    
+    def test_resolve_thread_identifier_with_id(self, setup_tools):
+        """Test resolving thread identifier with direct ID."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Create a test thread
+        thread_id = chat_manager.create_thread("Test Thread", "🧪")
+        
+        # Test ID resolution
+        result = tools._resolve_thread_identifier(thread_id)
+        assert result == thread_id
+    
+    def test_resolve_thread_identifier_with_name_unique(self, setup_tools):
+        """Test resolving thread identifier with unique name."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Create a test thread
+        thread_id = chat_manager.create_thread("Unique Thread Name", "🧪")
+        
+        # Test name resolution
+        result = tools._resolve_thread_identifier("Unique Thread Name")
+        assert result == thread_id
+    
+    def test_resolve_thread_identifier_with_name_partial_match(self, setup_tools):
+        """Test resolving thread identifier with partial name match."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Create a test thread
+        thread_id = chat_manager.create_thread("Project Planning Meeting", "📋")
+        
+        # Test partial name resolution
+        result = tools._resolve_thread_identifier("Project Planning")
+        assert result == thread_id
+    
+    def test_resolve_thread_identifier_with_name_case_insensitive(self, setup_tools):
+        """Test resolving thread identifier with case-insensitive name."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Create a test thread
+        thread_id = chat_manager.create_thread("Bug Fixes", "🐛")
+        
+        # Test case-insensitive name resolution
+        result = tools._resolve_thread_identifier("bug fixes")
+        assert result == thread_id
+    
+    def test_resolve_thread_identifier_with_ambiguous_name(self, setup_tools):
+        """Test resolving thread identifier with ambiguous name raises error."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Create multiple threads with similar names
+        thread1_id = chat_manager.create_thread("Project Planning", "📋")
+        thread2_id = chat_manager.create_thread("Project Planning Backup", "📋")
+        
+        # Test ambiguous name resolution
+        with pytest.raises(ValueError) as exc_info:
+            tools._resolve_thread_identifier("Project Planning")
+        
+        error_msg = str(exc_info.value)
+        assert "Multiple threads found matching" in error_msg
+        assert str(thread1_id) in error_msg
+        assert str(thread2_id) in error_msg
+        assert "Please specify the exact thread ID" in error_msg
+    
+    def test_resolve_thread_identifier_with_none_current_thread(self, setup_tools):
+        """Test resolving thread identifier with None (current thread)."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Create a test thread and switch to it
+        thread_id = chat_manager.create_thread("Current Thread", "💬")
+        chat_manager.switch_thread(thread_id)
+        
+        # Test None resolution (current thread)
+        result = tools._resolve_thread_identifier(None)
+        assert result == thread_id
+    
+    def test_resolve_thread_identifier_with_none_no_current_thread(self, setup_tools):
+        """Test resolving thread identifier with None when no current thread."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Test None resolution when no current thread
+        result = tools._resolve_thread_identifier(None)
+        assert result is None
+    
+    def test_resolve_thread_identifier_with_nonexistent_id(self, setup_tools):
+        """Test resolving thread identifier with non-existent ID."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Test non-existent ID resolution
+        result = tools._resolve_thread_identifier(99999)
+        assert result is None
+    
+    def test_resolve_thread_identifier_with_nonexistent_name(self, setup_tools):
+        """Test resolving thread identifier with non-existent name."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Test non-existent name resolution
+        result = tools._resolve_thread_identifier("Non-existent Thread")
+        assert result is None
+    
+    def test_rename_chat_thread_with_id(self, setup_tools):
+        """Test rename_chat_thread with thread ID."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Create a test thread
+        thread_id = chat_manager.create_thread("Old Name", "🧪")
+        
+        # Test renaming with ID
+        result = tools.rename_chat_thread(thread_id, "New Name")
+        assert "Successfully renamed" in result
+        
+        # Verify the thread was renamed
+        thread = chat_manager.get_thread(thread_id)
+        assert thread["name"] == "New Name"
+    
+    def test_rename_chat_thread_with_name(self, setup_tools):
+        """Test rename_chat_thread with thread name."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Create a test thread
+        thread_id = chat_manager.create_thread("Old Name", "🧪")
+        
+        # Test renaming with name
+        result = tools.rename_chat_thread("Old Name", "New Name")
+        assert "Successfully renamed" in result
+        
+        # Verify the thread was renamed
+        thread = chat_manager.get_thread(thread_id)
+        assert thread["name"] == "New Name"
+    
+    def test_rename_chat_thread_with_ambiguous_name(self, setup_tools):
+        """Test rename_chat_thread with ambiguous name returns error."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Create multiple threads with similar names
+        chat_manager.create_thread("Project Planning", "📋")
+        chat_manager.create_thread("Project Planning Backup", "📋")
+        
+        # Test renaming with ambiguous name
+        result = tools.rename_chat_thread("Project Planning", "New Name")
+        assert "Error:" in result
+        assert "Multiple threads found matching" in result
+    
+    def test_rename_chat_thread_with_nonexistent_identifier(self, setup_tools):
+        """Test rename_chat_thread with non-existent identifier."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Test renaming with non-existent ID
+        result = tools.rename_chat_thread(99999, "New Name")
+        assert "Thread '99999' not found" in result
+        
+        # Test renaming with non-existent name
+        result = tools.rename_chat_thread("Non-existent Thread", "New Name")
+        assert "Thread 'Non-existent Thread' not found" in result
+    
+    def test_rename_chat_thread_with_empty_name(self, setup_tools):
+        """Test rename_chat_thread with empty name."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Create a test thread
+        thread_id = chat_manager.create_thread("Test Thread", "🧪")
+        
+        # Test renaming with empty name
+        result = tools.rename_chat_thread(thread_id, "")
+        assert "Error:" in result
+        assert "New name cannot be empty" in result
+    
+    def test_search_chat_history_with_thread_id(self, setup_tools):
+        """Test search_chat_history with thread ID."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Create a test thread and add messages
+        thread_id = chat_manager.create_thread("Test Thread", "🧪")
+        chat_manager.switch_thread(thread_id)
+        chat_manager.add_user_message("Hello world")
+        chat_manager.add_ai_message("Hi there!")
+        
+        # Test searching with thread ID
+        result = tools.search_chat_history("Hello", thread_identifier=thread_id)
+        assert "Found" in result
+        assert "Hello world" in result
+    
+    def test_search_chat_history_with_thread_name(self, setup_tools):
+        """Test search_chat_history with thread name."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Create a test thread and add messages
+        thread_id = chat_manager.create_thread("Test Thread", "🧪")
+        chat_manager.switch_thread(thread_id)
+        chat_manager.add_user_message("Hello world")
+        chat_manager.add_ai_message("Hi there!")
+        
+        # Test searching with thread name
+        result = tools.search_chat_history("Hello", thread_identifier="Test Thread")
+        assert "Found" in result
+        assert "Hello world" in result
+    
+    def test_search_chat_history_with_ambiguous_name(self, setup_tools):
+        """Test search_chat_history with ambiguous name returns error."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Create multiple threads with similar names
+        chat_manager.create_thread("Project Planning", "📋")
+        chat_manager.create_thread("Project Planning Backup", "📋")
+        
+        # Test searching with ambiguous name
+        result = tools.search_chat_history("test", thread_identifier="Project Planning")
+        assert "Error:" in result
+        assert "Multiple threads found matching" in result
+    
+    def test_search_chat_history_with_nonexistent_identifier(self, setup_tools):
+        """Test search_chat_history with non-existent identifier."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Test searching with non-existent ID
+        result = tools.search_chat_history("test", thread_identifier=99999)
+        assert "Thread '99999' not found" in result
+        
+        # Test searching with non-existent name
+        result = tools.search_chat_history("test", thread_identifier="Non-existent Thread")
+        assert "Thread 'Non-existent Thread' not found" in result
+    
+    def test_export_current_conversation_with_thread_id(self, setup_tools):
+        """Test export_current_conversation with thread ID."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Create a test thread and add messages
+        thread_id = chat_manager.create_thread("Test Thread", "🧪")
+        chat_manager.switch_thread(thread_id)
+        chat_manager.add_user_message("Hello world")
+        chat_manager.add_ai_message("Hi there!")
+        
+        # Test exporting with thread ID
+        result = tools.export_current_conversation(thread_identifier=thread_id, format="json")
+        assert "Successfully exported" in result
+    
+    def test_export_current_conversation_with_thread_name(self, setup_tools):
+        """Test export_current_conversation with thread name."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Create a test thread and add messages
+        thread_id = chat_manager.create_thread("Test Thread", "🧪")
+        chat_manager.switch_thread(thread_id)
+        chat_manager.add_user_message("Hello world")
+        chat_manager.add_ai_message("Hi there!")
+        
+        # Test exporting with thread name
+        result = tools.export_current_conversation(thread_identifier="Test Thread", format="json")
+        assert "Successfully exported" in result
+    
+    def test_export_current_conversation_with_ambiguous_name(self, setup_tools):
+        """Test export_current_conversation with ambiguous name returns error."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Create multiple threads with similar names
+        chat_manager.create_thread("Project Planning", "📋")
+        chat_manager.create_thread("Project Planning Backup", "📋")
+        
+        # Test exporting with ambiguous name
+        result = tools.export_current_conversation(thread_identifier="Project Planning", format="json")
+        assert "Error:" in result
+        assert "Multiple threads found matching" in result
+    
+    def test_export_current_conversation_with_nonexistent_identifier(self, setup_tools):
+        """Test export_current_conversation with non-existent identifier."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Test exporting with non-existent ID
+        result = tools.export_current_conversation(thread_identifier=99999, format="json")
+        assert "Thread '99999' not found" in result
+        
+        # Test exporting with non-existent name
+        result = tools.export_current_conversation(thread_identifier="Non-existent Thread", format="json")
+        assert "Thread 'Non-existent Thread' not found" in result
+    
+    def test_export_current_conversation_with_none_no_current_thread(self, setup_tools):
+        """Test export_current_conversation with None when no current thread."""
+        tools, chat_manager, db_manager = setup_tools
+        
+        # Test exporting with None when no current thread
+        result = tools.export_current_conversation(thread_identifier=None, format="json")
+        assert "No active thread to export" in result
 
 
 class TestBaseProviderToolCalling:

@@ -82,7 +82,7 @@ For detailed tool calling documentation, see TOOL_CALLING_GUIDE.md
 
 import logging
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 from datetime import datetime
 from .chat_manager import ChatManager
 from .file_handler import JeevesFileHandler
@@ -125,19 +125,63 @@ class JeevesTools:
         self.file_handler = JeevesFileHandler()
         logger.info("JeevesTools initialized with chat manager and file handler")
 
-    def rename_chat_thread(self, thread_id: Optional[int], new_name: str) -> str:
+    def _resolve_thread_identifier(self, thread_identifier: Optional[Union[int, str]]) -> Optional[int]:
+        """
+        Resolve a thread identifier to a thread ID.
+        
+        Args:
+            thread_identifier: Thread ID (int) or thread name (str), or None for current thread
+            
+        Returns:
+            Thread ID if found, or None if not found or ambiguous
+        """
+        # Treat empty string or whitespace as None
+        if thread_identifier is None or (isinstance(thread_identifier, str) and thread_identifier.strip() == ""):
+            # If None, use current thread
+            current_thread_id = self.chat_manager.get_current_thread_id()
+            return current_thread_id
+        
+        if isinstance(thread_identifier, int):
+            # Direct ID - verify it exists
+            thread = self.chat_manager.get_thread(thread_identifier)
+            return thread_identifier if thread else None
+        
+        if isinstance(thread_identifier, str):
+            # Name search
+            matching_threads = self.chat_manager.find_threads_by_name(thread_identifier)
+            
+            if not matching_threads:
+                return None
+            
+            if len(matching_threads) == 1:
+                return matching_threads[0]["id"]
+            
+            # Multiple matches - raise error with details
+            thread_details = []
+            for thread in matching_threads:
+                thread_details.append(f"ID {thread['id']}: '{thread['name']}' (last activity: {thread['last_activity']})")
+            
+            raise ValueError(
+                f"Multiple threads found matching '{thread_identifier}':\n" + 
+                "\n".join(thread_details) + 
+                "\n\nPlease specify the exact thread ID or use a more specific name."
+            )
+        
+        return None
+
+    def rename_chat_thread(self, thread_identifier: Optional[Union[int, str]], new_name: str) -> str:
         """
         Rename a chat thread.
 
         Args:
-            thread_id: The ID of the thread to rename. Pass none for the current thread
+            thread_identifier: Thread ID (int) or thread name (str), or None for the current thread
             new_name: The new name for the thread
 
         Returns:
             Success or error message
         """
         logger.info(
-            f"Tool called: rename_chat_thread(thread_id={thread_id}, new_name='{new_name}')"
+            f"Tool called: rename_chat_thread(thread_identifier={thread_identifier}, new_name='{new_name}')"
         )
 
         try:
@@ -147,21 +191,22 @@ class JeevesTools:
                 )
                 return "Error: New name cannot be empty"
 
+            # Resolve thread identifier
+            try:
+                thread_id = self._resolve_thread_identifier(thread_identifier)
+            except ValueError as e:
+                return f"Error: {str(e)}"
+            
+            if thread_id is None:
+                if thread_identifier is None:
+                    return "No active thread."
+                else:
+                    return f"Thread '{thread_identifier}' not found."
+
             logger.debug(
                 f"Attempting to rename thread {thread_id} to '{new_name.strip()}'"
             )
-            if not thread_id:
-
-                current_thread = self.chat_manager.get_current_thread()
-
-                if not current_thread:
-                    logger.warning("No active thread found")
-                    return "No active thread."
-                thread_id = (
-                    current_thread.get("id", 0)
-                    if isinstance(current_thread.get("id", 0), int)
-                    else 0
-                )
+            
             success = self.chat_manager.update_thread_name(thread_id, new_name.strip())
 
             if success:
@@ -176,31 +221,42 @@ class JeevesTools:
                 )
 
         except Exception as e:
-            logger.error(f"Error renaming thread {thread_id}: {e}", exc_info=True)
+            logger.error(f"Error renaming thread {thread_identifier}: {e}", exc_info=True)
             return f"Error: {str(e)}"
 
     def search_chat_history(
-        self, query: str, thread_id: Optional[int] = None, limit: int = 10
+        self, query: str, thread_identifier: Optional[Union[int, str]] = None, limit: int = 10
     ) -> str:
         """
         Search through chat history.
 
         Args:
             query: Search query string
-            thread_id: Optional thread ID to limit search to specific thread
+            thread_identifier: Thread ID (int) or thread name (str), or None for all threads
             limit: Maximum number of results to return
 
         Returns:
             Formatted search results or error message
         """
         logger.info(
-            f"Tool called: search_chat_history(query='{query}', thread_id={thread_id}, limit={limit})"
+            f"Tool called: search_chat_history(query='{query}', thread_identifier={thread_identifier}, limit={limit})"
         )
 
         try:
             if not query or not query.strip():
                 logger.warning("search_chat_history: Query is empty or whitespace only")
                 return "Error: Search query cannot be empty"
+
+            # Resolve thread identifier
+            thread_id = None
+            if thread_identifier is not None:
+                try:
+                    thread_id = self._resolve_thread_identifier(thread_identifier)
+                except ValueError as e:
+                    return f"Error: {str(e)}"
+                
+                if thread_id is None:
+                    return f"Thread '{thread_identifier}' not found."
 
             logger.debug(
                 f"Searching for '{query.strip()}' in thread {thread_id} with limit {limit}"
@@ -212,8 +268,9 @@ class JeevesTools:
             logger.info(f"Search returned {len(results)} results")
 
             if not results:
-                logger.debug(f"No messages found matching '{query}'")
-                return f"No messages found matching '{query}'"
+                thread_info = f" in thread {thread_id}" if thread_id else ""
+                logger.debug(f"No messages found matching '{query}'{thread_info}")
+                return f"No messages found matching '{query}'{thread_info}"
 
             # Format results
             formatted_results = []
@@ -315,21 +372,39 @@ class JeevesTools:
             logger.error(f"Error getting current thread info: {e}", exc_info=True)
             return f"Error: {str(e)}"
 
-    def export_current_conversation(self, format: str = "json") -> str:
+    def export_current_conversation(self, thread_identifier: Optional[Union[int, str]] = None, format: str = "json") -> str:
         """
-        Export the current conversation to a file.
+        Export a conversation to a file.
 
         Args:
+            thread_identifier: Thread ID (int) or thread name (str), or None for the current thread
             format: Export format ('json' or 'txt')
 
         Returns:
             Success message with file path or error message
         """
-        logger.info(f"Tool called: export_current_conversation(format='{format}')")
+        logger.info(f"Tool called: export_current_conversation(thread_identifier={thread_identifier}, format='{format}')")
 
         try:
-            logger.debug(f"Exporting current conversation in {format} format")
-            export_path = self.chat_manager.export_conversation(format=format)
+            # Resolve thread identifier
+            thread_id = None
+            if thread_identifier is not None:
+                try:
+                    thread_id = self._resolve_thread_identifier(thread_identifier)
+                except ValueError as e:
+                    return f"Error: {str(e)}"
+                
+                if thread_id is None:
+                    return f"Thread '{thread_identifier}' not found."
+            else:
+                # Use current thread
+                current_thread = self.chat_manager.get_current_thread()
+                if not current_thread:
+                    return "No active thread to export."
+                thread_id = current_thread.get("id")
+
+            logger.debug(f"Exporting conversation for thread {thread_id} in {format} format")
+            export_path = self.chat_manager.export_conversation(thread_id=thread_id, format=format)
 
             logger.info(f"Successfully exported conversation to: {export_path}")
             return f"Successfully exported conversation to: {export_path}"
@@ -408,11 +483,11 @@ class JeevesTools:
         logger.debug("Getting tool descriptions")
         descriptions = {
             # Existing tools
-            "rename_chat_thread": "Rename a chat thread. Provide thread_id and new_name parameters.",
-            "search_chat_history": "Search through chat history. Provide query, optional thread_id, and optional limit (default 10).",
+            "rename_chat_thread": "Rename a chat thread. Provide thread_identifier (ID or name) and new_name parameters. Use None for current thread.",
+            "search_chat_history": "Search through chat history. Provide query, optional thread_identifier (ID or name), and optional limit (default 10).",
             "get_available_threads": "Get a list of all available chat threads.",
             "get_current_thread_info": "Get information about the current active thread.",
-            "export_current_conversation": 'Export the current conversation to a file. Provide optional format parameter ("json" or "txt").',
+            "export_current_conversation": 'Export a conversation to a file. Provide optional thread_identifier (ID or name) and format parameter ("json" or "txt").',
             "get_conversation_summary": "Get a summary of the current conversation.",
             
             # New file-based tools

@@ -522,6 +522,69 @@ class DatabaseManager:
 
         return self._execute_with_retry(_get)
 
+    def find_threads_by_name(self, name: str, active_only: bool = True) -> List[Dict]:
+        """
+        Find threads by name (case-insensitive partial match).
+
+        Args:
+            name: Thread name to search for
+            active_only: Only search active threads
+
+        Returns:
+            List of matching thread dictionaries
+        """
+
+        def _find():
+            with self._get_connection() as conn:
+                cursor = conn.cursor()
+
+                where_conditions = ["LOWER(name) LIKE LOWER(?)"]
+                params = [f"%{name}%"]
+
+                if active_only:
+                    where_conditions.append("is_active = ?")
+                    params.append(1)
+
+                where_clause = " AND ".join(where_conditions)
+
+                cursor.execute(
+                    f"""
+                    SELECT id, name, icon, description, tags, created_at, updated_at, 
+                           last_activity, is_active, is_archived, metadata, settings
+                    FROM threads
+                    WHERE {where_clause}
+                    ORDER BY last_activity DESC
+                """,
+                    params,
+                )
+
+                threads = []
+                for row in cursor.fetchall():
+                    threads.append(
+                        {
+                            "id": row["id"],
+                            "name": row["name"],
+                            "icon": row["icon"],
+                            "description": row["description"],
+                            "tags": json.loads(row["tags"]) if row["tags"] else [],
+                            "created_at": row["created_at"],
+                            "updated_at": row["updated_at"],
+                            "last_activity": row["last_activity"],
+                            "is_active": bool(row["is_active"]),
+                            "is_archived": bool(row["is_archived"]),
+                            "metadata": (
+                                json.loads(row["metadata"]) if row["metadata"] else {}
+                            ),
+                            "settings": (
+                                json.loads(row["settings"]) if row["settings"] else {}
+                            ),
+                        }
+                    )
+
+                return threads
+
+        return self._execute_with_retry(_find)
+
     def update_thread(self, thread_id: int, **kwargs) -> bool:
         """
         Update a thread with the given key-value arguments.
