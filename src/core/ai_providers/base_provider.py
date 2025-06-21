@@ -92,12 +92,14 @@ class BaseAIProvider(ABC):
             True if unregistration was successful, False otherwise
         """
         try:
+            found = False
             if name in self.registered_tools:
                 del self.registered_tools[name]
+                found = True
             if name in self.tool_config:
                 del self.tool_config[name]
             logger.info(f"Unregistered tool '{name}' from {self.provider_name}")
-            return True
+            return found
         except Exception as e:
             logger.error(f"Failed to unregister tool '{name}' from {self.provider_name}: {e}")
             return False
@@ -163,13 +165,17 @@ class BaseAIProvider(ABC):
         Returns:
             Dictionary containing provider information
         """
-        return {
+        info = {
             "provider_name": self.provider_name,
+            "name": self.provider_name,  # for backward compatibility
             "is_initialized": self.is_initialized,
             "is_available": self.is_available(),
             "registered_tools_count": len(self.registered_tools),
+            "registered_tools": list(self.registered_tools.keys()),  # for backward compatibility
+            "tool_config": self.tool_config.copy(),  # for backward compatibility
             "config": self.config.copy() if self.config else {}
         }
+        return info
     
     def validate_config(self) -> bool:
         """
