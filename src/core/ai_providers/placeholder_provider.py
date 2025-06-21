@@ -55,6 +55,12 @@ class PlaceholderProvider(BaseAIProvider):
         # Simulate processing time
         time.sleep(0.5)
         
+        # Check if user is asking about tools and we have tools registered
+        message_lower = user_message.lower()
+        if (any(word in message_lower for word in ['tools', 'functions', 'what can you do']) and 
+            self.registered_tools):
+            return "PLACEHOLDER: I have several tools available! I can help you with calculations, weather information, and more. Just ask me to use them!"
+        
         return "PLACEHOLDER: " + self._generate_placeholder_response(user_message)
     
     def _generate_placeholder_response(self, user_message: str) -> str:

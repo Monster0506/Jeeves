@@ -25,6 +25,16 @@ class AIEngine:
 
         self._initialize_providers()
 
+    @property
+    def conversation_history(self) -> List[Dict]:
+        """
+        Get the current conversation history for backward compatibility.
+        
+        Returns:
+            List of recent messages in the current thread
+        """
+        return self.get_conversation_context()
+
     def _initialize_providers(self):
         """Initialize AI providers."""
         try:

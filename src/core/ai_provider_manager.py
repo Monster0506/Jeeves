@@ -3,7 +3,7 @@ AI Provider Manager for Jeeves AI Assistant.
 Manages multiple AI providers and handles switching between them.
 """
 import logging
-from typing import Dict, List, Optional, Any, Type
+from typing import Dict, List, Optional, Any, Type, Callable
 from .ai_providers import BaseAIProvider, GeminiProvider, PlaceholderProvider
 
 logger = logging.getLogger(__name__)
@@ -17,6 +17,7 @@ class AIProviderManager:
         self.providers: Dict[str, BaseAIProvider] = {}
         self.current_provider: Optional[BaseAIProvider] = None
         self.provider_order = ['gemini', 'placeholder']  # Priority order
+        self.registered_tools: Dict[str, Callable] = {}
         
         # Register available providers
         self._register_providers()
@@ -43,7 +44,10 @@ class AIProviderManager:
             'temperature': 0.7,
             'top_p': 0.95,
             'top_k': 40,
-            'system_instruction': None  # Use default
+            'system_instruction': None,  # Use default
+            'enable_tool_calling': True,
+            'automatic_function_calling': True,
+            'max_tool_calls': 5
         }
     
     def initialize(self) -> bool:
@@ -64,6 +68,10 @@ class AIProviderManager:
                 if provider.initialize():
                     self.current_provider = provider
                     logger.info(f"Successfully initialized {provider_name} provider")
+                    
+                    # Register tools with the current provider
+                    self._register_tools_with_provider(provider)
+                    
                     return True
                 else:
                     logger.warning(f"Failed to initialize {provider_name} provider")
@@ -76,6 +84,113 @@ class AIProviderManager:
         
         logger.error("No AI providers could be initialized")
         return False
+    
+    def _register_tools_with_provider(self, provider: BaseAIProvider):
+        """Register all tools with the given provider."""
+        for name, func in self.registered_tools.items():
+            try:
+                provider.register_tool(name, func)
+                logger.info(f"Registered tool '{name}' with {provider.provider_name}")
+            except Exception as e:
+                logger.error(f"Failed to register tool '{name}' with {provider.provider_name}: {e}")
+    
+    def register_tool(self, name: str, function: Callable, description: str = None) -> bool:
+        """
+        Register a tool/function that can be used by all providers.
+        
+        Args:
+            name: Name of the tool
+            function: The callable function
+            description: Optional description of the tool
+            
+        Returns:
+            True if registration was successful, False otherwise
+        """
+        try:
+            self.registered_tools[name] = function
+            
+            # Register with current provider if available
+            if self.current_provider:
+                self.current_provider.register_tool(name, function, description)
+            
+            logger.info(f"Registered tool '{name}' with AI provider manager")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to register tool '{name}': {e}")
+            return False
+    
+    def unregister_tool(self, name: str) -> bool:
+        """
+        Unregister a tool/function from all providers.
+        
+        Args:
+            name: Name of the tool to unregister
+            
+        Returns:
+            True if unregistration was successful, False otherwise
+        """
+        # Check if tool exists in manager
+        if name not in self.registered_tools:
+            logger.warning(f"Tool '{name}' not found in manager")
+            return False
+        
+        try:
+            # Remove from manager
+            del self.registered_tools[name]
+            
+            # Remove from current provider
+            if self.current_provider:
+                self.current_provider.unregister_tool(name)
+            
+            logger.info(f"Unregistered tool '{name}' from AI provider manager")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to unregister tool '{name}': {e}")
+            return False
+    
+    def get_registered_tools(self) -> Dict[str, Callable]:
+        """
+        Get all registered tools.
+        
+        Returns:
+            Dictionary of registered tool names and their functions
+        """
+        return self.registered_tools.copy()
+    
+    def execute_tool(self, name: str, args: Dict[str, Any]) -> Any:
+        """
+        Execute a registered tool with the given arguments.
+        
+        Args:
+            name: Name of the tool to execute
+            args: Arguments to pass to the tool
+            
+        Returns:
+            Result of the tool execution
+            
+        Raises:
+            KeyError: If tool is not registered
+            Exception: If tool execution fails
+        """
+        if name not in self.registered_tools:
+            raise KeyError(f"Tool '{name}' is not registered")
+        
+        try:
+            # Filter args to only include parameters that the function accepts
+            import inspect
+            func = self.registered_tools[name]
+            sig = inspect.signature(func)
+            param_names = list(sig.parameters.keys())
+            
+            # Filter args to only include valid parameters
+            filtered_args = {k: v for k, v in args.items() if k in param_names}
+            
+            result = func(**filtered_args)
+            logger.info(f"Executed tool '{name}' with args: {filtered_args}")
+            return result
+        except Exception as e:
+            logger.error(f"Failed to execute tool '{name}': {e}")
+            raise
     
     def get_current_provider(self) -> Optional[BaseAIProvider]:
         """
@@ -111,6 +226,10 @@ class AIProviderManager:
             self.current_provider.cleanup()
         
         self.current_provider = provider
+        
+        # Register tools with the new provider
+        self._register_tools_with_provider(provider)
+        
         logger.info(f"Switched to {provider_name} provider")
         return True
     
@@ -184,6 +303,10 @@ class AIProviderManager:
             logger.warning(f"Provider '{name}' already exists, overwriting")
         
         self.providers[name] = provider
+        
+        # Register tools with the new provider
+        self._register_tools_with_provider(provider)
+        
         logger.info(f"Added custom provider: {name}")
         return True
     
@@ -223,11 +346,13 @@ class AIProviderManager:
                 logger.error(f"Error cleaning up {name} provider: {e}")
         
         self.current_provider = None
+        self.registered_tools.clear()
         logger.info("AI provider manager cleaned up")
     
     def __str__(self) -> str:
         current = self.current_provider.provider_name if self.current_provider else "None"
-        return f"AIProviderManager(current={current}, providers={list(self.providers.keys())})"
+        tools_count = len(self.registered_tools)
+        return f"AIProviderManager(current={current}, providers={list(self.providers.keys())}, tools={tools_count})"
     
     def __repr__(self) -> str:
         return self.__str__() 

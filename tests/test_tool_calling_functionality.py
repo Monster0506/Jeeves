@@ -1,14 +1,17 @@
 """
-Unit tests for AI providers.
+Unit tests for tool calling functionality.
 """
 import pytest
+import inspect
 from unittest.mock import Mock, patch, MagicMock
-from core.ai_providers import GeminiProvider, PlaceholderProvider, BaseAIProvider
-from typing import List, Dict
 from datetime import datetime
+from typing import Dict, List, Any
+
+from core.ai_providers import GeminiProvider, PlaceholderProvider, BaseAIProvider
+from core.ai_provider_manager import AIProviderManager
 
 
-# Test tool functions for tool calling tests
+# Test tool functions
 def get_current_time() -> str:
     """Get the current time and date."""
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -29,76 +32,27 @@ def get_weather(location: str) -> str:
     return weather_data.get(location, f"Weather data not available for {location}")
 
 
+def log_thought(thought: str) -> str:
+    """Log a thought for internal planning."""
+    return f"Thought logged: {thought}"
+
+
+def complex_tool(param1: str, param2: int, optional_param: bool = False) -> dict:
+    """A complex tool with multiple parameters."""
+    return {
+        "param1": param1,
+        "param2": param2,
+        "optional_param": optional_param,
+        "result": f"Processed {param1} with {param2}"
+    }
+
+
 def tool_with_error() -> str:
     """A tool that raises an exception."""
     raise ValueError("This is a test error")
 
 
-class TestBaseAIProvider:
-    """Test base AI provider functionality."""
-    
-    def test_base_provider_initialization(self):
-        """Test base provider initialization."""
-        # Create a concrete implementation for testing
-        class TestProvider(BaseAIProvider):
-            def initialize(self) -> bool:
-                return True
-            
-            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
-                return "Test response"
-            
-            def is_available(self) -> bool:
-                return True
-        
-        config = {'test_param': 'test_value'}
-        provider = TestProvider(config)
-        
-        assert provider.config == config
-        assert provider.is_initialized is False
-        assert provider.provider_name == 'TestProvider'
-    
-    def test_base_provider_cleanup(self):
-        """Test base provider cleanup."""
-        # Create a concrete implementation for testing
-        class TestProvider(BaseAIProvider):
-            def initialize(self) -> bool:
-                return True
-            
-            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
-                return "Test response"
-            
-            def is_available(self) -> bool:
-                return True
-        
-        provider = TestProvider()
-        provider.is_initialized = True
-        
-        provider.cleanup()
-        
-        assert provider.is_initialized is False
-    
-    def test_base_provider_get_provider_info(self):
-        """Test getting provider information."""
-        # Create a concrete implementation for testing
-        class TestProvider(BaseAIProvider):
-            def initialize(self) -> bool:
-                return True
-            
-            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
-                return "Test response"
-            
-            def is_available(self) -> bool:
-                return True
-        
-        provider = TestProvider({'test': 'config'})
-        info = provider.get_provider_info()
-        
-        assert info['name'] == 'TestProvider'
-        assert info['is_initialized'] is False
-        assert info['config'] == {'test': 'config'}
-
-
-class TestBaseAIProviderToolCalling:
+class TestBaseProviderToolCalling:
     """Test tool calling functionality in BaseAIProvider."""
     
     def test_base_provider_tool_registration(self):
@@ -306,364 +260,6 @@ class TestBaseAIProviderToolCalling:
         assert len(provider.tool_config) == 0
 
 
-class TestPlaceholderProvider:
-    """Test the placeholder AI provider."""
-    
-    def test_placeholder_provider_initialization(self):
-        """Test placeholder provider initialization."""
-        provider = PlaceholderProvider()
-        
-        assert provider.provider_name == 'PlaceholderProvider'
-        assert provider.is_initialized is False
-        assert provider.is_available() is True
-    
-    def test_placeholder_provider_initialize(self):
-        """Test placeholder provider initialization."""
-        provider = PlaceholderProvider()
-        
-        result = provider.initialize()
-        
-        assert result is True
-        assert provider.is_initialized is True
-    
-    def test_placeholder_provider_generate_response(self):
-        """Test placeholder provider response generation."""
-        provider = PlaceholderProvider()
-        provider.initialize()
-        
-        response = provider.generate_response("Hello")
-        
-        assert isinstance(response, str)
-        assert len(response) > 0
-        assert "Jeeves" in response or "assistant" in response.lower()
-    
-    def test_placeholder_provider_keyword_responses(self):
-        """Test placeholder provider keyword-based responses."""
-        provider = PlaceholderProvider()
-        provider.initialize()
-        
-        # Test Python keyword
-        response = provider.generate_response("Python programming")
-        assert "PLACEHOLDER:" in response
-        assert len(response) > 0
-    
-    def test_placeholder_provider_context_handling(self):
-        """Test placeholder provider context handling."""
-        provider = PlaceholderProvider()
-        provider.initialize()
-        
-        context = [
-            {'sender': 'user', 'content': 'Hello'},
-            {'sender': 'assistant', 'content': 'Hi there!'}
-        ]
-        
-        response = provider.generate_response("How are you?", context)
-        assert isinstance(response, str)
-        assert len(response) > 0
-    
-    def test_placeholder_provider_validation(self):
-        """Test placeholder provider configuration validation."""
-        provider = PlaceholderProvider()
-        
-        # Placeholder provider should always validate successfully
-        assert provider.validate_config() is True
-    
-    def test_placeholder_provider_availability(self):
-        """Test placeholder provider availability."""
-        provider = PlaceholderProvider()
-        
-        # Should be available even before initialization
-        assert provider.is_available() is True
-        
-        # Should still be available after initialization
-        provider.initialize()
-        assert provider.is_available() is True
-
-
-class TestPlaceholderProviderToolCalling:
-    """Test tool calling functionality in PlaceholderProvider."""
-    
-    def test_placeholder_provider_tool_registration(self):
-        """Test tool registration in placeholder provider."""
-        provider = PlaceholderProvider()
-        
-        # Test tool registration
-        result = provider.register_tool("test_tool", get_current_time)
-        assert result is True
-        assert "test_tool" in provider.registered_tools
-        assert provider.registered_tools["test_tool"] == get_current_time
-    
-    def test_placeholder_provider_tool_execution(self):
-        """Test tool execution in placeholder provider."""
-        provider = PlaceholderProvider()
-        provider.register_tool("calculate_sum", calculate_sum)
-        
-        result = provider.execute_tool("calculate_sum", {"a": 5, "b": 3})
-        assert result == 8
-    
-    def test_placeholder_provider_generate_response_with_tools(self):
-        """Test response generation with tools in placeholder provider."""
-        provider = PlaceholderProvider()
-        provider.initialize()
-        provider.register_tool("calculate_sum", calculate_sum)
-        provider.register_tool("get_weather", get_weather)
-        
-        # The placeholder provider should mention available tools
-        response = provider.generate_response("What tools do you have?")
-        
-        assert isinstance(response, str)
-        assert len(response) > 0
-        # Should mention that tools are available
-        assert "tools" in response.lower() or "functions" in response.lower()
-
-
-class TestGeminiProvider:
-    """Test the Gemini AI provider."""
-    
-    def test_gemini_provider_initialization(self):
-        """Test Gemini provider initialization."""
-        config = {
-            'api_key': 'test_key',
-            'model': 'gemini-2.0-flash',
-            'max_output_tokens': 1024,
-            'temperature': 0.7
-        }
-        provider = GeminiProvider(config)
-        
-        assert provider.provider_name == 'GeminiProvider'
-        assert provider.model_name == 'gemini-2.0-flash'
-        assert provider.max_output_tokens == 1024
-        assert provider.temperature == 0.7
-        assert provider.is_initialized is False
-    
-    def test_gemini_provider_default_config(self):
-        """Test Gemini provider with default configuration."""
-        provider = GeminiProvider()
-        
-        assert provider.model_name == 'gemini-2.0-flash'
-        assert provider.max_output_tokens == 2048
-        assert provider.temperature == 0.7
-        assert provider.top_p == 0.95
-        assert provider.top_k == 40
-        assert provider.system_instruction is not None
-    
-    def test_gemini_provider_system_prompt(self):
-        """Test Gemini provider system prompt."""
-        provider = GeminiProvider()
-        
-        system_prompt = provider._get_default_system_prompt()
-        
-        assert isinstance(system_prompt, str)
-        assert "Jeeves" in system_prompt
-        assert "helpful" in system_prompt.lower()
-        assert "assistant" in system_prompt.lower()
-    
-    @patch('google.genai.Client')
-    def test_gemini_provider_initialize_success(self, mock_client_class):
-        """Test successful Gemini provider initialization."""
-        # Mock the client
-        mock_client = Mock()
-        mock_client_class.return_value = mock_client
-        
-        # Mock models.list() to return a list
-        mock_models = [Mock(), Mock()]
-        mock_client.models.list.return_value = mock_models
-        
-        provider = GeminiProvider({'api_key': 'test_key'})
-        result = provider.initialize()
-        
-        assert result is True
-        assert provider.is_initialized is True
-        mock_client_class.assert_called_once_with(api_key='test_key')
-    
-    def test_gemini_provider_initialize_no_api_key(self):
-        """Test Gemini provider initialization without API key."""
-        provider = GeminiProvider()
-        
-        # Should return True even without API key (validation happens during actual API calls)
-        result = provider.initialize()
-        assert result is True
-    
-    def test_gemini_provider_initialize_import_error(self):
-        """Test Gemini provider initialization with import error."""
-        with patch('google.genai.Client', side_effect=ImportError("No module named 'google'")):
-            provider = GeminiProvider()
-            result = provider.initialize()
-            assert result is False
-    
-    @patch('google.genai.Client')
-    def test_gemini_provider_generate_response(self, mock_client_class):
-        """Test Gemini provider response generation."""
-        # Mock the client and response
-        mock_client = Mock()
-        mock_client_class.return_value = mock_client
-        
-        mock_response = Mock()
-        mock_response.text = "This is a test response from Gemini."
-        mock_client.models.generate_content.return_value = mock_response
-        
-        provider = GeminiProvider({'api_key': 'test_key'})
-        provider.initialize()
-        
-        response = provider.generate_response("Hello, how are you?")
-        
-        assert "This is a test response from Gemini." in response
-        mock_client.models.generate_content.assert_called_once()
-    
-    def test_gemini_provider_generate_response_not_available(self):
-        """Test response generation when provider is not available."""
-        provider = GeminiProvider()
-        
-        response = provider.generate_response("Hello")
-        
-        assert "not available" in response.lower()
-    
-    @patch('google.genai.Client')
-    def test_gemini_provider_generate_response_with_context(self, mock_client_class):
-        """Test Gemini provider response generation with context."""
-        # Mock the client and response
-        mock_client = Mock()
-        mock_client_class.return_value = mock_client
-        
-        mock_response = Mock()
-        mock_response.text = "Response with context."
-        mock_client.models.generate_content.return_value = mock_response
-        
-        provider = GeminiProvider({'api_key': 'test_key'})
-        provider.initialize()
-        
-        context = [
-            {'sender': 'user', 'content': 'My name is Alice'},
-            {'sender': 'assistant', 'content': 'Nice to meet you, Alice!'}
-        ]
-        
-        response = provider.generate_response("What is my name?", context)
-        
-        assert "Response with context." in response
-        # Verify context was passed to generate_content
-        call_args = mock_client.models.generate_content.call_args
-        assert call_args is not None
-    
-    @patch('google.genai.Client')
-    def test_gemini_provider_generate_response_empty_response(self, mock_client_class):
-        """Test handling of empty response from Gemini."""
-        # Mock the client and empty response
-        mock_client = Mock()
-        mock_client_class.return_value = mock_client
-        
-        mock_response = Mock()
-        mock_response.text = ""
-        mock_client.models.generate_content.return_value = mock_response
-        
-        provider = GeminiProvider({'api_key': 'test_key'})
-        provider.initialize()
-        
-        response = provider.generate_response("Hello")
-        
-        assert "I apologize" in response or "empty" in response.lower()
-    
-    def test_gemini_provider_validate_config_valid(self):
-        """Test Gemini provider configuration validation with valid config."""
-        config = {
-            'api_key': 'test_key',
-            'temperature': 0.5,
-            'top_p': 0.9,
-            'top_k': 20,
-            'max_output_tokens': 1024
-        }
-        provider = GeminiProvider(config)
-        
-        assert provider.validate_config() is True
-    
-    def test_gemini_provider_validate_config_no_api_key(self):
-        """Test Gemini provider configuration validation without API key."""
-        provider = GeminiProvider()
-        
-        # Should return True even without API key (validation happens during initialization)
-        assert provider.validate_config() is True
-    
-    def test_gemini_provider_validate_config_invalid_temperature(self):
-        """Test Gemini provider configuration validation with invalid temperature."""
-        config = {'api_key': 'test_key', 'temperature': 1.5}
-        provider = GeminiProvider(config)
-        
-        assert provider.validate_config() is False
-    
-    def test_gemini_provider_validate_config_invalid_top_p(self):
-        """Test Gemini provider configuration validation with invalid top_p."""
-        config = {'api_key': 'test_key', 'top_p': 1.5}
-        provider = GeminiProvider(config)
-        
-        assert provider.validate_config() is False
-    
-    def test_gemini_provider_validate_config_invalid_top_k(self):
-        """Test Gemini provider configuration validation with invalid top_k."""
-        config = {'api_key': 'test_key', 'top_k': -1}
-        provider = GeminiProvider(config)
-        
-        assert provider.validate_config() is False
-    
-    def test_gemini_provider_validate_config_invalid_max_tokens(self):
-        """Test Gemini provider configuration validation with invalid max_output_tokens."""
-        config = {'api_key': 'test_key', 'max_output_tokens': 0}
-        provider = GeminiProvider(config)
-        
-        assert provider.validate_config() is False
-    
-    def test_gemini_provider_is_available(self):
-        """Test Gemini provider availability check."""
-        provider = GeminiProvider({'api_key': 'test_key'})
-        
-        # Should not be available without initialization
-        assert provider.is_available() is False
-        
-        # Mock initialization
-        provider.is_initialized = True
-        provider.client = Mock()
-        
-        assert provider.is_available() is True
-    
-    def test_gemini_provider_get_provider_info(self):
-        """Test getting Gemini provider information."""
-        config = {
-            'api_key': 'test_key',
-            'model': 'gemini-2.0-flash',
-            'max_output_tokens': 1024,
-            'temperature': 0.7
-        }
-        provider = GeminiProvider(config)
-        
-        info = provider.get_provider_info()
-        
-        assert info['name'] == 'GeminiProvider'
-        assert info['model_name'] == 'gemini-2.0-flash'
-        assert info['max_output_tokens'] == 1024
-        assert info['temperature'] == 0.7
-        assert info['top_p'] == 0.95
-        assert info['top_k'] == 40
-        assert info['has_api_key'] is True
-    
-    def test_gemini_provider_cleanup(self):
-        """Test Gemini provider cleanup."""
-        provider = GeminiProvider({'api_key': 'test_key'})
-        provider.client = Mock()
-        provider.is_initialized = True
-        
-        provider.cleanup()
-        
-        assert provider.client is None
-        assert provider.is_initialized is False
-    
-    def test_gemini_provider_sdk_version(self):
-        """Test getting SDK version."""
-        provider = GeminiProvider()
-        
-        version = provider._get_sdk_version()
-        
-        # Should return either a version string or 'not installed'
-        assert isinstance(version, str)
-
-
 class TestGeminiProviderToolCalling:
     """Test tool calling functionality in GeminiProvider."""
     
@@ -707,6 +303,27 @@ class TestGeminiProviderToolCalling:
         assert "b" in func_decl.parameters.properties
         assert "a" in func_decl.parameters.required
         assert "b" in func_decl.parameters.required
+    
+    @patch('google.genai.Client')
+    def test_gemini_provider_create_function_declaration_with_optional_params(self, mock_client_class):
+        """Test function declaration creation with optional parameters."""
+        # Mock the client
+        mock_client = Mock()
+        mock_client_class.return_value = mock_client
+        mock_models = [Mock(), Mock()]
+        mock_client.models.list.return_value = mock_models
+        
+        provider = GeminiProvider({'api_key': 'test_key'})
+        provider.initialize()
+        
+        # Test function declaration creation with optional parameters
+        func_decl = provider._create_function_declaration("complex_tool", complex_tool)
+        
+        assert func_decl is not None
+        assert func_decl.name == "complex_tool"
+        assert "param1" in func_decl.parameters.required
+        assert "param2" in func_decl.parameters.required
+        assert "optional_param" not in func_decl.parameters.required  # Optional parameter
     
     @patch('google.genai.Client')
     def test_gemini_provider_build_tools_config(self, mock_client_class):
@@ -856,6 +473,7 @@ class TestGeminiProviderToolCalling:
         
         mock_response = Mock()
         mock_response.text = "This is a test response"
+        mock_response.function_calls = []  # Empty function calls list
         mock_client.models.generate_content.return_value = mock_response
         
         provider = GeminiProvider({
@@ -961,4 +579,421 @@ class TestGeminiProviderToolCalling:
         
         assert info['enable_tool_calling'] is True
         assert info['automatic_function_calling'] is True
-        assert info['max_tool_calls'] == 5 
+        assert info['max_tool_calls'] == 5
+
+
+class TestAIProviderManagerToolCalling:
+    """Test tool calling functionality in AIProviderManager."""
+    
+    def test_provider_manager_tool_registration(self):
+        """Test tool registration in provider manager."""
+        manager = AIProviderManager()
+        
+        # Test tool registration
+        result = manager.register_tool("test_tool", get_current_time)
+        assert result is True
+        assert "test_tool" in manager.registered_tools
+    
+    def test_provider_manager_tool_unregistration(self):
+        """Test tool unregistration in provider manager."""
+        manager = AIProviderManager()
+        
+        # Register a tool
+        manager.register_tool("test_tool", get_current_time)
+        assert "test_tool" in manager.registered_tools
+        
+        # Unregister the tool
+        result = manager.unregister_tool("test_tool")
+        assert result is True
+        assert "test_tool" not in manager.registered_tools
+    
+    def test_provider_manager_tool_unregistration_not_found(self):
+        """Test unregistering a non-existent tool."""
+        manager = AIProviderManager()
+        
+        result = manager.unregister_tool("non_existent")
+        assert result is False
+    
+    def test_provider_manager_get_registered_tools(self):
+        """Test getting registered tools."""
+        manager = AIProviderManager()
+        
+        # Register multiple tools
+        manager.register_tool("tool1", get_current_time)
+        manager.register_tool("tool2", calculate_sum)
+        
+        tools = manager.get_registered_tools()
+        
+        assert len(tools) == 2
+        assert "tool1" in tools
+        assert "tool2" in tools
+        assert tools["tool1"] == get_current_time
+        assert tools["tool2"] == calculate_sum
+    
+    def test_provider_manager_execute_tool(self):
+        """Test tool execution through manager."""
+        manager = AIProviderManager()
+        manager.register_tool("calculate_sum", calculate_sum)
+        
+        result = manager.execute_tool("calculate_sum", {"a": 5, "b": 3})
+        assert result == 8
+    
+    def test_provider_manager_execute_tool_not_registered(self):
+        """Test executing a non-registered tool through manager."""
+        manager = AIProviderManager()
+        
+        with pytest.raises(KeyError, match="Tool 'non_existent' is not registered"):
+            manager.execute_tool("non_existent", {})
+    
+    @patch('google.genai.Client')
+    def test_provider_manager_initialize_with_tools(self, mock_client_class):
+        """Test provider manager initialization with tools."""
+        # Mock the client
+        mock_client = Mock()
+        mock_client_class.return_value = mock_client
+        mock_models = [Mock(), Mock()]
+        mock_client.models.list.return_value = mock_models
+        
+        manager = AIProviderManager()
+        
+        # Register tools before initialization
+        manager.register_tool("calculate_sum", calculate_sum)
+        manager.register_tool("get_weather", get_weather)
+        
+        result = manager.initialize()
+        
+        assert result is True
+        assert manager.current_provider is not None
+        
+        # Check that tools were registered with the current provider
+        current_provider_tools = manager.current_provider.get_registered_tools()
+        assert "calculate_sum" in current_provider_tools
+        assert "get_weather" in current_provider_tools
+    
+    @patch('google.genai.Client')
+    def test_provider_manager_switch_provider_with_tools(self, mock_client_class):
+        """Test provider switching with tools."""
+        # Mock the client
+        mock_client = Mock()
+        mock_client_class.return_value = mock_client
+        mock_models = [Mock(), Mock()]
+        mock_client.models.list.return_value = mock_models
+        
+        manager = AIProviderManager()
+        manager.initialize()
+        
+        # Register tools
+        manager.register_tool("calculate_sum", calculate_sum)
+        manager.register_tool("get_weather", get_weather)
+        
+        # Switch to placeholder provider
+        result = manager.switch_provider("placeholder")
+        
+        assert result is True
+        assert manager.current_provider.provider_name == "PlaceholderProvider"
+        
+        # Check that tools were registered with the new provider
+        current_provider_tools = manager.current_provider.get_registered_tools()
+        assert "calculate_sum" in current_provider_tools
+        assert "get_weather" in current_provider_tools
+    
+    def test_provider_manager_add_provider_with_tools(self):
+        """Test adding a provider with existing tools."""
+        manager = AIProviderManager()
+        
+        # Register tools first
+        manager.register_tool("calculate_sum", calculate_sum)
+        manager.register_tool("get_weather", get_weather)
+        
+        # Add a new provider
+        new_provider = PlaceholderProvider()
+        new_provider.initialize = Mock(return_value=True)
+        
+        result = manager.add_provider("test_provider", new_provider)
+        
+        assert result is True
+        assert "test_provider" in manager.providers
+        
+        # Check that tools were registered with the new provider
+        new_provider_tools = new_provider.get_registered_tools()
+        assert "calculate_sum" in new_provider_tools
+        assert "get_weather" in new_provider_tools
+    
+    def test_provider_manager_cleanup_with_tools(self):
+        """Test cleanup clears tools."""
+        manager = AIProviderManager()
+        
+        # Register tools
+        manager.register_tool("calculate_sum", calculate_sum)
+        manager.register_tool("get_weather", get_weather)
+        
+        manager.cleanup()
+        
+        assert len(manager.registered_tools) == 0
+    
+    def test_provider_manager_str_representation_with_tools(self):
+        """Test string representation includes tool count."""
+        manager = AIProviderManager()
+        
+        # Register tools
+        manager.register_tool("calculate_sum", calculate_sum)
+        manager.register_tool("get_weather", get_weather)
+        
+        str_repr = str(manager)
+        
+        assert "tools=2" in str_repr
+
+
+class TestToolCallingIntegration:
+    """Integration tests for tool calling functionality."""
+    
+    @patch('google.genai.Client')
+    def test_full_tool_calling_workflow(self, mock_client_class):
+        """Test complete tool calling workflow."""
+        # Mock the client
+        mock_client = Mock()
+        mock_client_class.return_value = mock_client
+        mock_models = [Mock(), Mock()]
+        mock_client.models.list.return_value = mock_models
+        
+        # Mock function call response
+        mock_function_call = Mock()
+        mock_function_call.name = "calculate_sum"
+        mock_function_call.function_call.args = {"a": 10, "b": 20}
+        
+        mock_response = Mock()
+        mock_response.function_calls = [mock_function_call]
+        mock_response.text = None
+        
+        # Mock final response after function execution
+        mock_final_response = Mock()
+        mock_final_response.text = "The sum of 10 and 20 is 30"
+        
+        mock_client.models.generate_content.side_effect = [mock_response, mock_final_response]
+        
+        # Create manager and register tools
+        manager = AIProviderManager()
+        manager.register_tool("calculate_sum", calculate_sum)
+        manager.register_tool("get_weather", get_weather)
+        manager.register_tool("get_current_time", get_current_time)
+        
+        # Initialize
+        result = manager.initialize()
+        assert result is True
+        
+        # Test response generation
+        response = manager.generate_response("What is 10 + 20?")
+        
+        assert "The sum of 10 and 20 is 30" in response
+        assert mock_client.models.generate_content.call_count == 2
+    
+    @patch('google.genai.Client')
+    def test_multiple_tool_calls_in_single_request(self, mock_client_class):
+        """Test multiple tool calls in a single request."""
+        # Mock the client
+        mock_client = Mock()
+        mock_client_class.return_value = mock_client
+        mock_models = [Mock(), Mock()]
+        mock_client.models.list.return_value = mock_models
+        
+        # Mock multiple function calls
+        mock_function_call1 = Mock()
+        mock_function_call1.name = "calculate_sum"
+        mock_function_call1.function_call.args = {"a": 5, "b": 3}
+        
+        mock_function_call2 = Mock()
+        mock_function_call2.name = "get_current_time"
+        mock_function_call2.function_call.args = {}
+        
+        mock_response = Mock()
+        mock_response.function_calls = [mock_function_call1, mock_function_call2]
+        mock_response.text = None
+        
+        # Mock final response after function execution
+        mock_final_response = Mock()
+        mock_final_response.text = "The sum is 8 and the current time is 2024-01-01 12:00:00"
+        
+        mock_client.models.generate_content.side_effect = [mock_response, mock_final_response]
+        
+        # Create manager and register tools
+        manager = AIProviderManager()
+        manager.register_tool("calculate_sum", calculate_sum)
+        manager.register_tool("get_current_time", get_current_time)
+        
+        # Initialize
+        manager.initialize()
+        
+        # Test response generation
+        response = manager.generate_response("What is 5 + 3 and what time is it?")
+        
+        assert "The sum is 8" in response
+        assert "current time" in response
+        assert mock_client.models.generate_content.call_count == 2
+    
+    @patch('google.genai.Client')
+    def test_tool_calling_with_context(self, mock_client_class):
+        """Test tool calling with conversation context."""
+        # Mock the client
+        mock_client = Mock()
+        mock_client_class.return_value = mock_client
+        mock_models = [Mock(), Mock()]
+        mock_client.models.list.return_value = mock_models
+        
+        # Mock function call response
+        mock_function_call = Mock()
+        mock_function_call.name = "get_weather"
+        mock_function_call.function_call.args = {"location": "New York"}
+        
+        mock_response = Mock()
+        mock_response.function_calls = [mock_function_call]
+        mock_response.text = None
+        
+        # Mock final response after function execution
+        mock_final_response = Mock()
+        mock_final_response.text = "The weather in New York is Sunny, 72°F"
+        
+        mock_client.models.generate_content.side_effect = [mock_response, mock_final_response]
+        
+        # Create manager and register tools
+        manager = AIProviderManager()
+        manager.register_tool("get_weather", get_weather)
+        
+        # Initialize
+        manager.initialize()
+        
+        # Test with context
+        context = [
+            {'sender': 'user', 'content': 'I need weather information'},
+            {'sender': 'assistant', 'content': 'I can help you with that. What city?'}
+        ]
+        
+        response = manager.generate_response("New York", context)
+        
+        assert "The weather in New York is Sunny, 72°F" in response
+        assert mock_client.models.generate_content.call_count == 2
+    
+    def test_tool_calling_error_handling(self):
+        """Test error handling in tool calling."""
+        manager = AIProviderManager()
+        
+        # Register a tool that raises an error
+        manager.register_tool("error_tool", tool_with_error)
+        
+        # Test direct execution
+        with pytest.raises(ValueError, match="This is a test error"):
+            manager.execute_tool("error_tool", {})
+        
+        # Test through provider (should handle gracefully)
+        manager.initialize()
+        
+        # The placeholder provider should handle this gracefully
+        response = manager.generate_response("Test error handling")
+        assert isinstance(response, str)
+        assert len(response) > 0
+
+
+class TestToolCallingEdgeCases:
+    """Test edge cases and error conditions in tool calling."""
+    
+    def test_tool_with_complex_parameters(self):
+        """Test tool with complex parameter types."""
+        manager = AIProviderManager()
+        
+        def complex_tool_with_lists(items: list, count: int = 5) -> str:
+            """A tool with list parameters."""
+            return f"Processed {len(items)} items, showing {count}"
+        
+        manager.register_tool("complex_tool", complex_tool_with_lists)
+        
+        result = manager.execute_tool("complex_tool", {
+            "items": ["a", "b", "c"],
+            "count": 2
+        })
+        
+        assert result == "Processed 3 items, showing 2"
+    
+    def test_tool_with_dict_parameters(self):
+        """Test tool with dictionary parameters."""
+        manager = AIProviderManager()
+        
+        def dict_tool(data: dict, key: str) -> str:
+            """A tool with dictionary parameters."""
+            return data.get(key, "Not found")
+        
+        manager.register_tool("dict_tool", dict_tool)
+        
+        result = manager.execute_tool("dict_tool", {
+            "data": {"name": "John", "age": 30},
+            "key": "name"
+        })
+        
+        assert result == "John"
+    
+    def test_tool_with_no_parameters(self):
+        """Test tool with no parameters."""
+        manager = AIProviderManager()
+        
+        def no_param_tool() -> str:
+            """A tool with no parameters."""
+            return "No parameters needed"
+        
+        manager.register_tool("no_param_tool", no_param_tool)
+        
+        result = manager.execute_tool("no_param_tool", {})
+        assert result == "No parameters needed"
+    
+    def test_tool_registration_with_description(self):
+        """Test tool registration with custom description."""
+        manager = AIProviderManager()
+        
+        result = manager.register_tool(
+            "custom_tool", 
+            get_current_time, 
+            "Custom description for the tool"
+        )
+        
+        assert result is True
+        assert "custom_tool" in manager.registered_tools
+    
+    def test_tool_registration_duplicate(self):
+        """Test registering the same tool twice."""
+        manager = AIProviderManager()
+        
+        # Register tool first time
+        result1 = manager.register_tool("test_tool", get_current_time)
+        assert result1 is True
+        
+        # Register same tool again (should overwrite)
+        result2 = manager.register_tool("test_tool", calculate_sum)
+        assert result2 is True
+        
+        # Should now be the second function
+        tools = manager.get_registered_tools()
+        assert tools["test_tool"] == calculate_sum
+    
+    def test_tool_execution_with_wrong_parameters(self):
+        """Test tool execution with incorrect parameters."""
+        manager = AIProviderManager()
+        manager.register_tool("calculate_sum", calculate_sum)
+        
+        # Test with missing parameters
+        with pytest.raises(TypeError):
+            manager.execute_tool("calculate_sum", {"a": 5})  # Missing 'b'
+        
+        # Test with wrong parameter types
+        with pytest.raises(TypeError):
+            manager.execute_tool("calculate_sum", {"a": "invalid", "b": 3})
+    
+    def test_tool_execution_with_extra_parameters(self):
+        """Test tool execution with extra parameters."""
+        manager = AIProviderManager()
+        manager.register_tool("calculate_sum", calculate_sum)
+        
+        # Should work fine - extra parameters are ignored
+        result = manager.execute_tool("calculate_sum", {
+            "a": 5, 
+            "b": 3, 
+            "extra_param": "ignored"
+        })
+        
+        assert result == 8 

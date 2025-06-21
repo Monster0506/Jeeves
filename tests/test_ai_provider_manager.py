@@ -5,6 +5,33 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 from core.ai_provider_manager import AIProviderManager
 from core.ai_providers import GeminiProvider, PlaceholderProvider
+from datetime import datetime
+
+
+# Test tool functions for tool calling tests
+def get_current_time() -> str:
+    """Get the current time and date."""
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def calculate_sum(a: int, b: int) -> int:
+    """Calculate the sum of two numbers."""
+    return a + b
+
+
+def get_weather(location: str) -> str:
+    """Get weather information for a location."""
+    weather_data = {
+        "New York": "Sunny, 72°F",
+        "London": "Rainy, 55°F",
+        "Tokyo": "Cloudy, 68°F"
+    }
+    return weather_data.get(location, f"Weather data not available for {location}")
+
+
+def tool_with_error() -> str:
+    """A tool that raises an exception."""
+    raise ValueError("This is a test error")
 
 
 class TestAIProviderManager:
@@ -361,4 +388,378 @@ class TestAIProviderManager:
         
         # Test cleanup
         manager.cleanup()
-        assert manager.current_provider is None 
+        assert manager.current_provider is None
+
+
+class TestAIProviderManagerToolCalling:
+    """Test tool calling functionality in AIProviderManager."""
+    
+    def test_provider_manager_tool_registration(self):
+        """Test tool registration in provider manager."""
+        manager = AIProviderManager()
+        
+        # Test tool registration
+        result = manager.register_tool("test_tool", get_current_time)
+        assert result is True
+        assert "test_tool" in manager.registered_tools
+    
+    def test_provider_manager_tool_unregistration(self):
+        """Test tool unregistration in provider manager."""
+        manager = AIProviderManager()
+        
+        # Register a tool
+        manager.register_tool("test_tool", get_current_time)
+        assert "test_tool" in manager.registered_tools
+        
+        # Unregister the tool
+        result = manager.unregister_tool("test_tool")
+        assert result is True
+        assert "test_tool" not in manager.registered_tools
+    
+    def test_provider_manager_tool_unregistration_not_found(self):
+        """Test unregistering a non-existent tool."""
+        manager = AIProviderManager()
+        
+        result = manager.unregister_tool("non_existent")
+        assert result is False
+    
+    def test_provider_manager_get_registered_tools(self):
+        """Test getting registered tools."""
+        manager = AIProviderManager()
+        
+        # Register multiple tools
+        manager.register_tool("tool1", get_current_time)
+        manager.register_tool("tool2", calculate_sum)
+        
+        tools = manager.get_registered_tools()
+        
+        assert len(tools) == 2
+        assert "tool1" in tools
+        assert "tool2" in tools
+        assert tools["tool1"] == get_current_time
+        assert tools["tool2"] == calculate_sum
+    
+    def test_provider_manager_execute_tool(self):
+        """Test tool execution through manager."""
+        manager = AIProviderManager()
+        manager.register_tool("calculate_sum", calculate_sum)
+        
+        result = manager.execute_tool("calculate_sum", {"a": 5, "b": 3})
+        assert result == 8
+    
+    def test_provider_manager_execute_tool_not_registered(self):
+        """Test executing a non-registered tool through manager."""
+        manager = AIProviderManager()
+        
+        with pytest.raises(KeyError, match="Tool 'non_existent' is not registered"):
+            manager.execute_tool("non_existent", {})
+    
+    @patch('google.genai.Client')
+    def test_provider_manager_initialize_with_tools(self, mock_client_class):
+        """Test provider manager initialization with tools."""
+        # Mock the client
+        mock_client = Mock()
+        mock_client_class.return_value = mock_client
+        mock_models = [Mock(), Mock()]
+        mock_client.models.list.return_value = mock_models
+        
+        manager = AIProviderManager()
+        
+        # Register tools before initialization
+        manager.register_tool("calculate_sum", calculate_sum)
+        manager.register_tool("get_weather", get_weather)
+        
+        result = manager.initialize()
+        
+        assert result is True
+        assert manager.current_provider is not None
+        
+        # Check that tools were registered with the current provider
+        current_provider_tools = manager.current_provider.get_registered_tools()
+        assert "calculate_sum" in current_provider_tools
+        assert "get_weather" in current_provider_tools
+    
+    @patch('google.genai.Client')
+    def test_provider_manager_switch_provider_with_tools(self, mock_client_class):
+        """Test provider switching with tools."""
+        # Mock the client
+        mock_client = Mock()
+        mock_client_class.return_value = mock_client
+        mock_models = [Mock(), Mock()]
+        mock_client.models.list.return_value = mock_models
+        
+        manager = AIProviderManager()
+        manager.initialize()
+        
+        # Register tools
+        manager.register_tool("calculate_sum", calculate_sum)
+        manager.register_tool("get_weather", get_weather)
+        
+        # Switch to placeholder provider
+        result = manager.switch_provider("placeholder")
+        
+        assert result is True
+        assert manager.current_provider.provider_name == "PlaceholderProvider"
+        
+        # Check that tools were registered with the new provider
+        current_provider_tools = manager.current_provider.get_registered_tools()
+        assert "calculate_sum" in current_provider_tools
+        assert "get_weather" in current_provider_tools
+    
+    def test_provider_manager_add_provider_with_tools(self):
+        """Test adding a provider with existing tools."""
+        manager = AIProviderManager()
+        
+        # Register tools first
+        manager.register_tool("calculate_sum", calculate_sum)
+        manager.register_tool("get_weather", get_weather)
+        
+        # Add a new provider
+        new_provider = PlaceholderProvider()
+        new_provider.initialize = Mock(return_value=True)
+        
+        result = manager.add_provider("test_provider", new_provider)
+        
+        assert result is True
+        assert "test_provider" in manager.providers
+        
+        # Check that tools were registered with the new provider
+        new_provider_tools = new_provider.get_registered_tools()
+        assert "calculate_sum" in new_provider_tools
+        assert "get_weather" in new_provider_tools
+    
+    def test_provider_manager_cleanup_with_tools(self):
+        """Test cleanup clears tools."""
+        manager = AIProviderManager()
+        
+        # Register tools
+        manager.register_tool("calculate_sum", calculate_sum)
+        manager.register_tool("get_weather", get_weather)
+        
+        manager.cleanup()
+        
+        assert len(manager.registered_tools) == 0
+    
+    def test_provider_manager_str_representation_with_tools(self):
+        """Test string representation includes tool count."""
+        manager = AIProviderManager()
+        
+        # Register tools
+        manager.register_tool("calculate_sum", calculate_sum)
+        manager.register_tool("get_weather", get_weather)
+        
+        str_repr = str(manager)
+        
+        assert "tools=2" in str_repr
+    
+    def test_provider_manager_tool_registration_with_description(self):
+        """Test tool registration with custom description."""
+        manager = AIProviderManager()
+        
+        result = manager.register_tool(
+            "custom_tool", 
+            get_current_time, 
+            "Custom description for the tool"
+        )
+        
+        assert result is True
+        assert "custom_tool" in manager.registered_tools
+    
+    def test_provider_manager_tool_registration_duplicate(self):
+        """Test registering the same tool twice."""
+        manager = AIProviderManager()
+        
+        # Register tool first time
+        result1 = manager.register_tool("test_tool", get_current_time)
+        assert result1 is True
+        
+        # Register same tool again (should overwrite)
+        result2 = manager.register_tool("test_tool", calculate_sum)
+        assert result2 is True
+        
+        # Should now be the second function
+        tools = manager.get_registered_tools()
+        assert tools["test_tool"] == calculate_sum
+    
+    def test_provider_manager_tool_execution_with_error(self):
+        """Test tool execution that raises an exception."""
+        manager = AIProviderManager()
+        manager.register_tool("error_tool", tool_with_error)
+        
+        with pytest.raises(ValueError, match="This is a test error"):
+            manager.execute_tool("error_tool", {})
+    
+    def test_provider_manager_tool_execution_with_wrong_parameters(self):
+        """Test tool execution with incorrect parameters."""
+        manager = AIProviderManager()
+        manager.register_tool("calculate_sum", calculate_sum)
+        
+        # Test with missing parameters
+        with pytest.raises(TypeError):
+            manager.execute_tool("calculate_sum", {"a": 5})  # Missing 'b'
+        
+        # Test with wrong parameter types
+        with pytest.raises(TypeError):
+            manager.execute_tool("calculate_sum", {"a": "invalid", "b": 3})
+    
+    def test_provider_manager_tool_execution_with_extra_parameters(self):
+        """Test tool execution with extra parameters."""
+        manager = AIProviderManager()
+        manager.register_tool("calculate_sum", calculate_sum)
+        
+        # Should work fine - extra parameters are ignored
+        result = manager.execute_tool("calculate_sum", {
+            "a": 5, 
+            "b": 3, 
+            "extra_param": "ignored"
+        })
+        
+        assert result == 8
+
+
+class TestAIProviderManagerToolCallingIntegration:
+    """Integration tests for tool calling functionality in AIProviderManager."""
+    
+    @patch('google.genai.Client')
+    def test_full_tool_calling_workflow(self, mock_client_class):
+        """Test complete tool calling workflow."""
+        # Mock the client
+        mock_client = Mock()
+        mock_client_class.return_value = mock_client
+        mock_models = [Mock(), Mock()]
+        mock_client.models.list.return_value = mock_models
+        
+        # Mock function call response
+        mock_function_call = Mock()
+        mock_function_call.name = "calculate_sum"
+        mock_function_call.function_call.args = {"a": 10, "b": 20}
+        
+        mock_response = Mock()
+        mock_response.function_calls = [mock_function_call]
+        mock_response.text = None
+        
+        # Mock final response after function execution
+        mock_final_response = Mock()
+        mock_final_response.text = "The sum of 10 and 20 is 30"
+        
+        mock_client.models.generate_content.side_effect = [mock_response, mock_final_response]
+        
+        # Create manager and register tools
+        manager = AIProviderManager()
+        manager.register_tool("calculate_sum", calculate_sum)
+        manager.register_tool("get_weather", get_weather)
+        manager.register_tool("get_current_time", get_current_time)
+        
+        # Initialize
+        result = manager.initialize()
+        assert result is True
+        
+        # Test response generation
+        response = manager.generate_response("What is 10 + 20?")
+        
+        assert "The sum of 10 and 20 is 30" in response
+        assert mock_client.models.generate_content.call_count == 2
+    
+    @patch('google.genai.Client')
+    def test_multiple_tool_calls_in_single_request(self, mock_client_class):
+        """Test multiple tool calls in a single request."""
+        # Mock the client
+        mock_client = Mock()
+        mock_client_class.return_value = mock_client
+        mock_models = [Mock(), Mock()]
+        mock_client.models.list.return_value = mock_models
+        
+        # Mock multiple function calls
+        mock_function_call1 = Mock()
+        mock_function_call1.name = "calculate_sum"
+        mock_function_call1.function_call.args = {"a": 5, "b": 3}
+        
+        mock_function_call2 = Mock()
+        mock_function_call2.name = "get_current_time"
+        mock_function_call2.function_call.args = {}
+        
+        mock_response = Mock()
+        mock_response.function_calls = [mock_function_call1, mock_function_call2]
+        mock_response.text = None
+        
+        # Mock final response after function execution
+        mock_final_response = Mock()
+        mock_final_response.text = "The sum is 8 and the current time is 2024-01-01 12:00:00"
+        
+        mock_client.models.generate_content.side_effect = [mock_response, mock_final_response]
+        
+        # Create manager and register tools
+        manager = AIProviderManager()
+        manager.register_tool("calculate_sum", calculate_sum)
+        manager.register_tool("get_current_time", get_current_time)
+        
+        # Initialize
+        manager.initialize()
+        
+        # Test response generation
+        response = manager.generate_response("What is 5 + 3 and what time is it?")
+        
+        assert "The sum is 8" in response
+        assert "current time" in response
+        assert mock_client.models.generate_content.call_count == 2
+    
+    @patch('google.genai.Client')
+    def test_tool_calling_with_context(self, mock_client_class):
+        """Test tool calling with conversation context."""
+        # Mock the client
+        mock_client = Mock()
+        mock_client_class.return_value = mock_client
+        mock_models = [Mock(), Mock()]
+        mock_client.models.list.return_value = mock_models
+        
+        # Mock function call response
+        mock_function_call = Mock()
+        mock_function_call.name = "get_weather"
+        mock_function_call.function_call.args = {"location": "New York"}
+        
+        mock_response = Mock()
+        mock_response.function_calls = [mock_function_call]
+        mock_response.text = None
+        
+        # Mock final response after function execution
+        mock_final_response = Mock()
+        mock_final_response.text = "The weather in New York is Sunny, 72°F"
+        
+        mock_client.models.generate_content.side_effect = [mock_response, mock_final_response]
+        
+        # Create manager and register tools
+        manager = AIProviderManager()
+        manager.register_tool("get_weather", get_weather)
+        
+        # Initialize
+        manager.initialize()
+        
+        # Test with context
+        context = [
+            {'sender': 'user', 'content': 'I need weather information'},
+            {'sender': 'assistant', 'content': 'I can help you with that. What city?'}
+        ]
+        
+        response = manager.generate_response("New York", context)
+        
+        assert "The weather in New York is Sunny, 72°F" in response
+        assert mock_client.models.generate_content.call_count == 2
+    
+    def test_tool_calling_error_handling(self):
+        """Test error handling in tool calling."""
+        manager = AIProviderManager()
+        
+        # Register a tool that raises an error
+        manager.register_tool("error_tool", tool_with_error)
+        
+        # Test direct execution
+        with pytest.raises(ValueError, match="This is a test error"):
+            manager.execute_tool("error_tool", {})
+        
+        # Test through provider (should handle gracefully)
+        manager.initialize()
+        
+        # The placeholder provider should handle this gracefully
+        response = manager.generate_response("Test error handling")
+        assert isinstance(response, str)
+        assert len(response) > 0 

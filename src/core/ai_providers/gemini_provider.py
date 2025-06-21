@@ -5,7 +5,8 @@ Uses Google's Gemini API via the google-genai SDK.
 
 import os
 import logging
-from typing import Dict, List, Any
+import inspect
+from typing import Dict, List, Any, Callable, Optional
 from .base_provider import BaseAIProvider
 from datetime import datetime
 
@@ -28,6 +29,8 @@ class GeminiProvider(BaseAIProvider):
                 - top_p: Nucleus sampling parameter (0.0-1.0, default: 0.95)
                 - top_k: Top-k sampling parameter (default: 40)
                 - system_instruction: System instruction for the AI
+                - enable_tool_calling: Enable automatic tool calling (default: True)
+                - max_tool_calls: Maximum number of tool calls per response (default: 5)
         """
         super().__init__(config if config else {})
         self.client = None
@@ -39,6 +42,11 @@ class GeminiProvider(BaseAIProvider):
         self.system_instruction = self.config.get(
             "system_instruction", self._get_default_system_prompt()
         )
+        
+        # Tool calling configuration
+        self.enable_tool_calling = self.config.get("enable_tool_calling", True)
+        self.max_tool_calls = self.config.get("max_tool_calls", 5)
+        self.automatic_function_calling = self.config.get("automatic_function_calling", True)
 
         # Default configuration
         self.default_config = {
@@ -48,6 +56,9 @@ class GeminiProvider(BaseAIProvider):
             "top_p": 0.95,
             "top_k": 40,
             "system_instruction": self._get_default_system_prompt(),
+            "enable_tool_calling": True,
+            "max_tool_calls": 5,
+            "automatic_function_calling": True,
         }
 
     def _get_default_system_prompt(self) -> str:
@@ -86,6 +97,14 @@ class GeminiProvider(BaseAIProvider):
         *   Actively utilize the long-term persistent memory provided (which the system will prepend to your context) to recall user preferences, past actions, and relevant information for ongoing continuity.
         *   Refer to the current conversation thread's history (managed by the system in SQLite) to maintain coherent dialogue and provide contextually relevant responses.
         *   You are capable of using a temporary scratchpad tool (`log_thought`) for internal planning and breaking down complex tasks before providing a final answer or executing other tools.
+
+    **Tool Usage Guidelines:**
+
+    1.  **Tool Selection:** When a user request requires action or information retrieval, use the appropriate tools available to you. Choose tools that best match the user's intent.
+    2.  **Tool Execution:** Execute tools with the correct parameters. If you're unsure about required parameters, ask the user for clarification.
+    3.  **Tool Results:** After executing a tool, analyze the results and provide a clear, helpful response to the user based on the tool's output.
+    4.  **Error Handling:** If a tool execution fails, explain what went wrong and suggest alternative approaches or ask for clarification.
+    5.  **Multiple Tools:** For complex requests, you may need to use multiple tools in sequence. Plan your approach and execute tools logically.
 
     **Limitations & Safety Guidelines (CRITICAL):**
 
@@ -155,9 +174,125 @@ class GeminiProvider(BaseAIProvider):
             logger.error(f"Failed to initialize Gemini provider: {e}")
             return False
 
+    def _create_function_declaration(self, name: str, func: Callable, description: str = None) -> Any:
+        """
+        Create a FunctionDeclaration for a registered tool.
+        
+        Args:
+            name: Name of the function
+            func: The callable function
+            description: Optional description
+            
+        Returns:
+            FunctionDeclaration object
+        """
+        try:
+            from google.genai import types
+            
+            # Get function signature
+            sig = inspect.signature(func)
+            parameters = {}
+            required = []
+            
+            # Build parameter schema
+            for param_name, param in sig.parameters.items():
+                if param_name == 'self':
+                    continue
+                    
+                param_type = param.annotation
+                param_desc = f"Parameter {param_name}"
+                
+                # Map Python types to JSON schema types
+                if param_type == str or param_type == inspect.Parameter.empty:
+                    param_type_str = "STRING"
+                elif param_type == int:
+                    param_type_str = "INTEGER"
+                elif param_type == float:
+                    param_type_str = "NUMBER"
+                elif param_type == bool:
+                    param_type_str = "BOOLEAN"
+                elif param_type == list:
+                    param_type_str = "ARRAY"
+                elif param_type == dict:
+                    param_type_str = "OBJECT"
+                else:
+                    param_type_str = "STRING"
+                
+                parameters[param_name] = types.Schema(
+                    type=param_type_str,
+                    description=param_desc
+                )
+                
+                if param.default == inspect.Parameter.empty:
+                    required.append(param_name)
+            
+            # Create function declaration
+            func_desc = description or f"Function {name}"
+            if func.__doc__:
+                func_desc = func.__doc__.strip()
+            
+            return types.FunctionDeclaration(
+                name=name,
+                description=func_desc,
+                parameters=types.Schema(
+                    type="OBJECT",
+                    properties=parameters,
+                    required=required
+                )
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to create function declaration for {name}: {e}")
+            return None
+
+    def _build_tools_config(self) -> List[Any]:
+        """
+        Build tools configuration for Gemini API.
+        
+        Returns:
+            List of Tool objects
+        """
+        try:
+            from google.genai import types
+            
+            if not self.registered_tools:
+                return []
+            
+            tools = []
+            for name, func in self.registered_tools.items():
+                func_decl = self._create_function_declaration(name, func)
+                if func_decl:
+                    tool = types.Tool(function_declarations=[func_decl])
+                    tools.append(tool)
+            
+            return tools
+            
+        except Exception as e:
+            logger.error(f"Failed to build tools config: {e}")
+            return []
+
+    def _build_automatic_function_calling_config(self) -> Any:
+        """
+        Build automatic function calling configuration.
+        
+        Returns:
+            AutomaticFunctionCallingConfig object
+        """
+        try:
+            from google.genai import types
+            
+            return types.AutomaticFunctionCallingConfig(
+                disable=not self.automatic_function_calling,
+                maximum_remote_calls=self.max_tool_calls
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to build automatic function calling config: {e}")
+            return None
+
     def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
         """
-        Generate a response using Gemini AI.
+        Generate a response using Gemini AI with optional tool calling.
 
         Args:
             user_message: The user's input message
@@ -179,14 +314,42 @@ class GeminiProvider(BaseAIProvider):
             if context:
                 for message in context[-10:]:  # Limit to last 10 messages for context
                     role = "user" if message.get("sender") == "user" else "model"
-                    contents.append(
-                        types.Content(
-                            role=role,
-                            parts=[
-                                types.Part.from_text(text=message.get("content", ""))
-                            ],
+                    content = message.get("content", "")
+                    
+                    # Handle tool responses in context
+                    if message.get("tool_calls"):
+                        # Add tool calls as model content
+                        tool_call_parts = []
+                        for tool_call in message["tool_calls"]:
+                            tool_call_parts.append(
+                                types.Part.from_function_call(
+                                    name=tool_call["name"],
+                                    args=tool_call["args"]
+                                )
+                            )
+                        contents.append(
+                            types.Content(role="model", parts=tool_call_parts)
                         )
-                    )
+                    
+                    # Add tool responses as tool content
+                    if message.get("tool_responses"):
+                        for tool_response in message["tool_responses"]:
+                            response_part = types.Part.from_function_response(
+                                name=tool_response["name"],
+                                response=tool_response["response"]
+                            )
+                            contents.append(
+                                types.Content(role="tool", parts=[response_part])
+                            )
+                    
+                    # Add regular text content
+                    if content and not message.get("tool_calls") and not message.get("tool_responses"):
+                        contents.append(
+                            types.Content(
+                                role=role,
+                                parts=[types.Part.from_text(text=content)]
+                            )
+                        )
 
             # Add the current user message
             contents.append(
@@ -195,7 +358,7 @@ class GeminiProvider(BaseAIProvider):
                 )
             )
 
-            # Create generation config with all parameters
+            # Build generation config
             generation_config = types.GenerateContentConfig(
                 system_instruction=self.system_instruction,
                 max_output_tokens=self.max_output_tokens,
@@ -204,10 +367,32 @@ class GeminiProvider(BaseAIProvider):
                 top_k=self.top_k,
             )
 
-            # Generate response with proper config structure
+            # Add tools if available and enabled
+            if self.enable_tool_calling and self.registered_tools:
+                tools = self._build_tools_config()
+                if tools:
+                    generation_config.tools = tools
+                    
+                    # Add automatic function calling config
+                    if self.automatic_function_calling:
+                        auto_config = self._build_automatic_function_calling_config()
+                        if auto_config:
+                            generation_config.automatic_function_calling = auto_config
+
+            # Generate response
             response = self.client.models.generate_content(
                 model=self.model_name, contents=contents, config=generation_config
             )
+
+            # Handle function calls if present
+            if (hasattr(response, 'function_calls') and 
+                response.function_calls is not None):
+                try:
+                    if len(response.function_calls) > 0:
+                        return self._handle_function_calls(response, user_message, context)
+                except (TypeError, AttributeError):
+                    # Mock objects or objects without __len__ method
+                    pass
 
             if response.text:
                 return response.text
@@ -222,6 +407,115 @@ class GeminiProvider(BaseAIProvider):
             return (
                 f"Sorry, I encountered an error while processing your request: {str(e)}"
             )
+
+    def _handle_function_calls(self, response: Any, user_message: str, context: List[Dict] = None) -> str:
+        """
+        Handle function calls from the model response.
+        
+        Args:
+            response: The model response containing function calls
+            user_message: Original user message
+            context: Conversation context
+            
+        Returns:
+            Final response after executing function calls
+        """
+        try:
+            from google.genai import types
+            
+            # Execute function calls
+            function_responses = []
+            for func_call in response.function_calls:
+                try:
+                    # Execute the function
+                    result = self.execute_tool(func_call.name, func_call.function_call.args)
+                    function_responses.append({
+                        "name": func_call.name,
+                        "response": {"result": result}
+                    })
+                except Exception as e:
+                    logger.error(f"Failed to execute function {func_call.name}: {e}")
+                    function_responses.append({
+                        "name": func_call.name,
+                        "response": {"error": str(e)}
+                    })
+
+            # If we have function responses, continue the conversation
+            if function_responses:
+                # Build conversation with function calls and responses
+                contents = []
+                
+                # Add original context
+                if context:
+                    for message in context[-5:]:  # Limit context for function call continuation
+                        role = "user" if message.get("sender") == "user" else "model"
+                        content = message.get("content", "")
+                        if content:
+                            contents.append(
+                                types.Content(
+                                    role=role,
+                                    parts=[types.Part.from_text(text=content)]
+                                )
+                            )
+
+                # Add user message
+                contents.append(
+                    types.Content(
+                        role="user", parts=[types.Part.from_text(text=user_message)]
+                    )
+                )
+
+                # Add function calls
+                for func_call in response.function_calls:
+                    contents.append(
+                        types.Content(
+                            role="model",
+                            parts=[
+                                types.Part.from_function_call(
+                                    name=func_call.name,
+                                    args=func_call.function_call.args
+                                )
+                            ]
+                        )
+                    )
+
+                # Add function responses
+                for func_response in function_responses:
+                    contents.append(
+                        types.Content(
+                            role="tool",
+                            parts=[
+                                types.Part.from_function_response(
+                                    name=func_response["name"],
+                                    response=func_response["response"]
+                                )
+                            ]
+                        )
+                    )
+
+                # Generate final response
+                generation_config = types.GenerateContentConfig(
+                    system_instruction=self.system_instruction,
+                    max_output_tokens=self.max_output_tokens,
+                    temperature=self.temperature,
+                    top_p=self.top_p,
+                    top_k=self.top_k,
+                )
+
+                final_response = self.client.models.generate_content(
+                    model=self.model_name, contents=contents, config=generation_config
+                )
+
+                if final_response.text:
+                    return final_response.text
+                else:
+                    return "I've executed the requested actions, but couldn't generate a response summary."
+
+            return response.text if response.text else "Function calls executed successfully."
+
+        except Exception as e:
+            logger.error(f"Error handling function calls: {e}")
+            return f"Error executing function calls: {str(e)}"
 
     def is_available(self) -> bool:
         """
@@ -269,6 +563,12 @@ class GeminiProvider(BaseAIProvider):
             logger.error("max_output_tokens must be positive")
             return False
 
+        # Validate tool calling config
+        max_tool_calls = self.config.get("max_tool_calls", 5)
+        if max_tool_calls <= 0:
+            logger.error("max_tool_calls must be positive")
+            return False
+
         return True
 
     def get_provider_info(self) -> Dict[str, Any]:
@@ -290,6 +590,9 @@ class GeminiProvider(BaseAIProvider):
                     self.config.get("api_key") or os.getenv("GOOGLE_API_KEY")
                 ),
                 "sdk_version": self._get_sdk_version(),
+                "enable_tool_calling": self.enable_tool_calling,
+                "automatic_function_calling": self.automatic_function_calling,
+                "max_tool_calls": self.max_tool_calls,
             }
         )
         return info
