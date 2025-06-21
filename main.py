@@ -14,8 +14,9 @@ from pynput.keyboard import Key, KeyCode
 from src.gui.app import JeevesApp
 from src.utils.dialogs import show_error
 # Configure logging
+# search for: loglevel, logginglevel, info, debug, warning, error, critical
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler('jeeves.log'),
