@@ -116,6 +116,30 @@ class MessageBubble(ctk.CTkFrame):
         # No need to rebuild the whole bubble, just update wraplength if possible
         # For now, let's see if we can avoid rebuilding. With CTkTextbox, wrap is handled.
 
+    def destroy(self):
+        """Properly destroy the message bubble and its internal widgets."""
+        try:
+            # Clean up internal widgets
+            if hasattr(self, '_bubble') and self._bubble:
+                try:
+                    self._bubble.destroy()
+                except Exception:
+                    pass
+                self._bubble = None
+            
+            if hasattr(self, '_msg_frame') and self._msg_frame:
+                try:
+                    self._msg_frame.destroy()
+                except Exception:
+                    pass
+                self._msg_frame = None
+            
+            # Call parent destroy
+            super().destroy()
+        except Exception:
+            # If parent destroy fails, just pass
+            pass
+
     def _render_markdown(self, parent, text, text_color):
         # Use a Textbox for better markdown rendering with styles
         md_text = ctk.CTkTextbox(
@@ -621,61 +645,99 @@ class ChatDisplay(ctk.CTkFrame):
         self._add_message(message, "System", is_user=False)
 
     def _add_message(self, message: str, sender: str, is_user: bool):
-        timestamp = datetime.now().strftime("%H:%M")
-        max_bubble_width = max(int(self.canvas.winfo_width() * 0.95), 600)
-        bubble = MessageBubble(
-            self.scrollable_frame,
-            sender,
-            message,
-            timestamp,
-            is_user,
-            self.theme,
-            self.font_family,
-            max_width=max_bubble_width,
-        )
-        if is_user:
-            bubble.pack(anchor="e", pady=8, padx=(16, 16), fill=None)  # Consistent spacing
-        else:
-            bubble.pack(anchor="w", pady=8, padx=(16, 16), fill=None)  # Consistent spacing
-        self.bubbles.append(bubble)
-        self.update_idletasks()
-        self.canvas.yview_moveto(1.0)
-
-    def load_messages(self, messages: List[Dict]):
-        for widget in self.scrollable_frame.winfo_children():
-            widget.destroy()
-        self.bubbles.clear()
-        for message in messages:
-            sender = message.get("sender", "unknown")
-            content = message.get("content", "")
-            timestamp = message.get("timestamp", "")
-            is_user = sender == "user" or sender == "You"
-            display_sender = (
-                "You" if is_user else ("Jeeves" if sender == "ai" else sender.title())
-            )
+        """Add a message with proper error handling to prevent Tkinter errors."""
+        try:
+            timestamp = datetime.now().strftime("%H:%M")
             max_bubble_width = max(int(self.canvas.winfo_width() * 0.95), 600)
+            
             bubble = MessageBubble(
                 self.scrollable_frame,
-                display_sender,
-                content,
+                sender,
+                message,
                 timestamp,
                 is_user,
                 self.theme,
                 self.font_family,
                 max_width=max_bubble_width,
             )
+            
             if is_user:
-                bubble.pack(anchor="e", pady=8, padx=(16, 16), fill=None)  # Consistent spacing
+                bubble.pack(anchor="e", pady=8, padx=(16, 16), fill=None)
             else:
-                bubble.pack(anchor="w", pady=8, padx=(16, 16), fill=None)  # Consistent spacing
+                bubble.pack(anchor="w", pady=8, padx=(16, 16), fill=None)
+            
             self.bubbles.append(bubble)
-        self.update_idletasks()
-        self.canvas.yview_moveto(1.0)
+            self.update_idletasks()
+            self.canvas.yview_moveto(1.0)
+            
+        except Exception as e:
+            logging.getLogger(__name__).error(f"Error adding message: {e}")
+            # Try to continue without the problematic message bubble
+
+    def load_messages(self, messages: List[Dict]):
+        """Load messages with proper widget cleanup to prevent Tkinter errors."""
+        try:
+            # Safely destroy existing widgets
+            for widget in self.scrollable_frame.winfo_children():
+                try:
+                    widget.destroy()
+                except Exception:
+                    # Widget might already be destroyed, continue
+                    pass
+            
+            self.bubbles.clear()
+            
+            for message in messages:
+                sender = message.get("sender", "unknown")
+                content = message.get("content", "")
+                timestamp = message.get("timestamp", "")
+                is_user = sender == "user" or sender == "You"
+                display_sender = (
+                    "You" if is_user else ("Jeeves" if sender == "ai" else sender.title())
+                )
+                max_bubble_width = max(int(self.canvas.winfo_width() * 0.95), 600)
+                
+                try:
+                    bubble = MessageBubble(
+                        self.scrollable_frame,
+                        display_sender,
+                        content,
+                        timestamp,
+                        is_user,
+                        self.theme,
+                        self.font_family,
+                        max_width=max_bubble_width,
+                    )
+                    if is_user:
+                        bubble.pack(anchor="e", pady=8, padx=(16, 16), fill=None)
+                    else:
+                        bubble.pack(anchor="w", pady=8, padx=(16, 16), fill=None)
+                    self.bubbles.append(bubble)
+                except Exception as e:
+                    # Log error but continue loading other messages
+                    logging.getLogger(__name__).warning(f"Failed to create message bubble: {e}")
+                    continue
+            
+            self.update_idletasks()
+            self.canvas.yview_moveto(1.0)
+        except Exception as e:
+            logging.getLogger(__name__).error(f"Error loading messages: {e}")
 
     def clear_messages(self):
-        for widget in self.scrollable_frame.winfo_children():
-            widget.destroy()
-        self.bubbles.clear()
+        """Clear messages with proper widget cleanup to prevent Tkinter errors."""
+        try:
+            # Safely destroy existing widgets
+            for widget in self.scrollable_frame.winfo_children():
+                try:
+                    widget.destroy()
+                except Exception:
+                    # Widget might already be destroyed, continue
+                    pass
+            
+            self.bubbles.clear()
+            self.update_idletasks()
+        except Exception as e:
+            logging.getLogger(__name__).error(f"Error clearing messages: {e}")
 
     def _search_messages(self):
         """Trigger message search."""
@@ -688,12 +750,23 @@ class ChatDisplay(ctk.CTkFrame):
             self.on_export_chat()
 
     def _on_canvas_resize(self, event):
-        # Make scrollable_frame always match canvas width
-        self.canvas.itemconfig(self.canvas.find_withtag("all")[0], width=event.width)
-        # Update all bubbles' max_width
-        max_bubble_width = max(int(event.width * 0.95), 600)
-        for bubble in self.bubbles:
-            bubble.update_max_width(max_bubble_width)
+        """Handle canvas resize with proper error handling."""
+        try:
+            # Make scrollable_frame always match canvas width
+            canvas_items = self.canvas.find_withtag("all")
+            if canvas_items:
+                self.canvas.itemconfig(canvas_items[0], width=event.width)
+            
+            # Update all bubbles' max_width
+            max_bubble_width = max(int(event.width * 0.95), 600)
+            for bubble in self.bubbles:
+                try:
+                    bubble.update_max_width(max_bubble_width)
+                except Exception:
+                    # Skip bubbles that can't be updated
+                    continue
+        except Exception as e:
+            logging.getLogger(__name__).warning(f"Error in canvas resize: {e}")
 
     def _on_frame_configure(self):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))

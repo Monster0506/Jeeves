@@ -43,6 +43,11 @@ class GeminiProvider(BaseAIProvider):
             "system_instruction", self._get_default_system_prompt()
         )
         
+        # Ensure system instruction is never empty or None
+        if not self.system_instruction or not self.system_instruction.strip():
+            logger.warning("System instruction from config is empty, using default")
+            self.system_instruction = self._get_default_system_prompt()
+        
         # Tool calling configuration
         self.enable_tool_calling = self.config.get("enable_tool_calling", True)
         self.max_tool_calls = self.config.get("max_tool_calls", 5)
@@ -182,13 +187,21 @@ class GeminiProvider(BaseAIProvider):
             List of tools for the generation config
         """
         if not self.registered_tools:
+            logger.debug("No registered tools to build config for")
             return []
+        
+        logger.debug(f"Building tools config for {len(self.registered_tools)} tools")
         
         # For automatic function calling, we can pass Python functions directly
         tools = []
         for name, func in self.registered_tools.items():
-            tools.append(func)
+            logger.debug(f"Adding tool: {name} (type: {type(func)})")
+            if func is not None:
+                tools.append(func)
+            else:
+                logger.warning(f"Tool {name} is None, skipping")
         
+        logger.debug(f"Built tools config with {len(tools)} valid tools")
         return tools
 
     def _build_automatic_function_calling_config(self) -> Any:
@@ -201,13 +214,18 @@ class GeminiProvider(BaseAIProvider):
         try:
             from google.genai import types
             
-            return types.AutomaticFunctionCallingConfig(
+            logger.debug(f"Building automatic function calling config: disable={not self.automatic_function_calling}, max_calls={self.max_tool_calls}")
+            
+            config = types.AutomaticFunctionCallingConfig(
                 disable=not self.automatic_function_calling,
                 maximum_remote_calls=self.max_tool_calls
             )
             
+            logger.debug(f"Built automatic function calling config: {config}")
+            return config
+            
         except Exception as e:
-            logger.error(f"Failed to build automatic function calling config: {e}")
+            logger.error(f"Failed to build automatic function calling config: {e}", exc_info=True)
             return None
 
     def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
@@ -233,61 +251,129 @@ class GeminiProvider(BaseAIProvider):
             # Add conversation context
             if context:
                 for message in context:  # Use all messages for context
-                    role = "user" if message.get("sender") == "user" else "model"
-                    content = message.get("content", "")
-                    
-                    # Add regular text content
-                    if content:
+                    try:
+                        role = "user" if message.get("sender") == "user" else "model"
+                        content = message.get("content", "")
+                        
+                        # Skip empty messages
+                        if not content or not content.strip():
+                            logger.debug("Skipping empty message in context")
+                            continue
+                        
+                        # Add regular text content
+                        part = types.Part.from_text(text=content)
+                        if part is None:
+                            logger.warning(f"Failed to create Part from context message: {content[:50]}...")
+                            continue
+                        
                         contents.append(
                             types.Content(
                                 role=role,
-                                parts=[types.Part.from_text(text=content)]
+                                parts=[part]
                             )
                         )
+                    except Exception as e:
+                        logger.warning(f"Failed to process context message: {e}")
+                        continue
 
             # Add the current user message
-            contents.append(
-                types.Content(
-                    role="user", parts=[types.Part.from_text(text=user_message)]
+            if user_message is None or not user_message.strip():
+                logger.error("User message is None or empty")
+                return "I apologize, but I received an empty message. Please try again."
+            
+            try:
+                user_part = types.Part.from_text(text=user_message)
+                if user_part is None:
+                    logger.error("Failed to create Part from user message")
+                    return "I apologize, but I couldn't process your message. Please try again."
+                
+                contents.append(
+                    types.Content(
+                        role="user", parts=[user_part]
+                    )
                 )
-            )
+            except Exception as e:
+                logger.error(f"Failed to create content from user message: {e}")
+                return f"I apologize, but I couldn't process your message: {str(e)}"
 
             # Build generation config
-            generation_config = types.GenerateContentConfig(
-                system_instruction=self.system_instruction,
-                max_output_tokens=self.max_output_tokens,
-                temperature=self.temperature,
-                top_p=self.top_p,
-                top_k=self.top_k,
-            )
+            try:
+                # Validate system instruction - use default if empty or None
+                if not self.system_instruction or not self.system_instruction.strip():
+                    logger.warning("System instruction is empty or None, using default")
+                    self.system_instruction = self._get_default_system_prompt()
+                
+                generation_config = types.GenerateContentConfig(
+                    system_instruction=self.system_instruction,
+                    max_output_tokens=self.max_output_tokens,
+                    temperature=self.temperature,
+                    top_p=self.top_p,
+                    top_k=self.top_k,
+                )
+                
+                logger.debug(f"Generation config created successfully")
+                
+            except Exception as e:
+                logger.error(f"Failed to create generation config: {e}")
+                return f"I apologize, but there's a configuration error: {str(e)}"
+
+            # Log the system instruction being used
+            logger.debug(f"Using system instruction: {self.system_instruction[:200]}...")
+            logger.debug(f"Generation config: system_instruction length={len(self.system_instruction)}, max_tokens={self.max_output_tokens}, temp={self.temperature}")
 
             # Add tools if available and enabled
             if self.enable_tool_calling and self.registered_tools:
+                logger.debug(f"Configuring tools: {len(self.registered_tools)} tools available")
                 tools = self._build_tools_config()
                 if tools:
+                    logger.debug(f"Built tools config with {len(tools)} tools")
                     generation_config.tools = tools
                     
                     # Add automatic function calling config
                     if self.automatic_function_calling:
+                        logger.debug("Adding automatic function calling config")
                         auto_config = self._build_automatic_function_calling_config()
                         if auto_config:
                             generation_config.automatic_function_calling = auto_config
+                            logger.debug("Automatic function calling config added")
+                        else:
+                            logger.warning("Failed to build automatic function calling config")
+                else:
+                    logger.warning("No tools were built from registered tools")
+            else:
+                logger.debug("Tool calling disabled or no tools registered")
 
             # Generate response
+            logger.debug(f"Calling Gemini API with {len(contents)} content items and {len(self.registered_tools)} tools")
+            logger.debug(f"Model: {self.model_name}")
+            logger.debug(f"System instruction starts with: {self.system_instruction[:100]}...")
+            
             response = self.client.models.generate_content(
                 model=self.model_name, contents=contents, config=generation_config
             )
 
-            if response.text:
-                return response.text
+            # Debug response object
+            logger.debug(f"Response object type: {type(response)}")
+            logger.debug(f"Response object: {response}")
+            
+            if response is None:
+                logger.error("Gemini returned None response")
+                return "I apologize, but I received an empty response from the AI service. Please try again."
+            
+            # Check if response has text attribute
+            if hasattr(response, 'text'):
+                if response.text:
+                    logger.debug(f"Gemini response received: {len(response.text)} characters")
+                    return response.text
+                else:
+                    logger.warning("Gemini returned empty text response")
+                    return "I apologize, but I couldn't generate a response. Please try again."
             else:
-                logger.warning("Gemini returned empty response")
-                return (
-                    "I apologize, but I couldn't generate a response. Please try again."
-                )
+                logger.error(f"Response object has no 'text' attribute. Available attributes: {dir(response)}")
+                return "I apologize, but I received an unexpected response format. Please try again."
 
         except Exception as e:
-            logger.error(f"Error generating Gemini response: {e}")
+            logger.error(f"Error generating Gemini response: {e}", exc_info=True)
             return (
                 f"Sorry, I encountered an error while processing your request: {str(e)}"
             )
@@ -385,4 +471,60 @@ class GeminiProvider(BaseAIProvider):
         """Clean up Gemini provider resources."""
         super().cleanup()
         self.client = None
+
+    def update_system_instruction(self, new_instruction: str) -> bool:
+        """
+        Update the system instruction.
+        
+        Args:
+            new_instruction: New system instruction
+            
+        Returns:
+            True if successful
+        """
+        try:
+            self.system_instruction = new_instruction
+            logger.info(f"Updated system instruction for {self.provider_name}")
+            logger.debug(f"New system instruction: {new_instruction[:200]}...")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to update system instruction: {e}")
+            return False
+    
+    def get_system_instruction(self) -> str:
+        """
+        Get the current system instruction.
+        
+        Returns:
+            Current system instruction
+        """
+        return self.system_instruction
+
+    def test_system_instruction(self) -> str:
+        """
+        Test the system instruction with a simple prompt.
+        
+        Returns:
+            Test response or error message
+        """
+        if not self.is_available():
+            return "Provider not available - check API key and initialization"
+        
+        try:
+            test_message = "What is your name and what are you supposed to do?"
+            logger.info("Testing system instruction with identity question")
+            
+            response = self.generate_response(test_message)
+            
+            # Check if response shows Jeeves persona
+            if "Jeeves" in response or "jeeves" in response.lower():
+                logger.info("✅ System instruction test passed - Jeeves persona detected")
+                return f"System instruction working: {response}"
+            else:
+                logger.warning("❌ System instruction test failed - no Jeeves persona detected")
+                return f"System instruction may not be working: {response}"
+                
+        except Exception as e:
+            logger.error(f"System instruction test failed: {e}")
+            return f"Test failed: {str(e)}"
 

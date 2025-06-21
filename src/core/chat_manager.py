@@ -132,6 +132,19 @@ class ChatManager:
         """Get the current thread ID."""
         return self.current_thread_id
     
+    def get_thread_message_counts(self) -> Dict[int, int]:
+        """
+        Get message counts for all threads.
+        
+        Returns:
+            Dictionary mapping thread_id to message count
+        """
+        try:
+            return self.db.get_thread_message_counts()
+        except DatabaseError as e:
+            logger.error(f"Failed to get thread message counts: {e}")
+            return {}
+    
     def get_messages(self, thread_id: int = None, limit: int = None,
                     include_attachments: bool = True) -> List[Dict]:
         """

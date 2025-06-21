@@ -8,6 +8,7 @@ import logging
 from typing import Dict, List
 from .chat_manager import ChatManager
 from .ai_provider_manager import AIProviderManager
+from .tools import JeevesTools
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ class AIEngine:
         self.chat_manager = chat_manager
 
         self.provider_manager = AIProviderManager()
+        self.tools = JeevesTools(chat_manager)
 
         self.chat_manager.register_message_callback(self._on_message_added)
         self.chat_manager.register_thread_callback(self._on_thread_changed)
@@ -43,10 +45,30 @@ class AIEngine:
                 logger.info(
                     f"AI Engine initialized with provider: {current_provider.provider_name}"
                 )
+                
+                # Register tools
+                self._register_tools()
             else:
                 logger.warning("Failed to initialize any AI providers, using fallback")
         except Exception as e:
             logger.error(f"Error initializing AI providers: {e}")
+
+    def _register_tools(self):
+        """Register all available tools with the provider manager."""
+        try:
+            # Get all tools and their descriptions
+            tools = self.tools.get_registered_tools()
+            descriptions = self.tools.get_tool_descriptions()
+            
+            # Register each tool
+            for tool_name, tool_func in tools.items():
+                description = descriptions.get(tool_name, f"Tool: {tool_name}")
+                self.provider_manager.register_tool(tool_name, tool_func, description)
+                logger.info(f"Registered tool: {tool_name}")
+            
+            logger.info(f"Registered {len(tools)} tools with provider manager")
+        except Exception as e:
+            logger.error(f"Error registering tools: {e}")
 
     def _on_message_added(self, message: Dict):
         """Callback when a new message is added to the conversation."""
