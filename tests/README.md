@@ -52,6 +52,36 @@ tests/
 - Edge cases and error conditions
 - Implementation examples from TOOL_CALLING_GUIDE.md
 
+**Built-in Tools Testing:**
+The test suite comprehensively tests all 11 built-in tools:
+
+**Chat Management Tools (6):**
+- `rename_chat_thread` - Thread renaming functionality
+- `search_chat_history` - Historical search capabilities
+- `get_available_threads` - Thread listing and statistics
+- `get_current_thread_info` - Current thread information
+- `export_current_conversation` - Conversation export (JSON/text)
+- `get_conversation_summary` - Conversation statistics
+
+**File Management Tools (3):**
+- `note_manager` - Personal note management (~/.jeeves/notes/)
+- `todo_list_manager` - Centralized todo list (~/.jeeves/todo.md)
+- `content_searcher` - File and content search within sandbox
+
+**Memory & Logging Tools (2):**
+- `persistent_memory_manager` - Long-term memory management
+- `scratchpad_logger` - Session-specific thought logging
+
+**Tool Testing Features:**
+- Parameter validation and type checking
+- Error handling and edge cases
+- File system operations within sandbox
+- Database operations and persistence
+- Search functionality and pattern matching
+- Memory storage and retrieval
+- Tool chaining and multi-step workflows
+- Security and safety measures
+
 ### 3. Integration Tests (`test_integration.py`)
 - **Purpose**: Test interaction between components
 - **Scope**: Multiple components working together
@@ -374,8 +404,8 @@ Use these metrics to maintain test quality and identify areas for improvement.
 - [x] Achieve 95%+ code coverage
 - [x] Complete tool calling test suite
 - [x] Add comprehensive integration tests
-- [ ] Add performance benchmarks
-- [ ] Add security testing
+- [x] Add performance benchmarks
+- [x] Add security testing
 
 ### Long-term Goals
 - [ ] Add GUI testing framework

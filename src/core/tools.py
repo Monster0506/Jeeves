@@ -1,6 +1,83 @@
 """
 Tools module for Jeeves AI Assistant.
 Contains all available tools that can be called by the AI.
+
+## Available Tools (11 total)
+
+### 🗂️ Chat Management Tools (6)
+1. **rename_chat_thread** - Rename chat threads for better organization
+2. **search_chat_history** - Search through conversation history across threads
+3. **get_available_threads** - List all chat threads with statistics
+4. **get_current_thread_info** - Get detailed info about current thread
+5. **export_current_conversation** - Export conversation to JSON/text format
+6. **get_conversation_summary** - Get conversation statistics and summary
+
+### 📝 File Management Tools (3)
+7. **note_manager** - Manage personal notes in ~/.jeeves/notes/
+8. **todo_list_manager** - Manage centralized todo list in ~/.jeeves/todo.md
+9. **content_searcher** - Search files and content within ~/.jeeves/ sandbox
+
+### 🧠 Memory & Logging Tools (2)
+10. **persistent_memory_manager** - Manage Jeeves's long-term memory
+11. **scratchpad_logger** - Log internal thoughts to session-specific files
+
+## Tool Categories & Usage
+
+### Chat Management
+Tools for organizing and managing conversation threads:
+- Thread renaming and organization
+- Historical search and retrieval  
+- Conversation export and summaries
+
+### File Management  
+Tools for managing personal files and data:
+- Note creation, reading, and management
+- Todo list with task tracking
+- Content search across all files
+- Safe file operations within sandbox
+
+### Memory & Logging
+Tools for persistent memory and session logging:
+- Long-term memory storage and retrieval
+- Session-specific thought logging
+- Context preservation across conversations
+
+## Security Features
+- All tools operate within ~/.jeeves/ sandbox
+- Input validation and parameter filtering
+- Error handling with graceful fallbacks
+- Soft deletes for file operations
+- Comprehensive logging for audit trails
+
+## Usage Examples
+
+### Basic Tool Usage
+```python
+# Chat management
+response = manager.generate_response("Rename this thread to 'Project Planning'")
+response = manager.generate_response("Search for 'API' in chat history")
+
+# File management  
+response = manager.generate_response("Create a note called 'ideas' with content 'Build a new app'")
+response = manager.generate_response("Add 'Review code' to my todo list")
+
+# Memory management
+response = manager.generate_response("Remember that I prefer dark mode")
+response = manager.generate_response("Log this thought: 'User needs help with authentication'")
+```
+
+### Complex Workflows
+```python
+# Multi-step process
+response = manager.generate_response("""
+1. Search my notes for 'database design'
+2. If found, read the content
+3. Add 'Review database schema' to todo list
+4. Remember that I'm working on database optimization
+""")
+```
+
+For detailed tool calling documentation, see TOOL_CALLING_GUIDE.md
 """
 
 import logging
@@ -14,7 +91,28 @@ logger = logging.getLogger(__name__)
 
 
 class JeevesTools:
-    """Collection of tools available to Jeeves AI Assistant."""
+    """
+    Collection of tools available to Jeeves AI Assistant.
+    
+    This class provides 11 powerful tools organized into 3 categories:
+    
+    **Chat Management (6 tools):**
+    - Thread organization and renaming
+    - Historical search and retrieval  
+    - Conversation export and summaries
+    
+    **File Management (3 tools):**
+    - Personal note management
+    - Todo list with task tracking
+    - Content search across files
+    
+    **Memory & Logging (2 tools):**
+    - Persistent memory storage
+    - Session-specific thought logging
+    
+    All tools operate within a secure sandbox (~/.jeeves/) and include
+    comprehensive error handling, input validation, and logging.
+    """
 
     def __init__(self, chat_manager: ChatManager):
         """

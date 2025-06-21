@@ -380,3 +380,194 @@ For detailed testing documentation, see [tests/README.md](tests/README.md).
 ## License
 
 This project is licensed under the MIT License.
+
+## Available Tools
+
+Jeeves comes with **11 powerful built-in tools** that enable advanced functionality and automation. These tools are automatically available in conversations and can be called by the AI to perform various tasks.
+
+### 🗂️ **Chat Management Tools**
+
+#### `rename_chat_thread`
+Rename chat threads for better organization.
+```python
+# Rename current thread
+response = manager.generate_response("Rename this thread to 'Project Planning'")
+
+# Rename specific thread
+response = manager.generate_response("Rename thread 5 to 'Bug Fixes'")
+```
+
+#### `search_chat_history`
+Search through conversation history across all threads.
+```python
+# Search all threads
+response = manager.generate_response("Search for 'API integration' in chat history")
+
+# Search specific thread with limit
+response = manager.generate_response("Find mentions of 'database' in thread 3, limit to 5 results")
+```
+
+#### `get_available_threads`
+List all chat threads with message counts and activity info.
+```python
+response = manager.generate_response("Show me all my chat threads")
+```
+
+#### `get_current_thread_info`
+Get detailed information about the current active thread.
+```python
+response = manager.generate_response("What thread am I currently in?")
+```
+
+#### `export_current_conversation`
+Export the current conversation to JSON or text format.
+```python
+# Export as JSON
+response = manager.generate_response("Export this conversation as JSON")
+
+# Export as text
+response = manager.generate_response("Save this conversation as a text file")
+```
+
+#### `get_conversation_summary`
+Get a summary of the current conversation with statistics.
+```python
+response = manager.generate_response("Summarize this conversation")
+```
+
+### 📝 **File Management Tools**
+
+#### `note_manager`
+Manage personal notes in the `~/.jeeves/notes/` directory.
+```python
+# Create a new note
+response = manager.generate_response("Create a note called 'meeting_notes' with content 'Discuss API design'")
+
+# Read a note
+response = manager.generate_response("Read my meeting_notes")
+
+# Append to existing note
+response = manager.generate_response("Add 'Follow up on database migration' to meeting_notes")
+
+# List all notes
+response = manager.generate_response("Show me all my notes")
+
+# Delete a note
+response = manager.generate_response("Delete the meeting_notes file")
+```
+
+#### `todo_list_manager`
+Manage a centralized todo list in `~/.jeeves/todo.md`.
+```python
+# Add a new task
+response = manager.generate_response("Add 'Review pull request #123' to my todo list")
+
+# List all tasks
+response = manager.generate_response("Show me my todo list")
+
+# Complete a task
+response = manager.generate_response("Mark task 3 as complete")
+
+# Delete a task
+response = manager.generate_response("Remove task 2 from my todo list")
+
+# Clear all tasks
+response = manager.generate_response("Clear my entire todo list")
+```
+
+#### `content_searcher`
+Search for files and content within the `~/.jeeves/` sandbox.
+```python
+# Search file contents
+response = manager.generate_response("Search for 'database' in all my files")
+
+# Search by filename
+response = manager.generate_response("Find files with 'config' in the name")
+
+# Search both content and filenames
+response = manager.generate_response("Search for 'API' in both content and filenames")
+
+# Search with file pattern
+response = manager.generate_response("Search for 'password' in all .md files")
+
+# Non-recursive search
+response = manager.generate_response("Search for 'test' only in the current directory")
+```
+
+### 🧠 **Memory & Logging Tools**
+
+#### `persistent_memory_manager`
+Manage Jeeves's long-term memory in `~/.jeeves/MEMORY.md`.
+```python
+# Add a memory entry
+response = manager.generate_response("Remember that I prefer dark mode interfaces")
+
+# List all memories
+response = manager.generate_response("Show me all my memories")
+
+# Remove a memory entry
+response = manager.generate_response("Remove memory entry 5")
+
+# Clear all memories
+response = manager.generate_response("Clear all my memories")
+```
+
+#### `scratchpad_logger`
+Log internal thoughts to session-specific scratchpad files.
+```python
+# Log thoughts for current session
+response = manager.generate_response("Log this thought: 'User seems interested in API documentation'")
+
+# Log with specific session name
+response = manager.generate_response("Log to session 'project_planning': 'Need to research authentication methods'")
+```
+
+### 🔧 **Tool Usage Examples**
+
+#### Complex Workflows
+```python
+# Multi-step workflow
+response = manager.generate_response("""
+1. Create a note called 'project_ideas'
+2. Add 'Build a task management app' to my todo list
+3. Remember that I'm working on productivity tools
+4. Search for any existing notes about task management
+""")
+
+# Research and documentation
+response = manager.generate_response("""
+1. Search my notes for 'API documentation'
+2. If found, read the content
+3. If not found, create a new note with 'Need to document API endpoints'
+4. Add 'Write API documentation' to my todo list
+""")
+```
+
+#### Context-Aware Interactions
+```python
+# Contextual responses
+response = manager.generate_response("Based on our conversation, what should I remember about your preferences?")
+
+# Historical analysis
+response = manager.generate_response("Search our chat history for patterns in my coding questions")
+```
+
+### 🛡️ **Security & Safety**
+
+All tools operate within a sandboxed environment (`~/.jeeves/`) and include:
+- **Input validation** for all parameters
+- **Error handling** with graceful fallbacks
+- **File operation safety** with soft deletes
+- **Parameter filtering** to prevent injection attacks
+- **Logging** for audit trails
+
+### 📊 **Tool Statistics**
+
+- **Total Tools**: 11
+- **Chat Management**: 6 tools
+- **File Management**: 3 tools  
+- **Memory & Logging**: 2 tools
+- **Categories**: 3 main categories
+- **Safety Features**: 5+ security measures
+
+For detailed tool calling documentation and advanced usage examples, see [TOOL_CALLING_GUIDE.md](TOOL_CALLING_GUIDE.md).

@@ -13,6 +13,288 @@ Tool calling enables Jeeves to:
 - Chain multiple tools together
 - Handle complex multi-step processes
 
+## Built-in Tools Reference
+
+Jeeves comes with **11 powerful built-in tools** organized into 3 categories. These tools are automatically available and can be called by the AI during conversations.
+
+### 🗂️ Chat Management Tools
+
+#### 1. `rename_chat_thread`
+Rename chat threads for better organization.
+
+**Parameters:**
+- `thread_id` (Optional[int]): Thread ID to rename (None for current thread)
+- `new_name` (str): New name for the thread
+
+**Examples:**
+```python
+# Rename current thread
+response = manager.generate_response("Rename this thread to 'Project Planning'")
+
+# Rename specific thread
+response = manager.generate_response("Rename thread 5 to 'Bug Fixes'")
+```
+
+#### 2. `search_chat_history`
+Search through conversation history across all threads.
+
+**Parameters:**
+- `query` (str): Search query string
+- `thread_id` (Optional[int]): Limit search to specific thread
+- `limit` (int, default=10): Maximum number of results
+
+**Examples:**
+```python
+# Search all threads
+response = manager.generate_response("Search for 'API integration' in chat history")
+
+# Search specific thread with limit
+response = manager.generate_response("Find mentions of 'database' in thread 3, limit to 5 results")
+```
+
+#### 3. `get_available_threads`
+List all chat threads with message counts and activity info.
+
+**Parameters:** None
+
+**Examples:**
+```python
+response = manager.generate_response("Show me all my chat threads")
+```
+
+#### 4. `get_current_thread_info`
+Get detailed information about the current active thread.
+
+**Parameters:** None
+
+**Examples:**
+```python
+response = manager.generate_response("What thread am I currently in?")
+```
+
+#### 5. `export_current_conversation`
+Export the current conversation to JSON or text format.
+
+**Parameters:**
+- `format` (str, default="json"): Export format ("json" or "txt")
+
+**Examples:**
+```python
+# Export as JSON
+response = manager.generate_response("Export this conversation as JSON")
+
+# Export as text
+response = manager.generate_response("Save this conversation as a text file")
+```
+
+#### 6. `get_conversation_summary`
+Get a summary of the current conversation with statistics.
+
+**Parameters:** None
+
+**Examples:**
+```python
+response = manager.generate_response("Summarize this conversation")
+```
+
+### 📝 File Management Tools
+
+#### 7. `note_manager`
+Manage personal notes in the `~/.jeeves/notes/` directory.
+
+**Parameters:**
+- `action` (str): 'create', 'append', 'read', 'list', or 'delete'
+- `filename` (Optional[str]): Name of the note file (without .md extension)
+- `content` (Optional[str]): Content to write or append
+- `directory` (str, default="notes"): Subdirectory within ~/.jeeves/
+
+**Examples:**
+```python
+# Create a new note
+response = manager.generate_response("Create a note called 'meeting_notes' with content 'Discuss API design'")
+
+# Read a note
+response = manager.generate_response("Read my meeting_notes")
+
+# Append to existing note
+response = manager.generate_response("Add 'Follow up on database migration' to meeting_notes")
+
+# List all notes
+response = manager.generate_response("Show me all my notes")
+
+# Delete a note
+response = manager.generate_response("Delete the meeting_notes file")
+```
+
+#### 8. `todo_list_manager`
+Manage a centralized todo list in `~/.jeeves/todo.md`.
+
+**Parameters:**
+- `action` (str): 'add', 'list', 'complete', 'delete', or 'clear'
+- `task_content` (Optional[str]): Content of the task to add
+- `task_id` (Optional[int]): Numerical ID of the task to complete/delete
+
+**Examples:**
+```python
+# Add a new task
+response = manager.generate_response("Add 'Review pull request #123' to my todo list")
+
+# List all tasks
+response = manager.generate_response("Show me my todo list")
+
+# Complete a task
+response = manager.generate_response("Mark task 3 as complete")
+
+# Delete a task
+response = manager.generate_response("Remove task 2 from my todo list")
+
+# Clear all tasks
+response = manager.generate_response("Clear my entire todo list")
+```
+
+#### 9. `content_searcher`
+Search for files and content within the `~/.jeeves/` sandbox.
+
+**Parameters:**
+- `query` (str): Search query (keywords or regex pattern)
+- `search_type` (str, default="content"): 'content', 'filename', or 'both'
+- `file_pattern` (Optional[str]): Optional file pattern to limit search (e.g., "*.md")
+- `recursive` (bool, default=True): Whether to search recursively in subdirectories
+
+**Examples:**
+```python
+# Search file contents
+response = manager.generate_response("Search for 'database' in all my files")
+
+# Search by filename
+response = manager.generate_response("Find files with 'config' in the name")
+
+# Search both content and filenames
+response = manager.generate_response("Search for 'API' in both content and filenames")
+
+# Search with file pattern
+response = manager.generate_response("Search for 'password' in all .md files")
+
+# Non-recursive search
+response = manager.generate_response("Search for 'test' only in the current directory")
+```
+
+### 🧠 Memory & Logging Tools
+
+#### 10. `persistent_memory_manager`
+Manage Jeeves's long-term memory in `~/.jeeves/MEMORY.md`.
+
+**Parameters:**
+- `action` (str): 'add', 'list', 'remove', or 'clear'
+- `content` (Optional[str]): Memory entry to add
+- `entry_id` (Optional[int]): ID of entry to remove
+
+**Examples:**
+```python
+# Add a memory entry
+response = manager.generate_response("Remember that I prefer dark mode interfaces")
+
+# List all memories
+response = manager.generate_response("Show me all my memories")
+
+# Remove a memory entry
+response = manager.generate_response("Remove memory entry 5")
+
+# Clear all memories
+response = manager.generate_response("Clear all my memories")
+```
+
+#### 11. `scratchpad_logger`
+Log internal thoughts to session-specific scratchpad files.
+
+**Parameters:**
+- `content` (str): Content to log
+- `session_name` (Optional[str]): Optional session name (uses current thread if None)
+
+**Examples:**
+```python
+# Log thoughts for current session
+response = manager.generate_response("Log this thought: 'User seems interested in API documentation'")
+
+# Log with specific session name
+response = manager.generate_response("Log to session 'project_planning': 'Need to research authentication methods'")
+```
+
+### 🔧 Advanced Tool Usage Patterns
+
+#### Complex Workflows
+```python
+# Multi-step workflow
+response = manager.generate_response("""
+1. Create a note called 'project_ideas'
+2. Add 'Build a task management app' to my todo list
+3. Remember that I'm working on productivity tools
+4. Search for any existing notes about task management
+""")
+
+# Research and documentation
+response = manager.generate_response("""
+1. Search my notes for 'API documentation'
+2. If found, read the content
+3. If not found, create a new note with 'Need to document API endpoints'
+4. Add 'Write API documentation' to my todo list
+""")
+```
+
+#### Context-Aware Interactions
+```python
+# Contextual responses
+response = manager.generate_response("Based on our conversation, what should I remember about your preferences?")
+
+# Historical analysis
+response = manager.generate_response("Search our chat history for patterns in my coding questions")
+```
+
+#### Tool Chaining Examples
+```python
+# Information gathering workflow
+response = manager.generate_response("""
+1. Search my notes for 'database design patterns'
+2. If found, read the content and add 'Review database patterns' to todo list
+3. If not found, create a note with 'Research database design patterns'
+4. Remember that I'm working on database optimization
+5. Log this thought: 'User needs database design guidance'
+""")
+
+# Project management workflow
+response = manager.generate_response("""
+1. Get current thread info
+2. Create a note with thread name and current date
+3. Add 'Complete project planning' to todo list
+4. Search for any existing project notes
+5. Export current conversation for backup
+""")
+```
+
+### 🛡️ Tool Security & Safety
+
+All built-in tools include comprehensive security measures:
+
+- **Sandboxed Environment**: All file operations are restricted to `~/.jeeves/`
+- **Input Validation**: All parameters are validated before processing
+- **Error Handling**: Graceful error handling with informative messages
+- **Soft Deletes**: File deletions are moved to trash rather than permanent deletion
+- **Parameter Filtering**: Invalid parameters are automatically filtered out
+- **Logging**: All tool executions are logged for audit trails
+- **Type Safety**: Strong typing ensures parameter correctness
+
+### 📊 Tool Statistics
+
+- **Total Tools**: 11
+- **Chat Management**: 6 tools
+- **File Management**: 3 tools
+- **Memory & Logging**: 2 tools
+- **Categories**: 3 main categories
+- **Safety Features**: 5+ security measures
+- **File Operations**: 4 tools with file system access
+- **Search Capabilities**: 2 tools with search functionality
+- **Memory Operations**: 2 tools with persistent storage
+
 ## Architecture
 
 ### Base Provider Interface
