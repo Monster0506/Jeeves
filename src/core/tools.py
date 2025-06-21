@@ -68,13 +68,13 @@ response = manager.generate_response("Log this thought: 'User needs help with au
 
 ### Complex Workflows
 ```python
-# Multi-step process
-response = manager.generate_response("""
+# Multi-step process example
+response = manager.generate_response(\"\"\"
 1. Search my notes for 'database design'
 2. If found, read the content
 3. Add 'Review database schema' to todo list
 4. Remember that I'm working on database optimization
-""")
+\"\"\")
 ```
 
 For detailed tool calling documentation, see TOOL_CALLING_GUIDE.md
@@ -752,17 +752,14 @@ class JeevesTools:
             
             if search_type in ["content", "both"]:
                 logger.debug("Searching file contents")
-                # Search file contents
-                content_results = self.file_handler.search_file_contents(query, recursive=recursive)
+                # Search file contents - search_file_contents requires relative_root_path as first parameter
+                content_results = self.file_handler.search_file_contents("", query)
                 logger.debug(f"Found {len(content_results)} content results")
                 for result in content_results:
-                    file_path = result.get('file', 'Unknown')
-                    matches = result.get('matches', [])
-                    logger.debug(f"File {file_path} has {len(matches)} matches")
-                    for match in matches:
-                        line_num = match.get('line', 'Unknown')
-                        line_content = match.get('content', '')[:100]  # Truncate long lines
-                        results.append(f"Content in {file_path}:{line_num} - {line_content}...")
+                    file_path = result.get('file_path', 'Unknown')  # Changed from 'file' to 'file_path'
+                    line_number = result.get('line_number', 'Unknown')  # Changed from 'line' to 'line_number'
+                    line_content = result.get('line_content', '')[:100]  # Changed from 'content' to 'line_content'
+                    results.append(f"Content in {file_path}:{line_number} - {line_content}...")
             
             if not results:
                 logger.debug(f"No results found for query: '{query}'")
