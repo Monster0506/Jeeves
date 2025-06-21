@@ -123,22 +123,27 @@ class MessageBubble(ctk.CTkFrame):
             if hasattr(self, '_bubble') and self._bubble:
                 try:
                     self._bubble.destroy()
-                except Exception:
-                    pass
+                except tk.TclError as e:
+                    logger.debug(f"Widget already destroyed: {e}")
+                except Exception as e:
+                    logger.warning(f"Error destroying bubble widget: {e}")
                 self._bubble = None
             
             if hasattr(self, '_msg_frame') and self._msg_frame:
                 try:
                     self._msg_frame.destroy()
-                except Exception:
-                    pass
+                except tk.TclError as e:
+                    logger.debug(f"Widget already destroyed: {e}")
+                except Exception as e:
+                    logger.warning(f"Error destroying message frame: {e}")
                 self._msg_frame = None
             
             # Call parent destroy
             super().destroy()
-        except Exception:
-            # If parent destroy fails, just pass
-            pass
+        except tk.TclError as e:
+            logger.debug(f"Parent widget already destroyed: {e}")
+        except Exception as e:
+            logger.warning(f"Error during widget destruction: {e}")
 
     def _render_markdown(self, parent, text, text_color):
         # Use a Textbox for better markdown rendering with styles
@@ -427,9 +432,11 @@ class MessageBubble(ctk.CTkFrame):
             # Add some padding
             height = lines * (font_size + 9)
             md_text.configure(height=height)
-        except Exception:
+        except (tk.TclError, ValueError, TypeError) as e:
             # If height calculation fails, just leave it, it's not critical
-            pass
+            logger.debug(f"Height calculation failed: {e}")
+        except Exception as e:
+            logger.warning(f"Unexpected error in height calculation: {e}")
 
 
 class ChatDisplay(ctk.CTkFrame):
@@ -681,9 +688,10 @@ class ChatDisplay(ctk.CTkFrame):
             for widget in self.scrollable_frame.winfo_children():
                 try:
                     widget.destroy()
-                except Exception:
-                    # Widget might already be destroyed, continue
-                    pass
+                except tk.TclError as e:
+                    logger.debug(f"Widget already destroyed: {e}")
+                except Exception as e:
+                    logger.warning(f"Error destroying widget: {e}")
             
             self.bubbles.clear()
             
@@ -715,13 +723,13 @@ class ChatDisplay(ctk.CTkFrame):
                     self.bubbles.append(bubble)
                 except Exception as e:
                     # Log error but continue loading other messages
-                    logging.getLogger(__name__).warning(f"Failed to create message bubble: {e}")
+                    logger.warning(f"Failed to create message bubble: {e}")
                     continue
             
             self.update_idletasks()
             self.canvas.yview_moveto(1.0)
         except Exception as e:
-            logging.getLogger(__name__).error(f"Error loading messages: {e}")
+            logger.error(f"Error loading messages: {e}")
 
     def clear_messages(self):
         """Clear messages with proper widget cleanup to prevent Tkinter errors."""
@@ -730,14 +738,15 @@ class ChatDisplay(ctk.CTkFrame):
             for widget in self.scrollable_frame.winfo_children():
                 try:
                     widget.destroy()
-                except Exception:
-                    # Widget might already be destroyed, continue
-                    pass
+                except tk.TclError as e:
+                    logger.debug(f"Widget already destroyed: {e}")
+                except Exception as e:
+                    logger.warning(f"Error destroying widget: {e}")
             
             self.bubbles.clear()
             self.update_idletasks()
         except Exception as e:
-            logging.getLogger(__name__).error(f"Error clearing messages: {e}")
+            logger.error(f"Error clearing messages: {e}")
 
     def _search_messages(self):
         """Trigger message search."""
@@ -762,11 +771,12 @@ class ChatDisplay(ctk.CTkFrame):
             for bubble in self.bubbles:
                 try:
                     bubble.update_max_width(max_bubble_width)
-                except Exception:
-                    # Skip bubbles that can't be updated
-                    continue
+                except tk.TclError as e:
+                    logger.debug(f"Bubble widget already destroyed: {e}")
+                except Exception as e:
+                    logger.warning(f"Error updating bubble max width: {e}")
         except Exception as e:
-            logging.getLogger(__name__).warning(f"Error in canvas resize: {e}")
+            logger.warning(f"Error in canvas resize: {e}")
 
     def _on_frame_configure(self):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
