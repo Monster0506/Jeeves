@@ -82,7 +82,7 @@ class TestThreadIdentifierResolution:
         thread_id = chat_manager.create_thread("Test Thread", "🧪")
         
         # Test ID resolution
-        result = tools._resolve_thread_identifier(thread_id)
+        result = tools._resolve_thread_identifier(str(thread_id))
         assert result == thread_id
     
     def test_resolve_thread_identifier_with_name_unique(self, setup_tools):
@@ -161,7 +161,7 @@ class TestThreadIdentifierResolution:
         tools, chat_manager, db_manager = setup_tools
         
         # Test non-existent ID resolution
-        result = tools._resolve_thread_identifier(99999)
+        result = tools._resolve_thread_identifier("99999")
         assert result is None
     
     def test_resolve_thread_identifier_with_nonexistent_name(self, setup_tools):
@@ -180,7 +180,7 @@ class TestThreadIdentifierResolution:
         thread_id = chat_manager.create_thread("Old Name", "🧪")
         
         # Test renaming with ID
-        result = tools.rename_chat_thread(thread_id, "New Name")
+        result = tools.rename_chat_thread(str(thread_id), "New Name")
         assert "Successfully renamed" in result
         
         # Verify the thread was renamed
@@ -220,7 +220,7 @@ class TestThreadIdentifierResolution:
         tools, chat_manager, db_manager = setup_tools
         
         # Test renaming with non-existent ID
-        result = tools.rename_chat_thread(99999, "New Name")
+        result = tools.rename_chat_thread("99999", "New Name")
         assert "Thread '99999' not found" in result
         
         # Test renaming with non-existent name
@@ -235,7 +235,7 @@ class TestThreadIdentifierResolution:
         thread_id = chat_manager.create_thread("Test Thread", "🧪")
         
         # Test renaming with empty name
-        result = tools.rename_chat_thread(thread_id, "")
+        result = tools.rename_chat_thread(str(thread_id), "")
         assert "Error:" in result
         assert "New name cannot be empty" in result
     
@@ -250,7 +250,7 @@ class TestThreadIdentifierResolution:
         chat_manager.add_ai_message("Hi there!")
         
         # Test searching with thread ID
-        result = tools.search_chat_history("Hello", thread_identifier=thread_id)
+        result = tools.search_chat_history("Hello", thread_identifier=str(thread_id))
         assert "Found" in result
         assert "Hello world" in result
     
@@ -287,7 +287,7 @@ class TestThreadIdentifierResolution:
         tools, chat_manager, db_manager = setup_tools
         
         # Test searching with non-existent ID
-        result = tools.search_chat_history("test", thread_identifier=99999)
+        result = tools.search_chat_history("test", thread_identifier="99999")
         assert "Thread '99999' not found" in result
         
         # Test searching with non-existent name
@@ -305,7 +305,7 @@ class TestThreadIdentifierResolution:
         chat_manager.add_ai_message("Hi there!")
         
         # Test exporting with thread ID
-        result = tools.export_current_conversation(thread_identifier=thread_id, format="json")
+        result = tools.export_current_conversation(thread_identifier=str(thread_id), format="json")
         assert "Successfully exported" in result
     
     def test_export_current_conversation_with_thread_name(self, setup_tools):
@@ -340,7 +340,7 @@ class TestThreadIdentifierResolution:
         tools, chat_manager, db_manager = setup_tools
         
         # Test exporting with non-existent ID
-        result = tools.export_current_conversation(thread_identifier=99999, format="json")
+        result = tools.export_current_conversation(thread_identifier="99999", format="json")
         assert "Thread '99999' not found" in result
         
         # Test exporting with non-existent name

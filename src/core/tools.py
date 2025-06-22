@@ -125,12 +125,12 @@ class JeevesTools:
         self.file_handler = JeevesFileHandler()
         logger.info("JeevesTools initialized with chat manager and file handler")
 
-    def _resolve_thread_identifier(self, thread_identifier: Optional[Union[int, str]]) -> Optional[int]:
+    def _resolve_thread_identifier(self, thread_identifier: Optional[str]) -> Optional[int]:
         """
         Resolve a thread identifier to a thread ID.
         
         Args:
-            thread_identifier: Thread ID (int) or thread name (str), or None for current thread
+            thread_identifier: Thread ID (as string) or thread name (str), or None for current thread
             
         Returns:
             Thread ID if found, or None if not found or ambiguous
@@ -141,12 +141,14 @@ class JeevesTools:
             current_thread_id = self.chat_manager.get_current_thread_id()
             return current_thread_id
         
-        if isinstance(thread_identifier, int):
-            # Direct ID - verify it exists
-            thread = self.chat_manager.get_thread(thread_identifier)
-            return thread_identifier if thread else None
-        
         if isinstance(thread_identifier, str):
+            # Check if it's a numeric string (thread ID)
+            if thread_identifier.isdigit():
+                thread_id = int(thread_identifier)
+                # Direct ID - verify it exists
+                thread = self.chat_manager.get_thread(thread_id)
+                return thread_id if thread else None
+            
             # Name search
             matching_threads = self.chat_manager.find_threads_by_name(thread_identifier)
             
@@ -169,12 +171,12 @@ class JeevesTools:
         
         return None
 
-    def rename_chat_thread(self, thread_identifier: Optional[Union[int, str]], new_name: str) -> str:
+    def rename_chat_thread(self, thread_identifier: Optional[str], new_name: str) -> str:
         """
         Rename a chat thread.
 
         Args:
-            thread_identifier: Thread ID (int) or thread name (str), or None for the current thread
+            thread_identifier: Thread ID (as string) or thread name (str), or None for the current thread
             new_name: The new name for the thread
 
         Returns:
@@ -225,14 +227,14 @@ class JeevesTools:
             return f"Error: {str(e)}"
 
     def search_chat_history(
-        self, query: str, thread_identifier: Optional[Union[int, str]] = None, limit: int = 10
+        self, query: str, thread_identifier: Optional[str] = None, limit: int = 10
     ) -> str:
         """
         Search through chat history.
 
         Args:
             query: Search query string
-            thread_identifier: Thread ID (int) or thread name (str), or None for all threads
+            thread_identifier: Thread ID (as string) or thread name (str), or None for all threads
             limit: Maximum number of results to return
 
         Returns:
@@ -372,12 +374,12 @@ class JeevesTools:
             logger.error(f"Error getting current thread info: {e}", exc_info=True)
             return f"Error: {str(e)}"
 
-    def export_current_conversation(self, thread_identifier: Optional[Union[int, str]] = None, format: str = "json") -> str:
+    def export_current_conversation(self, thread_identifier: Optional[str] = None, format: str = "json") -> str:
         """
         Export a conversation to a file.
 
         Args:
-            thread_identifier: Thread ID (int) or thread name (str), or None for the current thread
+            thread_identifier: Thread ID (as string) or thread name (str), or None for the current thread
             format: Export format ('json' or 'txt')
 
         Returns:
