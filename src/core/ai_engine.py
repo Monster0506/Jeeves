@@ -5,7 +5,7 @@ Now uses a modular provider system for different AI backends.
 """
 
 import logging
-from typing import Dict, List
+from typing import Optional, Dict, List
 
 from .ai_provider_manager import AIProviderManager
 from .chat_manager import ChatManager
@@ -79,7 +79,7 @@ class AIEngine:
         # No longer needed: self.conversation_history = []
         pass
 
-    def generate_response(self, user_message: str, attachments: List[Dict] = None) -> str:
+    def generate_response(self, user_message: str, attachments: Optional[List[Dict]] = None) -> str:
         """
         Generate an AI response to the user's message.
 
@@ -204,7 +204,7 @@ class AIEngine:
             logger.error(f"Error refreshing memory: {e}")
             return False
 
-    def get_conversation_context(self, thread_id: int = None) -> List[Dict]:
+    def get_conversation_context(self, thread_id: Optional[int] = None) -> List[Dict]:
         """
         Get conversation context for AI processing.
 
@@ -254,7 +254,7 @@ class AIEngine:
         """
         return self.provider_manager.get_available_providers()
 
-    def analyze_conversation(self, thread_id: int = None) -> Dict:
+    def analyze_conversation(self, thread_id: Optional[int] = None) -> Dict:
         """
         Analyze the current conversation for insights.
 

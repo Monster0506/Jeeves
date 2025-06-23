@@ -5,7 +5,7 @@ Defines the contract that all AI providers must implement.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List
+from typing import Optional, Any, Callable, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class BaseAIProvider(ABC):
     """Abstract base class for AI providers."""
 
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         """
         Initialize the AI provider.
 
@@ -40,8 +40,8 @@ class BaseAIProvider(ABC):
     def generate_response(
         self,
         user_message: str,
-        context: List[Dict] = None,
-        attachments: List[Dict] = None,
+        context: Optional[List[Dict]] = None,
+        attachments: Optional[List[Dict]] = None,
     ) -> str:
         """
         Generate an AI response to the user's message.
@@ -66,7 +66,7 @@ class BaseAIProvider(ABC):
         """
         pass
 
-    def register_tool(self, name: str, function: Callable, description: str = None) -> bool:
+    def register_tool(self, name: str, function: Callable, description: Optional[str] = None) -> bool:
         """
         Register a tool/function that can be used by the provider.
 

@@ -298,11 +298,11 @@ class DatabaseManager:
     def create_thread(
         self,
         name: str,
-        icon: str = None,
-        description: str = None,
-        tags: List[str] = None,
-        metadata: Dict = None,
-        settings: Dict = None,
+        icon: Optional[str] = None,
+        description: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        metadata: Optional[Dict] = None,
+        settings: Optional[Dict] = None,
     ) -> int:
         """
         Create a new conversation thread.
@@ -349,7 +349,7 @@ class DatabaseManager:
         self,
         active_only: bool = True,
         include_archived: bool = False,
-        limit: int = None,
+        limit: Optional[int] = None,
         offset: int = 0,
     ) -> List[Dict]:
         """
@@ -644,10 +644,10 @@ class DatabaseManager:
         sender: str,
         content: str,
         content_type: str = "text",
-        metadata: Dict = None,
-        attachments: List[Dict] = None,
-        parent_message_id: int = None,
-        reply_to_message_id: int = None,
+        metadata: Optional[Dict] = None,
+        attachments: Optional[List[Dict]] = None,
+        parent_message_id: Optional[int] = None,
+        reply_to_message_id: Optional[int] = None,
     ) -> int:
         """
         Add a message to a thread with enhanced features.
@@ -831,7 +831,7 @@ class DatabaseManager:
     def search_messages(
         self,
         query: str,
-        thread_id: int = None,
+        thread_id: Optional[int] = None,
         limit: int = 50,
         include_attachments: bool = False,
     ) -> List[Dict]:
@@ -930,7 +930,7 @@ class DatabaseManager:
 
         return self._execute_with_retry(_search)
 
-    def update_message(self, message_id: int, content: str = None, metadata: Dict = None) -> bool:
+    def update_message(self, message_id: int, content: Optional[str] = None, metadata: Optional[Dict] = None) -> bool:
         """
         Update a message with new content or metadata.
 
@@ -972,7 +972,7 @@ class DatabaseManager:
 
         return self._execute_with_retry(_update)
 
-    def get_user_settings(self, key: str = None) -> Union[Dict, Any]:
+    def get_user_settings(self, key: Optional[str] = None) -> Union[Dict, Any]:
         """
         Get user settings.
 
@@ -1038,7 +1038,7 @@ class DatabaseManager:
 
         return self._execute_with_retry(_get)
 
-    def set_user_setting(self, key: str, value: Any, value_type: str = "string", description: str = None) -> bool:
+    def set_user_setting(self, key: str, value: Any, value_type: str = "string", description: Optional[str] = None) -> bool:
         """
         Set a user setting.
 
@@ -1110,7 +1110,7 @@ class DatabaseManager:
         logger.info(f"Added analytics for thread {thread_id}: {analytics_type}")
         return analytics_id
 
-    def get_analytics(self, thread_id: int, analytics_type: str = None) -> List[Dict]:
+    def get_analytics(self, thread_id: int, analytics_type: Optional[str] = None) -> List[Dict]:
         """
         Get conversation analytics.
 

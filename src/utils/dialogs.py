@@ -11,7 +11,7 @@ import customtkinter as ctk
 logger = logging.getLogger(__name__)
 
 
-def show_error(title: str, message: str, parent: Any = None) -> None:
+def show_error(title: str, message: str, parent: Optional[Any] = None) -> None:
     """Show an error dialog."""
     try:
         dialog = ctk.CTkToplevel(parent)
@@ -50,7 +50,7 @@ def show_error(title: str, message: str, parent: Any = None) -> None:
         logger.error(f"Error showing error dialog: {e}")
 
 
-def show_info(title: str, message: str, parent: Any = None) -> None:
+def show_info(title: str, message: str, parent: Optional[Any] = None) -> None:
     """Show an info dialog."""
     try:
         dialog = ctk.CTkToplevel(parent)
@@ -89,7 +89,7 @@ def show_info(title: str, message: str, parent: Any = None) -> None:
         logger.error(f"Error showing info dialog: {e}")
 
 
-def show_warning(title: str, message: str, parent: Any = None) -> None:
+def show_warning(title: str, message: str, parent: Optional[Any] = None) -> None:
     """Show a warning dialog."""
     try:
         dialog = ctk.CTkToplevel(parent)
@@ -131,7 +131,7 @@ def show_warning(title: str, message: str, parent: Any = None) -> None:
 def show_confirmation(
     title: str,
     message: str,
-    parent: Any = None,
+    parent: Optional[Any] = None,
     on_confirm: Optional[Callable] = None,
     on_cancel: Optional[Callable] = None,
 ) -> bool:
@@ -210,7 +210,7 @@ def show_input_dialog(
     title: str,
     message: str,
     default_value: str = "",
-    parent: Any = None,
+    parent: Optional[Any] = None,
     on_ok: Optional[Callable] = None,
     on_cancel: Optional[Callable] = None,
 ) -> Optional[str]:
@@ -293,7 +293,7 @@ def show_input_dialog(
         return None
 
 
-def show_loading_dialog(title: str, message: str, parent: Any = None) -> Any:
+def show_loading_dialog(title: str, message: str, parent: Optional[Any] = None) -> Any:
     """Show a loading dialog."""
     try:
         dialog = ctk.CTkToplevel(parent)

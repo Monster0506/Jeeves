@@ -8,7 +8,7 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Optional, Any, Dict, List
 
 from src.config.settings import APP_SETTINGS
 
@@ -320,8 +320,8 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
     def generate_response(
         self,
         user_message: str,
-        context: List[Dict] = None,
-        attachments: List[Dict] = None,
+        context: Optional[List[Dict]] = None,
+        attachments: Optional[List[Dict]] = None,
     ) -> str:
         """
         Generate a response using Gemini AI with automatic tool calling and file support.

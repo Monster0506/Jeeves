@@ -28,7 +28,7 @@ class SandboxViolationError(ValueError):
 class JeevesFileHandler:
     """Secure file handler for Jeeves AI Assistant operations."""
 
-    def __init__(self, sandbox_root_dir: str = None):
+    def __init__(self, sandbox_root_dir: Optional[str] = None):
         """
         Initialize the file handler with sandbox directory.
 
@@ -1787,7 +1787,7 @@ class JeevesFileHandler:
     # Error Handling & Logging (Placeholders/basic implementations)
     # For a real system, these would interact with a more persistent logging/auditing system.
 
-    def _log_operation(self, operation_type: str, status: str, path: str, details: Dict = None) -> None:
+    def _log_operation(self, operation_type: str, status: str, path: str, details: Optional[Dict] = None) -> None:
         """Internal method to log operation history."""
         entry = {
             "timestamp": datetime.now().isoformat(),

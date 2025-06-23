@@ -62,10 +62,10 @@ class ChatManager:
         self,
         name: str,
         icon: str = "💬",
-        description: str = None,
-        tags: List[str] = None,
-        metadata: Dict = None,
-        settings: Dict = None,
+        description: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        metadata: Optional[Dict] = None,
+        settings: Optional[Dict] = None,
     ) -> int:
         """
         Create a new conversation thread.
@@ -97,7 +97,7 @@ class ChatManager:
         self,
         active_only: bool = True,
         include_archived: bool = False,
-        limit: int = None,
+        limit: Optional[int] = None,
         offset: int = 0,
     ) -> List[Dict]:
         """Get all active threads."""
@@ -209,8 +209,8 @@ class ChatManager:
         self,
         content: str,
         content_type: str = "text",
-        metadata: Dict = None,
-        attachments: List[Dict] = None,
+        metadata: Optional[Dict] = None,
+        attachments: Optional[List[Dict]] = None,
     ) -> int:
         """
         Add a user message to the current thread.
@@ -253,8 +253,8 @@ class ChatManager:
         self,
         content: str,
         content_type: str = "text",
-        metadata: Dict = None,
-        attachments: List[Dict] = None,
+        metadata: Optional[Dict] = None,
+        attachments: Optional[List[Dict]] = None,
     ) -> int:
         """
         Add an AI message to the current thread.
@@ -293,7 +293,7 @@ class ChatManager:
             logger.error(f"Failed to add AI message: {e}")
             raise
 
-    def add_system_message(self, content: str, content_type: str = "text", metadata: Dict = None) -> int:
+    def add_system_message(self, content: str, content_type: str = "text", metadata: Optional[Dict] = None) -> int:
         """
         Add a system message to the current thread.
 
@@ -388,7 +388,7 @@ class ChatManager:
     def search_messages(
         self,
         query: str,
-        thread_id: int = None,
+        thread_id: Optional[int] = None,
         limit: int = 50,
         include_attachments: bool = False,
     ) -> List[Dict]:
@@ -413,7 +413,7 @@ class ChatManager:
             logger.error(f"Failed to search messages: {e}")
             return []
 
-    def get_conversation_summary(self, thread_id: int = None) -> Dict:
+    def get_conversation_summary(self, thread_id: Optional[int] = None) -> Dict:
         """
         Get a summary of the current conversation.
 
@@ -462,7 +462,7 @@ class ChatManager:
             logger.error(f"Failed to get conversation summary for thread {thread_id}: {e}")
             return {}
 
-    def export_conversation(self, thread_id: int = None, format: str = "json") -> str:
+    def export_conversation(self, thread_id: Optional[int] = None, format: str = "json") -> str:
         """
         Export a conversation to a file.
 
@@ -515,7 +515,7 @@ class ChatManager:
             logger.error(f"Failed to export conversation: {e}")
             raise
 
-    def get_user_settings(self, key: str = None) -> Any:
+    def get_user_settings(self, key: Optional[str] = None) -> Any:
         """
         Get user settings.
 
@@ -531,7 +531,7 @@ class ChatManager:
             logger.error(f"Failed to get user settings: {e}")
             return {} if key is None else None
 
-    def set_user_setting(self, key: str, value: Any, value_type: str = "string", description: str = None) -> bool:
+    def set_user_setting(self, key: str, value: Any, value_type: str = "string", description: Optional[str] = None) -> bool:
         """
         Set a user setting.
 
@@ -568,7 +568,7 @@ class ChatManager:
             logger.error(f"Failed to add analytics: {e}")
             raise
 
-    def get_analytics(self, thread_id: int, analytics_type: str = None) -> List[Dict]:
+    def get_analytics(self, thread_id: int, analytics_type: Optional[str] = None) -> List[Dict]:
         """
         Get conversation analytics.
 

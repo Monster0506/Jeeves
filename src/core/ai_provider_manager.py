@@ -96,7 +96,7 @@ class AIProviderManager:
             except Exception as e:
                 logger.error(f"Failed to register tool '{name}' with {provider.provider_name}: {e}")
 
-    def register_tool(self, name: str, function: Callable, description: str = None) -> bool:
+    def register_tool(self, name: str, function: Callable, description: Optional[str] = None) -> bool:
         """
         Register a tool/function that can be used by all providers.
 
@@ -239,8 +239,8 @@ class AIProviderManager:
     def generate_response(
         self,
         user_message: str,
-        context: List[Dict] = None,
-        attachments: List[Dict] = None,
+        context: Optional[List[Dict]] = None,
+        attachments: Optional[List[Dict]] = None,
     ) -> str:
         """
         Generate a response using the current AI provider.

@@ -6,7 +6,7 @@ Provides simple keyword-based responses as a fallback when no AI service is avai
 import logging
 import time
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Optional, Any, Dict, List
 
 from .base_provider import BaseAIProvider
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class PlaceholderProvider(BaseAIProvider):
     """Placeholder AI provider with simple keyword-based responses."""
 
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         """
         Initialize the placeholder provider.
 
@@ -46,8 +46,8 @@ class PlaceholderProvider(BaseAIProvider):
     def generate_response(
         self,
         user_message: str,
-        context: List[Dict] = None,
-        attachments: List[Dict] = None,
+        context: Optional[List[Dict]] = None,
+        attachments: Optional[List[Dict]] = None,
     ) -> str:
         """
         Generate a placeholder response based on keywords.
