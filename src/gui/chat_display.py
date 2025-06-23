@@ -516,6 +516,30 @@ class MessageBubble(ctk.CTkFrame):
             logger.warning(f"Unexpected error in height calculation: {e}")
 
 
+class AttachmentPill(ctk.CTkFrame):
+    """A widget to display a single attachment in the input area."""
+    def __init__(self, parent, attachment_info: Dict, on_remove: Callable):
+        super().__init__(parent, fg_color=("#E0E0E0", "#4A4D50"), corner_radius=12)
+        self.pack(side="left", padx=4, pady=4)
+
+        # File icon
+        icon_label = ctk.CTkLabel(self, text="📄", font=(None, 16))
+        icon_label.pack(side="left", padx=(8, 4))
+
+        # File name
+        file_name = attachment_info.get("name", "Unknown file")
+        name_label = ctk.CTkLabel(self, text=file_name, font=(None, 12))
+        name_label.pack(side="left", padx=4)
+
+        # Remove button
+        remove_button = ctk.CTkButton(
+            self, text="✕", width=20, height=20, corner_radius=10,
+            fg_color=("#D0D0D0", "#3A3D40"), hover_color=("#C0C0C0", "#2A2D30"),
+            command=on_remove
+        )
+        remove_button.pack(side="left", padx=(4, 8))
+
+
 class ChatDisplay(ctk.CTkFrame):
     """Modern chat display with bubble design and markdown support."""
 
@@ -581,11 +605,19 @@ class ChatDisplay(ctk.CTkFrame):
             border_color=self.theme["border_primary"],
         )
         self.input_frame.grid(
-            row=1, column=0, sticky="ew", padx=16, pady=(16, 16)
-        )  # Consistent spacing
+            row=1, column=0, sticky="ew", padx=16, pady=(16, 8)
+        )  # Consistent spacing, less bottom padding
         self.input_frame.grid_columnconfigure(
             1, weight=1
         )  # Changed to column 1 for paperclip button
+
+        # Attachment Tray
+        self.attachment_tray = ctk.CTkScrollableFrame(
+            self, fg_color=self.theme["bg_secondary"], height=60,
+            orientation="horizontal", scrollbar_button_color=self.theme["button_secondary"],
+            scrollbar_button_hover_color=self.theme["button_secondary_hover"]
+        )
+        # This will be gridded later when an attachment is added
 
         # Paperclip button for file attachments
         self.attachment_button = ctk.CTkButton(
@@ -634,8 +666,8 @@ class ChatDisplay(ctk.CTkFrame):
             border_color=self.theme["border_secondary"],
         )
         self.toolbar_frame.grid(
-            row=2, column=0, sticky="ew", padx=16, pady=(0, 16)
-        )  # Consistent spacing
+            row=3, column=0, sticky="ew", padx=16, pady=(0, 16)
+        )  # Consistent spacing, row updated to 3
 
         self.search_button = ctk.CTkButton(
             self.toolbar_frame,
@@ -762,29 +794,22 @@ class ChatDisplay(ctk.CTkFrame):
 
     def _send_message(self):
         message = self.input_field.get().strip()
+        
+        # Prevent sending empty messages unless there are attachments
         if not message and not self._current_attachments:
             return
 
-        if message and self.on_send_message:
-            # Handle attachments if present
-            attachments = getattr(self, "_current_attachments", [])
-            if attachments:
-                # Add attachment information to the message
-                attachment_text = "\n\n**Attachments:**\n"
-                for attachment in attachments:
-                    file_size_mb = attachment["size"] / 1024 / 1024
-                    attachment_text += f"- ATTACHMENT: {attachment['name']} ({file_size_mb:.1f}MB, {attachment['type']})\n"
-                message += attachment_text
+        # Extract the attachment info dictionaries from the internal list
+        attachments_to_send = [info for key, info, widget in self._current_attachments]
 
-                # Call attachment callback if provided
-                if self.on_attachment:
-                    for attachment in attachments:
-                        self.on_attachment(attachment)
+        # The on_send_message callback now receives the pure message text
+        # and a list of attachment dictionaries.
+        if self.on_send_message:
+            self.on_send_message(message, attachments_to_send)
 
-            self.on_send_message(message)
-            # Clear the input field and any attachments
-            self.input_field.delete(0, "end")
-            self._clear_attachments()
+        # Clear the input field and any attachments
+        self.input_field.delete(0, "end")
+        self._clear_attachments()
 
     def _insert_newline(self):
         current_text = self.input_field.get()
@@ -1013,8 +1038,8 @@ class ChatDisplay(ctk.CTkFrame):
                 "type": self._get_file_type(file_extension),
             }
 
-            # Add attachment to input field
-            self._add_attachment_to_input(attachment_info)
+            # Add attachment to the new UI tray
+            self._add_attachment(attachment_info)
 
         except Exception as e:
             logger.error(f"Error handling file attachment: {e}")
@@ -1046,41 +1071,59 @@ class ChatDisplay(ctk.CTkFrame):
         }
         return file_types.get(extension, "File")
 
-    def _add_attachment_to_input(self, attachment_info: Dict):
-        """Add attachment information to the input field."""
-        try:
-            current_text = self.input_field.get()
+    def _add_attachment(self, attachment_info: Dict):
+        """Add a new attachment pill to the UI."""
+        # Show the tray if this is the first attachment
+        if not self._current_attachments:
+            self.attachment_tray.grid(row=2, column=0, sticky="ew", padx=16, pady=(0, 8))
 
-            # Create attachment text with a simpler indicator to avoid Unicode issues
-            file_size_mb = attachment_info["size"] / 1024 / 1024
-            attachment_text = (
-                f"\n[ATTACHMENT: {attachment_info['name']} ({file_size_mb:.1f}MB)]"
-            )
+        # Use the file path as a unique key
+        attachment_key = attachment_info["path"]
+        
+        # Prevent duplicate attachments
+        if any(key == attachment_key for key, _, _ in self._current_attachments):
+            logger.warning(f"Attachment {attachment_info['name']} already added.")
+            return
 
-            # Add to current text
-            new_text = current_text + attachment_text
-            self.input_field.delete(0, "end")
-            self.input_field.insert(0, new_text)
+        # Create the pill widget and store a reference to it
+        pill = AttachmentPill(
+            self.attachment_tray,
+            attachment_info,
+            lambda: self._remove_attachment(attachment_key)
+        )
+        
+        # Store attachment info along with its widget
+        self._current_attachments.append((attachment_key, attachment_info, pill))
+        
+    def _remove_attachment(self, attachment_key: str):
+        """Remove an attachment pill from the UI."""
+        attachment_to_remove = None
+        for attachment in self._current_attachments:
+            if attachment[0] == attachment_key:
+                attachment_to_remove = attachment
+                break
+        
+        if attachment_to_remove:
+            key, info, pill_widget = attachment_to_remove
+            pill_widget.destroy()
+            self._current_attachments.remove(attachment_to_remove)
+            logger.info(f"Removed attachment: {info['name']}")
 
-            # Store attachment info for later processing
-            if not hasattr(self, "_current_attachments"):
-                self._current_attachments = []
-            self._current_attachments.append(attachment_info)
-
-            # Don't change placeholder text - this was causing the typing issue
-            # Instead, we'll show attachment info in a different way if needed
-
-        except Exception as e:
-            logger.error(f"Error adding attachment to input: {e}")
+        # Hide the tray if no attachments are left
+        if not self._current_attachments:
+            self.attachment_tray.grid_forget()
 
     def _show_error_message(self, message: str):
         """Show error message to user."""
-        # For now, we'll use a simple approach - in the future this could be a toast notification
         logger.error(f"User error: {message}")
         # You could implement a toast notification system here
 
     def _clear_attachments(self):
-        """Clear current attachments."""
-        if hasattr(self, "_current_attachments"):
-            self._current_attachments.clear()
+        """Clear all attachment pills."""
+        for key, info, pill_widget in self._current_attachments:
+            pill_widget.destroy()
+        
+        self._current_attachments.clear()
+        self.attachment_tray.grid_forget()
+        logger.info("Cleared all attachments.")
         # The placeholder is managed by the widget, so no need to configure it here.

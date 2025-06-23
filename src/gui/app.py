@@ -278,41 +278,38 @@ class JeevesApp:
             logger.error(f"Failed to rename thread: {e}")
             show_error("Error", f"Failed to rename thread: {e}")
     
-    def _on_send_message(self, message: str):
+    def _on_send_message(self, message: str, attachments: List[Dict] = None):
         """Handle sending a message."""
-        if not message.strip():
-            return
+        # The message no longer contains attachment text, so no cleaning is needed.
         
         try:
-            # Extract attachments from the message if present
-            attachments = []
-            clean_message = message
-            
-            # Check if there are attachments in the message
-            if hasattr(self.chat_display, '_current_attachments') and self.chat_display._current_attachments:
-                attachments = self.chat_display._current_attachments.copy()
-                # Remove attachment text from the message content
-                # The attachment text was added in the format: "\n\n**Attachments:**\n- ATTACHMENT: ..."
-                if "\n\n**Attachments:**\n" in clean_message:
-                    clean_message = clean_message.split("\n\n**Attachments:**\n")[0].strip()
-            
             # Add user message to chat display immediately
-            self.chat_display.add_user_message(message)
+            # We construct the display text here, including attachments
+            display_message = message
+            if attachments:
+                attachment_text = "\n\n**Attachments:**\n"
+                for att in attachments:
+                    file_size_mb = att.get('size', 0) / 1024 / 1024
+                    attachment_text += f"- {att.get('name', '...')} ({file_size_mb:.1f}MB)\n"
+                display_message += attachment_text
             
-            # Process attachments if present
+            self.chat_display.add_user_message(display_message)
+            
+            # Process attachments for the backend
             processed_attachments = []
             if attachments:
                 for attachment in attachments:
-                    processed_attachment = self._process_attachment(attachment)
-                    if processed_attachment:
-                        processed_attachments.append(processed_attachment)
+                    processed = self._process_attachment(attachment)
+                    if processed:
+                        processed_attachments.append(processed)
             
             # Generate AI response in a separate thread
             def generate_response():
                 try:
-                    # The AI engine will handle adding the user message to the database
-                    # and processing attachments
-                    response = self.ai_engine.generate_response(clean_message, attachments=processed_attachments if attachments else None)
+                    response = self.ai_engine.generate_response(
+                        message, 
+                        attachments=processed_attachments
+                    )
                     # Update UI in main thread
                     self.root.after(0, lambda: self.chat_display.add_ai_message(response))
                 except Exception as e:
