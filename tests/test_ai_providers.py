@@ -8,8 +8,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from core.ai_providers import (BaseAIProvider, GeminiProvider,
-                               PlaceholderProvider)
+from core.ai_providers import BaseAIProvider, GeminiProvider, PlaceholderProvider
 
 
 # Test tool functions for tool calling tests

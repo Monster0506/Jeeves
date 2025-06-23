@@ -10,8 +10,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from core.ai_provider_manager import AIProviderManager
-from core.ai_providers import (BaseAIProvider, GeminiProvider,
-                               PlaceholderProvider)
+from core.ai_providers import BaseAIProvider, GeminiProvider, PlaceholderProvider
 from core.chat_manager import ChatManager
 from core.database import DatabaseManager
 from core.tools import JeevesTools

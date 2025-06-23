@@ -4,10 +4,17 @@ Tests for the dialogs module.
 
 from unittest.mock import MagicMock, patch
 
-from src.utils.dialogs import (close_loading_dialog, show_confirmation,
-                               show_confirmation_dialog, show_error, show_info,
-                               show_input_dialog, show_loading_dialog,
-                               show_warning, show_warning_dialog)
+from src.utils.dialogs import (
+    close_loading_dialog,
+    show_confirmation,
+    show_confirmation_dialog,
+    show_error,
+    show_info,
+    show_input_dialog,
+    show_loading_dialog,
+    show_warning,
+    show_warning_dialog,
+)
 
 
 class TestDialogs:

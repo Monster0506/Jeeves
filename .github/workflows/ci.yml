@@ -170,7 +170,7 @@ jobs:
         uv run black --check src/ tests/ --line-length 2000
         
         # Run isort check
-        uv run isort --check-only src/ tests/
+        uv run isort --check-only src/ tests/ --profile black
 
   build:
     name: Build

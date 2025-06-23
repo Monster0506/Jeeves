@@ -4,8 +4,13 @@ Tests for the settings module.
 
 import os
 
-from src.config.settings import (AI_PROVIDER_SETTINGS, APP_SETTINGS, COLORS,
-                                 DEFAULT_THREADS, ICONS)
+from src.config.settings import (
+    AI_PROVIDER_SETTINGS,
+    APP_SETTINGS,
+    COLORS,
+    DEFAULT_THREADS,
+    ICONS,
+)
 from src.core.file_handler import JeevesFileHandler
 
 
