@@ -76,7 +76,7 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v4
       with:
-        version: "0.2.0"
+        version: "0.7.13"
 
     - name: Cache uv dependencies
       uses: actions/cache@v4
@@ -93,26 +93,26 @@ jobs:
         uv sync --extra dev
 
     - name: Run security checks
-      run: | 
-                # Run Bandit security checks
-                uv run bandit -r src/ -f json -o bandit-report.json || true
-                
-                # Run safety checks for known vulnerabilities (using deprecated but working command)
-                uv run safety check --json > safety-report-raw.json 2>/dev/null || echo '{"vulnerabilities": []}' > safety-report-raw.json
-                
-                # Filter out the warning lines from the raw safety report
-                grep -v "DEPRECATED" safety-report-raw.json | grep -v "===" > safety-report.json || echo '{"vulnerabilities": []}' > safety-report.json
-                
-                # Display results
-                echo "=== Bandit Security Report ==="
-                if [ -f bandit-report.json ]; then
-                  cat bandit-report.json | jq -r '.results[] | "\(.severity): \(.issue_text) at \(.filename):\(.line_number)"' || echo "No issues found or jq not available"
-                fi
-                
-                echo "=== Safety Report ==="
-                if [ -f safety-report.json ]; then
-                  cat safety-report.json | jq -r '.vulnerabilities[] | "\(.severity): \(.package) \(.installed_version) - \(.advisory)"' || echo "No vulnerabilities found or jq not available"
-                fi
+      run: |
+        # Run Bandit security checks
+        uv run bandit -r src/ -f json -o bandit-report.json || true
+        
+        # Run safety checks for known vulnerabilities (using deprecated but working command)
+        uv run safety check --json > safety-report-raw.json 2>/dev/null || echo '{"vulnerabilities": []}' > safety-report-raw.json
+        
+        # Filter out the warning lines from the raw safety report
+        grep -v "DEPRECATED" safety-report-raw.json | grep -v "===" > safety-report.json || echo '{"vulnerabilities": []}' > safety-report.json
+        
+        # Display results
+        echo "=== Bandit Security Report ==="
+        if [ -f bandit-report.json ]; then
+          cat bandit-report.json | jq -r '.results[] | "\(.severity): \(.issue_text) at \(.filename):\(.line_number)"' || echo "No issues found or jq not available"
+        fi
+        
+        echo "=== Safety Report ==="
+        if [ -f safety-report.json ]; then
+          cat safety-report.json | jq -r '.vulnerabilities[] | "\(.severity): \(.package) \(.installed_version) - \(.advisory)"' || echo "No vulnerabilities found or jq not available"
+        fi
 
     - name: Upload security reports
       uses: actions/upload-artifact@v4
@@ -141,7 +141,7 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v4
       with:
-        version: "0.2.0"
+        version: "0.7.13"
 
     - name: Cache uv dependencies
       uses: actions/cache@v4
@@ -189,7 +189,7 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v4
       with:
-        version: "0.2.0"
+        version: "0.7.13"
 
     - name: Cache uv dependencies
       uses: actions/cache@v4
