@@ -21,7 +21,8 @@ import pytest
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from core.file_handler import JeevesFileHandler, SandboxViolationError  # noqa: E402
+from core.file_handler import JeevesFileHandler  # noqa: E402
+from core.file_handler import SandboxViolationError  # noqa: E402
 
 
 class TestJeevesFileHandler:
