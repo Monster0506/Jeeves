@@ -1,13 +1,59 @@
-"""
-Sidebar component for Jeeves GUI.
-"""
-
 import logging
-from typing import Callable, Dict, List
+from typing import (
+    Any,
+    Callable,
+    Optional,
+    TypedDict,
+)
 
 import customtkinter as ctk
 
-from ..config.settings import APP_SETTINGS, COLORS
+from ..config.settings import APP_SETTINGS as _APP_SETTINGS_RAW
+from ..config.settings import COLORS as _COLORS_RAW
+
+
+class FontSizes(TypedDict):
+    large: int
+    normal: int
+
+
+class AppSettingsType(TypedDict):
+    font_family: str
+    font_sizes: FontSizes
+
+
+class ColorsTheme(TypedDict):
+    bg_sidebar: str
+    accent_primary: str
+    button_primary: str
+    text_inverse: str
+    button_primary_hover: str
+    border_divider: str
+    thread_general: str
+    thread_code: str
+    thread_planning: str
+    thread_creative: str
+    thread_support: str
+    thread_docs: str
+    button_secondary: str
+    text_primary: str
+    button_secondary_hover: str
+    border_focus: str
+    border_secondary: str
+    text_secondary: str
+    error: str
+    warning: str
+    success: str
+    info: str
+
+
+class ColorsType(TypedDict):
+    dark: ColorsTheme
+
+
+APP_SETTINGS: AppSettingsType = _APP_SETTINGS_RAW  # type: ignore[assignment]
+COLORS: ColorsType = _COLORS_RAW  # type: ignore[assignment]
+
 
 logger = logging.getLogger(__name__)
 
@@ -17,16 +63,23 @@ class Sidebar(ctk.CTkFrame):
 
     def __init__(
         self,
-        parent,
-        on_thread_select: Callable = None,
-        on_new_thread: Callable = None,
-        on_delete_thread: Callable = None,
-        on_rename_thread: Callable = None,
+        parent: Any,
+        on_thread_select: Optional[Callable[[int], None]] = None,
+        on_new_thread: Optional[Callable[[], None]] = None,
+        on_delete_thread: Optional[Callable[[int], None]] = None,
+        on_rename_thread: Optional[Callable[[int, str], None]] = None,
     ):
-        theme = COLORS["dark"]
-        font_family = APP_SETTINGS["font_family"]
-        font_large = (font_family, APP_SETTINGS["font_sizes"]["large"], "bold")
-        font_normal = (font_family, APP_SETTINGS["font_sizes"]["normal"])
+        theme: ColorsTheme = COLORS["dark"]
+        font_family: str = APP_SETTINGS["font_family"]
+        font_large: tuple[str, int, str] = (
+            font_family,
+            APP_SETTINGS["font_sizes"]["large"],
+            "bold",
+        )
+        font_normal: tuple[str, int] = (
+            font_family,
+            APP_SETTINGS["font_sizes"]["normal"],
+        )
         super().__init__(parent, width=300, fg_color=theme["bg_sidebar"])
 
         self.on_thread_select = on_thread_select
@@ -34,12 +87,12 @@ class Sidebar(ctk.CTkFrame):
         self.on_delete_thread = on_delete_thread
         self.on_rename_thread = on_rename_thread
 
-        self.threads = []
-        self.current_thread_id = None
+        self.threads: list[dict[str, Any]] = []
+        self.current_thread_id: Optional[int] = None
 
         self._setup_ui(theme, font_large, font_normal)
 
-    def _setup_ui(self, theme, font_large, font_normal):
+    def _setup_ui(self, theme: ColorsTheme, font_large: tuple[str, int, str], font_normal: tuple[str, int]) -> None:
         """Setup the user interface."""
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(2, weight=1)  # Give weight to the threads_frame row
@@ -73,11 +126,11 @@ class Sidebar(ctk.CTkFrame):
         self.new_thread_button.grid(row=0, column=1, padx=(0, 24), pady=16)  # Consistent spacing
 
         # Add enhanced hover effects to new thread button
-        def on_new_button_enter(event):
-            self.new_thread_button.configure(corner_radius=24)  # Slightly larger radius on hover
+        def on_new_button_enter(event: Any) -> None:
+            self.new_thread_button.configure(corner_radius=24)
 
-        def on_new_button_leave(event):
-            self.new_thread_button.configure(corner_radius=22)  # Return to normal radius
+        def on_new_button_leave(event: Any) -> None:
+            self.new_thread_button.configure(corner_radius=22)
 
         self.new_thread_button.bind("<Enter>", on_new_button_enter)
         self.new_thread_button.bind("<Leave>", on_new_button_leave)
@@ -90,14 +143,14 @@ class Sidebar(ctk.CTkFrame):
         self.threads_frame = ctk.CTkScrollableFrame(self, fg_color=theme["bg_sidebar"], corner_radius=0)
         self.threads_frame.grid(row=2, column=0, sticky="nsew", padx=0, pady=0)  # Updated row to 2
         self.threads_frame.grid_columnconfigure(0, weight=1)
-        self.thread_buttons = []
+        self.thread_buttons: list[ctk.CTkButton] = []
 
-    def _create_new_thread(self):
+    def _create_new_thread(self) -> None:
         """Create a new thread."""
         if self.on_new_thread:
             self.on_new_thread()
 
-    def load_threads(self, threads: List[Dict]):
+    def load_threads(self, threads: list[dict[str, Any]]) -> None:
         """Load threads into the sidebar."""
         try:
             self.threads = threads
@@ -105,31 +158,35 @@ class Sidebar(ctk.CTkFrame):
         except Exception as e:
             logger.error(f"Error loading threads: {e}")
 
-    def _update_thread_buttons(self):
+    def _update_thread_buttons(self) -> None:
         try:
             for button in self.thread_buttons:
                 button.destroy()
             self.thread_buttons.clear()
-            theme = COLORS["dark"]
-            font_family = APP_SETTINGS["font_family"]
-            font_normal = (font_family, APP_SETTINGS["font_sizes"]["normal"])
+            theme: ColorsTheme = COLORS["dark"]
+            font_family: str = APP_SETTINGS["font_family"]
+            font_normal: tuple[str, int] = (
+                font_family,
+                APP_SETTINGS["font_sizes"]["normal"],
+            )
             for i, thread in enumerate(self.threads):
                 button = self._create_thread_button(thread, i, theme, font_normal)
-                self.thread_buttons.append(button)
+                if button:
+                    self.thread_buttons.append(button)
         except Exception as e:
             logger.error(f"Error updating thread buttons: {e}")
 
-    def _create_thread_button(self, thread: Dict, index: int, theme, font_normal) -> ctk.CTkButton:
+    def _create_thread_button(self, thread: dict[str, Any], index: int, theme: ColorsTheme, font_normal: tuple[str, int]) -> Optional[ctk.CTkButton]:
         try:
             button_frame = ctk.CTkFrame(self.threads_frame, fg_color=theme["bg_sidebar"], corner_radius=0)
             button_frame.grid(row=index, column=0, sticky="ew", pady=8, padx=16)  # Consistent spacing
             button_frame.grid_columnconfigure(0, weight=1)
 
-            is_active = thread["id"] == self.current_thread_id
+            is_active: bool = thread["id"] == self.current_thread_id
 
             # Determine thread color based on type
-            thread_type = thread.get("type", "general")
-            thread_color_map = {
+            thread_type: str = thread.get("type", "general")
+            thread_color_map: dict[str, str] = {
                 "general": theme.get("thread_general", theme["accent_primary"]),
                 "code": theme.get("thread_code", theme["success"]),
                 "planning": theme.get("thread_planning", theme["warning"]),
@@ -137,7 +194,7 @@ class Sidebar(ctk.CTkFrame):
                 "support": theme.get("thread_support", theme["error"]),
                 "docs": theme.get("thread_docs", theme["info"]),
             }
-            thread_color = thread_color_map.get(thread_type, theme["accent_primary"])
+            thread_color: str = thread_color_map.get(thread_type, theme["accent_primary"])
 
             button = ctk.CTkButton(
                 button_frame,
@@ -179,12 +236,12 @@ class Sidebar(ctk.CTkFrame):
             logger.error(f"Error creating thread button: {e}")
             return None
 
-    def _select_thread(self, thread_id: int):
+    def _select_thread(self, thread_id: int) -> None:
         """Select a thread."""
         if self.on_thread_select:
             self.on_thread_select(thread_id)
 
-    def _show_thread_menu(self, thread: Dict):
+    def _show_thread_menu(self, thread: dict[str, Any]) -> None:
         """Show context menu for a thread."""
         try:
             # Create popup menu
@@ -237,7 +294,7 @@ class Sidebar(ctk.CTkFrame):
         except Exception as e:
             logger.error(f"Error showing thread menu: {e}")
 
-    def _rename_thread(self, thread: Dict, menu):
+    def _rename_thread(self, thread: dict[str, Any], menu: ctk.CTkToplevel) -> None:
         """Rename a thread."""
         try:
             menu.destroy()
@@ -298,7 +355,7 @@ class Sidebar(ctk.CTkFrame):
         except Exception as e:
             logger.error(f"Error renaming thread: {e}")
 
-    def _save_rename(self, thread_id: int, new_name: str, dialog):
+    def _save_rename(self, thread_id: int, new_name: str, dialog: ctk.CTkToplevel) -> None:
         """Save the renamed thread."""
         try:
             if new_name.strip():
@@ -308,7 +365,7 @@ class Sidebar(ctk.CTkFrame):
         except Exception as e:
             logger.error(f"Error saving rename: {e}")
 
-    def _delete_thread(self, thread: Dict, menu):
+    def _delete_thread(self, thread: dict[str, Any], menu: ctk.CTkToplevel) -> None:
         """Delete a thread."""
         try:
             menu.destroy()
@@ -364,7 +421,7 @@ class Sidebar(ctk.CTkFrame):
         except Exception as e:
             logger.error(f"Error deleting thread: {e}")
 
-    def _confirm_delete(self, thread_id: int, dialog):
+    def _confirm_delete(self, thread_id: int, dialog: ctk.CTkToplevel) -> None:
         """Confirm thread deletion."""
         try:
             if self.on_delete_thread:
@@ -373,7 +430,7 @@ class Sidebar(ctk.CTkFrame):
         except Exception as e:
             logger.error(f"Error confirming delete: {e}")
 
-    def set_current_thread(self, thread_id: int):
+    def set_current_thread(self, thread_id: int) -> None:
         """Set the current active thread."""
         self.current_thread_id = thread_id
         self._update_thread_buttons()
