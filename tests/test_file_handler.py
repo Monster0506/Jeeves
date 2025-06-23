@@ -752,7 +752,7 @@ class TestJeevesFileHandler:
 
         assert len(files) == 3
         assert "test1.txt" in files
-        
+
         # Normalize paths for platform-agnostic comparison
         normalized_files = [f.replace("\\", "/") for f in files]
         assert "dir1/test2.txt" in normalized_files
@@ -827,7 +827,7 @@ class TestJeevesFileHandler:
 
         assert len(files) == 3
         assert "test1.txt" in files
-        
+
         # Normalize paths for platform-agnostic comparison
         normalized_files = [f.replace("\\", "/") for f in files]
         assert "dir1/test2.txt" in normalized_files
