@@ -5,7 +5,7 @@ Defines the contract that all AI providers must implement.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Optional, Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +194,7 @@ class BaseAIProvider(ABC):
         # Base implementation - can be overridden by subclasses
         return True
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up provider resources."""
         self.registered_tools.clear()
         self.tool_config.clear()

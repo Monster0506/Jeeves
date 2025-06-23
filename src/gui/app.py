@@ -7,7 +7,7 @@ import logging
 import shutil
 import threading
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
 import customtkinter as ctk
 

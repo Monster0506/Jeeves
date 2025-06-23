@@ -5,7 +5,7 @@ Now uses a modular provider system for different AI backends.
 """
 
 import logging
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
 from .ai_provider_manager import AIProviderManager
 from .chat_manager import ChatManager
