@@ -752,8 +752,11 @@ class TestJeevesFileHandler:
 
         assert len(files) == 3
         assert "test1.txt" in files
-        assert "dir1\\test2.txt" in files  # Windows path separator
-        assert "dir1\\subdir\\test3.txt" in files
+        
+        # Normalize paths for platform-agnostic comparison
+        normalized_files = [f.replace("\\", "/") for f in files]
+        assert "dir1/test2.txt" in normalized_files
+        assert "dir1/subdir/test3.txt" in normalized_files
 
     def test_find_files_by_pattern_non_recursive(self):
         """Test finding files by pattern non-recursively."""
@@ -824,8 +827,11 @@ class TestJeevesFileHandler:
 
         assert len(files) == 3
         assert "test1.txt" in files
-        assert "dir1\\test2.txt" in files  # Windows path separator
-        assert "dir1\\subdir\\test3.txt" in files
+        
+        # Normalize paths for platform-agnostic comparison
+        normalized_files = [f.replace("\\", "/") for f in files]
+        assert "dir1/test2.txt" in normalized_files
+        assert "dir1/subdir/test3.txt" in normalized_files
 
     def test_find_files_by_extension_no_matches(self):
         """Test finding files by extension with no matches."""
