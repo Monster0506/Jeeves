@@ -518,6 +518,7 @@ class MessageBubble(ctk.CTkFrame):
 
 class AttachmentPill(ctk.CTkFrame):
     """A widget to display a single attachment in the input area."""
+
     def __init__(self, parent, attachment_info: Dict, on_remove: Callable):
         super().__init__(parent, fg_color=("#E0E0E0", "#4A4D50"), corner_radius=12)
         self.pack(side="left", padx=4, pady=4)
@@ -533,9 +534,14 @@ class AttachmentPill(ctk.CTkFrame):
 
         # Remove button
         remove_button = ctk.CTkButton(
-            self, text="✕", width=20, height=20, corner_radius=10,
-            fg_color=("#D0D0D0", "#3A3D40"), hover_color=("#C0C0C0", "#2A2D30"),
-            command=on_remove
+            self,
+            text="✕",
+            width=20,
+            height=20,
+            corner_radius=10,
+            fg_color=("#D0D0D0", "#3A3D40"),
+            hover_color=("#C0C0C0", "#2A2D30"),
+            command=on_remove,
         )
         remove_button.pack(side="left", padx=(4, 8))
 
@@ -613,9 +619,12 @@ class ChatDisplay(ctk.CTkFrame):
 
         # Attachment Tray
         self.attachment_tray = ctk.CTkScrollableFrame(
-            self, fg_color=self.theme["bg_secondary"], height=60,
-            orientation="horizontal", scrollbar_button_color=self.theme["button_secondary"],
-            scrollbar_button_hover_color=self.theme["button_secondary_hover"]
+            self,
+            fg_color=self.theme["bg_secondary"],
+            height=60,
+            orientation="horizontal",
+            scrollbar_button_color=self.theme["button_secondary"],
+            scrollbar_button_hover_color=self.theme["button_secondary_hover"],
         )
         # This will be gridded later when an attachment is added
 
@@ -794,7 +803,7 @@ class ChatDisplay(ctk.CTkFrame):
 
     def _send_message(self):
         message = self.input_field.get().strip()
-        
+
         # Prevent sending empty messages unless there are attachments
         if not message and not self._current_attachments:
             return
@@ -869,16 +878,18 @@ class ChatDisplay(ctk.CTkFrame):
                     logger.debug(f"Widget already destroyed: {e}")
                 except Exception as e:
                     logger.warning(f"Error destroying widget: {e}")
-            
+
             self.bubbles.clear()
-            
+
             for message in messages:
                 sender = message.get("sender", "unknown")
                 content = message.get("content", "")
                 timestamp = message.get("timestamp", "")
                 is_user = sender == "user" or sender == "You"
                 display_sender = (
-                    "You" if is_user else ("Jeeves" if sender == "ai" else sender.title())
+                    "You"
+                    if is_user
+                    else ("Jeeves" if sender == "ai" else sender.title())
                 )
                 max_bubble_width = max(int(self.canvas.winfo_width() * 0.95), 600)
 
@@ -886,10 +897,10 @@ class ChatDisplay(ctk.CTkFrame):
                 if message.get("attachments"):
                     attachment_text = "\n\n**Attachments:**\n"
                     for attachment in message["attachments"]:
-                        file_size_mb = attachment.get('file_size', 0) / 1024 / 1024
+                        file_size_mb = attachment.get("file_size", 0) / 1024 / 1024
                         attachment_text += f"- {attachment.get('file_name', '...')} ({file_size_mb:.1f}MB)\n"
                     content += attachment_text
-                
+
                 try:
                     bubble = MessageBubble(
                         self.scrollable_frame,
@@ -910,7 +921,7 @@ class ChatDisplay(ctk.CTkFrame):
                     # Log error but continue loading other messages
                     logger.warning(f"Failed to create message bubble: {e}")
                     continue
-            
+
             self.update_idletasks()
             self.canvas.yview_moveto(1.0)
         except Exception as e:
@@ -980,9 +991,10 @@ class ChatDisplay(ctk.CTkFrame):
         try:
             # Get the sandbox directory from JeevesFileHandler
             from ..core.file_handler import JeevesFileHandler
+
             file_handler = JeevesFileHandler()
             sandbox_root = file_handler.get_sandbox_root()
-            
+
             # Open file dialog with common file types
             file_types = [
                 ("All Files", "*.*"),
@@ -1080,11 +1092,13 @@ class ChatDisplay(ctk.CTkFrame):
         """Add a new attachment pill to the UI."""
         # Show the tray if this is the first attachment
         if not self._current_attachments:
-            self.attachment_tray.grid(row=2, column=0, sticky="ew", padx=16, pady=(0, 8))
+            self.attachment_tray.grid(
+                row=2, column=0, sticky="ew", padx=16, pady=(0, 8)
+            )
 
         # Use the file path as a unique key
         attachment_key = attachment_info["path"]
-        
+
         # Prevent duplicate attachments
         if any(key == attachment_key for key, _, _ in self._current_attachments):
             logger.warning(f"Attachment {attachment_info['name']} already added.")
@@ -1094,12 +1108,12 @@ class ChatDisplay(ctk.CTkFrame):
         pill = AttachmentPill(
             self.attachment_tray,
             attachment_info,
-            lambda: self._remove_attachment(attachment_key)
+            lambda: self._remove_attachment(attachment_key),
         )
-        
+
         # Store attachment info along with its widget
         self._current_attachments.append((attachment_key, attachment_info, pill))
-        
+
     def _remove_attachment(self, attachment_key: str):
         """Remove an attachment pill from the UI."""
         attachment_to_remove = None
@@ -1107,7 +1121,7 @@ class ChatDisplay(ctk.CTkFrame):
             if attachment[0] == attachment_key:
                 attachment_to_remove = attachment
                 break
-        
+
         if attachment_to_remove:
             key, info, pill_widget = attachment_to_remove
             pill_widget.destroy()
@@ -1127,7 +1141,7 @@ class ChatDisplay(ctk.CTkFrame):
         """Clear all attachment pills."""
         for key, info, pill_widget in self._current_attachments:
             pill_widget.destroy()
-        
+
         self._current_attachments.clear()
         self.attachment_tray.grid_forget()
         logger.info("Cleared all attachments.")

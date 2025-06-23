@@ -1,4 +1,4 @@
-# Utils package 
+# Utils package
 
 """
 Utility functions for Jeeves AI Assistant.

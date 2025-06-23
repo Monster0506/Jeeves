@@ -37,8 +37,8 @@ class JeevesFileHandler:
         """
         # Get sandbox directory from settings if not provided
         if sandbox_root_dir is None:
-            sandbox_root_dir = APP_SETTINGS['sandbox_directory']
-        
+            sandbox_root_dir = APP_SETTINGS["sandbox_directory"]
+
         # Resolve sandbox root path immediately to its absolute, canonical form.
         # This handles user expansion (~) and '..' components, and follows symlinks.
         # All subsequent path checks will be against this resolved path.
@@ -2485,4 +2485,3 @@ class JeevesFileHandler:
         except Exception as e:
             logger.error(f"An unexpected error occurred importing from JSON: {e}")
             return False
-

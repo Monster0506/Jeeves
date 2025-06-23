@@ -32,7 +32,7 @@ class AIEngine:
     def conversation_history(self) -> List[Dict]:
         """
         Get the current conversation history for backward compatibility.
-        
+
         Returns:
             List of recent messages in the current thread
         """
@@ -46,7 +46,7 @@ class AIEngine:
                 logger.info(
                     f"AI Engine initialized with provider: {current_provider.provider_name}"
                 )
-                
+
                 # Register tools
                 self._register_tools()
             else:
@@ -60,13 +60,13 @@ class AIEngine:
             # Get all tools and their descriptions
             tools = self.tools.get_registered_tools()
             descriptions = self.tools.get_tool_descriptions()
-            
+
             # Register each tool
             for tool_name, tool_func in tools.items():
                 description = descriptions.get(tool_name, f"Tool: {tool_name}")
                 self.provider_manager.register_tool(tool_name, tool_func, description)
                 logger.info(f"Registered tool: {tool_name}")
-            
+
             logger.info(f"Registered {len(tools)} tools with provider manager")
         except Exception as e:
             logger.error(f"Error registering tools: {e}")
@@ -81,7 +81,9 @@ class AIEngine:
         # No longer needed: self.conversation_history = []
         pass
 
-    def generate_response(self, user_message: str, attachments: List[Dict] = None) -> str:
+    def generate_response(
+        self, user_message: str, attachments: List[Dict] = None
+    ) -> str:
         """
         Generate an AI response to the user's message.
 
@@ -92,27 +94,27 @@ class AIEngine:
         Returns:
             Generated AI response
         """
-        logger.info(f"Generating response for message with {len(attachments) if attachments else 0} attachments")
-        
+        logger.info(
+            f"Generating response for message with {len(attachments) if attachments else 0} attachments"
+        )
+
         # Format new attachments for database storage
         db_attachments = None
         if attachments:
             db_attachments = [
                 {
-                    'file_name': att.get('file_name'),
-                    'file_path': att.get('sandbox_path'),  # Relative path for DB
-                    'file_size': att.get('file_size'),
-                    'mime_type': att.get('mime_type'),
-                    'hash': att.get('hash')
+                    "file_name": att.get("file_name"),
+                    "file_path": att.get("sandbox_path"),  # Relative path for DB
+                    "file_size": att.get("file_size"),
+                    "mime_type": att.get("mime_type"),
+                    "hash": att.get("hash"),
                 }
                 for att in attachments
             ]
-        
+
         # Add user message to database
         message_id = self.chat_manager.add_user_message(
-            user_message, 
-            content_type='text',
-            attachments=db_attachments
+            user_message, content_type="text", attachments=db_attachments
         )
 
         # Refresh memory at the beginning of each chat session
@@ -120,41 +122,50 @@ class AIEngine:
 
         # Get conversation context
         context = self.get_conversation_context()
-        
+
         # Prepare all attachments for the AI provider (historical + new)
         ai_attachments = []
 
         # 1. Process historical attachments from context
         from src.core.file_handler import JeevesFileHandler
+
         file_handler = JeevesFileHandler()
 
         for message in context:
             if message.get("attachments"):
                 for att in message["attachments"]:
                     # Convert stored relative path to absolute sandbox path
-                    sandbox_path = att.get('file_path')
+                    sandbox_path = att.get("file_path")
                     if sandbox_path:
-                        ai_attachments.append({
-                            'file_name': att.get('file_name'),
-                            'file_path': file_handler.get_absolute_path(sandbox_path),
-                            'mime_type': att.get('mime_type'),
-                            'file_size': att.get('file_size'),
-                        })
+                        ai_attachments.append(
+                            {
+                                "file_name": att.get("file_name"),
+                                "file_path": file_handler.get_absolute_path(
+                                    sandbox_path
+                                ),
+                                "mime_type": att.get("mime_type"),
+                                "file_size": att.get("file_size"),
+                            }
+                        )
 
         # 2. Process new attachments for this message
         if attachments:
             for att in attachments:
                 # Use the absolute path already prepared
-                ai_attachments.append({
-                    'file_name': att.get('file_name'),
-                    'file_path': att.get('sandbox_absolute_path'),
-                    'mime_type': att.get('mime_type'),
-                    'file_size': att.get('file_size'),
-                })
-        
+                ai_attachments.append(
+                    {
+                        "file_name": att.get("file_name"),
+                        "file_path": att.get("sandbox_absolute_path"),
+                        "mime_type": att.get("mime_type"),
+                        "file_size": att.get("file_size"),
+                    }
+                )
+
         # Pass full context and all attachments to the provider
-        response = self.provider_manager.generate_response(user_message, context, ai_attachments)
-        
+        response = self.provider_manager.generate_response(
+            user_message, context, ai_attachments
+        )
+
         # log context
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug("-- SENDING CONTEXT TO AI --")
@@ -194,7 +205,7 @@ class AIEngine:
         """
         Manually refresh memory content.
         This can be called when memory is updated externally.
-        
+
         Returns:
             True if memory was refreshed successfully, False otherwise
         """

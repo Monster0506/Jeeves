@@ -1,6 +1,7 @@
 """
 Main application for Jeeves AI Assistant using CustomTkinter.
 """
+
 import customtkinter as ctk
 import threading
 import logging
@@ -19,48 +20,49 @@ from ..utils import normalize_mime_type
 logger = logging.getLogger(__name__)
 ctk.deactivate_automatic_dpi_awareness()
 
+
 class JeevesApp:
     """Main application class for Jeeves AI Assistant."""
-    
+
     def __init__(self):
         # Initialize database and managers
         self.db_manager = DatabaseManager()
         self.chat_manager = ChatManager(self.db_manager)
         self.ai_engine = AIEngine(self.chat_manager)
-        
+
         # Setup CustomTkinter
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("dark-blue")
-        
+
         # Create main window
         self.root = ctk.CTk()
         self.root.title("Jeeves AI Assistant")
         self.root.geometry("1200x800")
         self.root.minsize(800, 600)
-        
+
         # Configure grid
         self.root.grid_columnconfigure(0, weight=1)
         self.root.grid_rowconfigure(0, weight=1)
-        
+
         # Initialize UI components
         self._setup_ui()
         self._setup_bindings()
-        
+
         # Load initial data
         self._load_initial_data()
-        
+
         # Register callbacks
         self.chat_manager.register_message_callback(self._on_message_added)
         self.chat_manager.register_thread_callback(self._on_thread_changed)
-        
+
         logger.info("Jeeves application initialized")
-    
+
     def _setup_ui(self):
         """Setup the user interface components."""
-        theme = COLORS['dark']
-        font_family = APP_SETTINGS['font_family']
-        font_large = (font_family, APP_SETTINGS['font_sizes']['large'], 'bold')
-        font_normal = (font_family, APP_SETTINGS['font_sizes']['normal'])
+        theme = COLORS["dark"]
+        font_family = APP_SETTINGS["font_family"]
+        font_large = (font_family, APP_SETTINGS["font_sizes"]["large"], "bold")
+        font_normal = (font_family, APP_SETTINGS["font_sizes"]["normal"])
 
         # Configure grid for header, sidebar, and main content
         self.root.grid_rowconfigure(0, weight=0)  # Header
@@ -70,33 +72,34 @@ class JeevesApp:
 
         # Header bar with enhanced styling and consistent spacing
         self.header = ctk.CTkFrame(
-            self.root, 
-            fg_color=theme['bg_header'], 
+            self.root,
+            fg_color=theme["bg_header"],
             height=64,  # Increased from 56 for better proportions
             corner_radius=0,
-            border_width=0
+            border_width=0,
         )
         self.header.grid(row=0, column=0, columnspan=2, sticky="nsew")
         self.header.grid_columnconfigure(0, weight=1)
         self.header.grid_columnconfigure(1, weight=0)
-        
+
         # Add a subtle border at the bottom of the header
         self.header_border = ctk.CTkFrame(
-            self.root,
-            fg_color=theme['border_divider'],
-            height=1,
-            corner_radius=0
+            self.root, fg_color=theme["border_divider"], height=1, corner_radius=0
         )
-        self.header_border.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(63, 0))
+        self.header_border.grid(
+            row=0, column=0, columnspan=2, sticky="ew", pady=(63, 0)
+        )
 
         # App name/logo with enhanced styling and better spacing
         self.header_label = ctk.CTkLabel(
             self.header,
             text="🧑‍💻 Jeeves",
             font=font_large,
-            text_color=theme['accent_primary']
+            text_color=theme["accent_primary"],
         )
-        self.header_label.grid(row=0, column=0, sticky="w", padx=24, pady=16)  # Increased padding
+        self.header_label.grid(
+            row=0, column=0, sticky="w", padx=24, pady=16
+        )  # Increased padding
 
         # Global actions with enhanced styling and consistent spacing
         self.settings_button = ctk.CTkButton(
@@ -104,35 +107,38 @@ class JeevesApp:
             text="⚙️",
             width=56,  # Increased for better proportions
             height=56,  # Increased for better proportions
-            fg_color=theme['button_secondary'],
-            hover_color=theme['button_secondary_hover'],
+            fg_color=theme["button_secondary"],
+            hover_color=theme["button_secondary_hover"],
             font=(font_family, 16, "bold"),  # Larger, bold font for icon
             corner_radius=28,  # Increased for modern look
-            text_color=theme['text_primary'],
+            text_color=theme["text_primary"],
             border_width=1,  # Subtle border for definition
-            border_color=theme['border_secondary'],
-            command=lambda: show_info("Settings", "Settings coming soon!")
+            border_color=theme["border_secondary"],
+            command=lambda: show_info("Settings", "Settings coming soon!"),
         )
-        self.settings_button.grid(row=0, column=1, sticky="e", padx=(0, 24), pady=8)  # Consistent padding
+        self.settings_button.grid(
+            row=0, column=1, sticky="e", padx=(0, 24), pady=8
+        )  # Consistent padding
 
         # Add enhanced hover effects to settings button
         def on_settings_enter(event):
-            self.settings_button.configure(corner_radius=30)  # Slightly larger radius on hover
-        
+            self.settings_button.configure(
+                corner_radius=30
+            )  # Slightly larger radius on hover
+
         def on_settings_leave(event):
             self.settings_button.configure(corner_radius=28)  # Return to normal radius
-        
+
         self.settings_button.bind("<Enter>", on_settings_enter)
         self.settings_button.bind("<Leave>", on_settings_leave)
 
         # Main content area with enhanced styling and better spacing
         self.main_frame = ctk.CTkFrame(
-            self.root, 
-            fg_color=theme['bg_primary'],
-            corner_radius=0,
-            border_width=0
+            self.root, fg_color=theme["bg_primary"], corner_radius=0, border_width=0
         )
-        self.main_frame.grid(row=1, column=0, sticky="nsew", padx=16, pady=16)  # Consistent margins
+        self.main_frame.grid(
+            row=1, column=0, sticky="nsew", padx=16, pady=16
+        )  # Consistent margins
         self.main_frame.grid_columnconfigure(0, weight=1)
         self.main_frame.grid_rowconfigure(0, weight=1)
 
@@ -142,9 +148,11 @@ class JeevesApp:
             on_send_message=self._on_send_message,
             on_export_chat=self._on_export_chat,
             on_search_messages=self._on_search_messages,
-            on_attachment=self._on_attachment
+            on_attachment=self._on_attachment,
         )
-        self.chat_display.grid(row=0, column=0, sticky="nsew", padx=8, pady=8)  # Consistent internal spacing
+        self.chat_display.grid(
+            row=0, column=0, sticky="nsew", padx=8, pady=8
+        )  # Consistent internal spacing
 
         # Sidebar with better spacing
         self.sidebar = Sidebar(
@@ -152,9 +160,11 @@ class JeevesApp:
             on_thread_select=self._on_thread_select,
             on_new_thread=self._on_new_thread,
             on_delete_thread=self._on_delete_thread,
-            on_rename_thread=self._on_rename_thread
+            on_rename_thread=self._on_rename_thread,
         )
-        self.sidebar.grid(row=1, column=1, sticky="nsew", padx=(8, 16), pady=16)  # Consistent spacing
+        self.sidebar.grid(
+            row=1, column=1, sticky="nsew", padx=(8, 16), pady=16
+        )  # Consistent spacing
 
         # Sidebar toggle button with enhanced styling and better positioning
         self.sidebar_toggle = ctk.CTkButton(
@@ -164,63 +174,67 @@ class JeevesApp:
             height=56,  # Increased for better proportions
             command=self._toggle_sidebar,
             font=(font_family, 16, "bold"),  # Larger, bold font for icon
-            fg_color=theme['button_secondary'],
-            hover_color=theme['button_secondary_hover'],
-            text_color=theme['text_primary'],
+            fg_color=theme["button_secondary"],
+            hover_color=theme["button_secondary_hover"],
+            text_color=theme["text_primary"],
             corner_radius=28,  # Increased for modern look
             border_width=1,  # Subtle border for definition
-            border_color=theme['border_secondary']
+            border_color=theme["border_secondary"],
         )
-        self.sidebar_toggle.grid(row=1, column=1, sticky="ne", padx=(0, 24), pady=(24, 0))  # Better positioning
-        
+        self.sidebar_toggle.grid(
+            row=1, column=1, sticky="ne", padx=(0, 24), pady=(24, 0)
+        )  # Better positioning
+
         # Add enhanced hover effects to sidebar toggle button
         def on_toggle_enter(event):
-            self.sidebar_toggle.configure(corner_radius=30)  # Slightly larger radius on hover
-        
+            self.sidebar_toggle.configure(
+                corner_radius=30
+            )  # Slightly larger radius on hover
+
         def on_toggle_leave(event):
             self.sidebar_toggle.configure(corner_radius=28)  # Return to normal radius
-        
+
         self.sidebar_toggle.bind("<Enter>", on_toggle_enter)
         self.sidebar_toggle.bind("<Leave>", on_toggle_leave)
-        
+
         self.sidebar.grid_remove()
         self.sidebar_visible = False
-    
+
     def _setup_bindings(self):
         """Setup keyboard and window bindings."""
         # Bind window close event
         self.root.protocol("WM_DELETE_WINDOW", self._on_closing)
-        
+
         # Bind keyboard shortcuts
         self.root.bind("<Control-n>", lambda e: self._on_new_thread())
         self.root.bind("<Control-f>", lambda e: self._on_search_messages())
         self.root.bind("<Control-e>", lambda e: self._on_export_chat())
         self.root.bind("<Control-q>", lambda e: self._on_closing())
-    
+
     def _load_initial_data(self):
         """Load initial data from database."""
         try:
             # Load threads
             threads = self.chat_manager.get_threads()
             self.sidebar.load_threads(threads)
-            
+
             # Set current thread
             if threads:
                 current_thread = self.chat_manager.get_current_thread()
                 if current_thread:
-                    self.sidebar.set_current_thread(current_thread['id'])
-                    self._load_thread_messages(current_thread['id'])
+                    self.sidebar.set_current_thread(current_thread["id"])
+                    self._load_thread_messages(current_thread["id"])
                 else:
                     # Switch to first thread
-                    self.chat_manager.switch_thread(threads[0]['id'])
-                    self.sidebar.set_current_thread(threads[0]['id'])
-                    self._load_thread_messages(threads[0]['id'])
-            
+                    self.chat_manager.switch_thread(threads[0]["id"])
+                    self.sidebar.set_current_thread(threads[0]["id"])
+                    self._load_thread_messages(threads[0]["id"])
+
             logger.info("Initial data loaded successfully")
         except Exception as e:
             logger.error(f"Failed to load initial data: {e}")
             show_error("Error", f"Failed to load data: {e}")
-    
+
     def _on_thread_select(self, thread_id: int):
         """Handle thread selection."""
         try:
@@ -232,12 +246,14 @@ class JeevesApp:
         except Exception as e:
             logger.error(f"Failed to switch thread: {e}")
             show_error("Error", f"Failed to switch thread: {e}")
-    
+
     def _on_new_thread(self):
         """Handle new thread creation."""
         try:
             thread_id = self.chat_manager.create_thread("New Chat", "💬")
-            self.chat_manager.switch_thread(thread_id)  # Ensure backend switches to new thread
+            self.chat_manager.switch_thread(
+                thread_id
+            )  # Ensure backend switches to new thread
             threads = self.chat_manager.get_threads()
             self.sidebar.load_threads(threads)
             self.sidebar.set_current_thread(thread_id)
@@ -246,27 +262,27 @@ class JeevesApp:
         except Exception as e:
             logger.error(f"Failed to create new thread: {e}")
             show_error("Error", f"Failed to create new thread: {e}")
-    
+
     def _on_delete_thread(self, thread_id: int):
         """Handle thread deletion."""
         try:
             if self.chat_manager.delete_thread(thread_id):
                 threads = self.chat_manager.get_threads()
                 self.sidebar.load_threads(threads)
-                
+
                 # If we deleted the current thread, switch to another one
                 current_thread = self.chat_manager.get_current_thread()
                 if current_thread:
-                    self.sidebar.set_current_thread(current_thread['id'])
-                    self._load_thread_messages(current_thread['id'])
+                    self.sidebar.set_current_thread(current_thread["id"])
+                    self._load_thread_messages(current_thread["id"])
                 else:
                     self.chat_display.clear_messages()
-                
+
                 logger.info(f"Deleted thread: {thread_id}")
         except Exception as e:
             logger.error(f"Failed to delete thread: {e}")
             show_error("Error", f"Failed to delete thread: {e}")
-    
+
     def _on_rename_thread(self, thread_id: int, new_name: str):
         """Handle thread renaming."""
         try:
@@ -277,11 +293,11 @@ class JeevesApp:
         except Exception as e:
             logger.error(f"Failed to rename thread: {e}")
             show_error("Error", f"Failed to rename thread: {e}")
-    
+
     def _on_send_message(self, message: str, attachments: List[Dict] = None):
         """Handle sending a message."""
         # The message no longer contains attachment text, so no cleaning is needed.
-        
+
         try:
             # Add user message to chat display immediately
             # We construct the display text here, including attachments
@@ -289,12 +305,14 @@ class JeevesApp:
             if attachments:
                 attachment_text = "\n\n**Attachments:**\n"
                 for att in attachments:
-                    file_size_mb = att.get('size', 0) / 1024 / 1024
-                    attachment_text += f"- {att.get('name', '...')} ({file_size_mb:.1f}MB)\n"
+                    file_size_mb = att.get("size", 0) / 1024 / 1024
+                    attachment_text += (
+                        f"- {att.get('name', '...')} ({file_size_mb:.1f}MB)\n"
+                    )
                 display_message += attachment_text
-            
+
             self.chat_display.add_user_message(display_message)
-            
+
             # Process attachments for the backend
             processed_attachments = []
             if attachments:
@@ -302,23 +320,26 @@ class JeevesApp:
                     processed = self._process_attachment(attachment)
                     if processed:
                         processed_attachments.append(processed)
-            
+
             # Generate AI response in a separate thread
             def generate_response():
                 try:
                     response = self.ai_engine.generate_response(
-                        message, 
-                        attachments=processed_attachments
+                        message, attachments=processed_attachments
                     )
                     # Update UI in main thread
-                    self.root.after(0, lambda: self.chat_display.add_ai_message(response))
+                    self.root.after(
+                        0, lambda: self.chat_display.add_ai_message(response)
+                    )
                 except Exception as e:
                     logger.error(f"Failed to generate response: {e}")
                     error_msg = f"Sorry, I encountered an error: {e}"
-                    self.root.after(0, lambda: self.chat_display.add_ai_message(error_msg))
-            
+                    self.root.after(
+                        0, lambda: self.chat_display.add_ai_message(error_msg)
+                    )
+
             threading.Thread(target=generate_response, daemon=True).start()
-            
+
         except Exception as e:
             logger.error(f"Failed to send message: {e}")
             show_error("Error", f"Failed to send message: {e}")
@@ -331,14 +352,16 @@ class JeevesApp:
             # - Copying files to a secure location
             # - Processing file content for AI analysis
             # - Storing file metadata in the database
-            logger.info(f"Processing attachment: {attachment_info['name']} ({attachment_info['size']} bytes)")
-            
+            logger.info(
+                f"Processing attachment: {attachment_info['name']} ({attachment_info['size']} bytes)"
+            )
+
             # You could add file processing logic here
             # For example, copying to sandbox directory:
             # from ..core.file_handler import JeevesFileHandler
             # file_handler = JeevesFileHandler()
             # file_handler.copy_file(attachment_info['path'], f"attachments/{attachment_info['name']}")
-            
+
         except Exception as e:
             logger.error(f"Failed to process attachment: {e}")
             show_error("Error", f"Failed to process attachment: {e}")
@@ -350,94 +373,107 @@ class JeevesApp:
             import hashlib
             import mimetypes
             from ..core.file_handler import JeevesFileHandler
-            
-            file_path = Path(attachment_info['path'])
-            
-            logger.info(f"Processing attachment: {attachment_info['name']} from {file_path}")
-            
+
+            file_path = Path(attachment_info["path"])
+
+            logger.info(
+                f"Processing attachment: {attachment_info['name']} from {file_path}"
+            )
+
             # Initialize file handler for sandbox operations
             file_handler = JeevesFileHandler()
-            
+
             # Check if the file is already in the attachments directory
             sandbox_root = file_handler.get_sandbox_root()
             file_absolute_path = file_path.resolve()
-            
+
             # Check if the file is already within the attachments directory
-            if str(file_absolute_path).startswith(str(Path(sandbox_root) / "attachments")):
-                logger.info(f"File {attachment_info['name']} is already in attachments directory, using directly")
-                
+            if str(file_absolute_path).startswith(
+                str(Path(sandbox_root) / "attachments")
+            ):
+                logger.info(
+                    f"File {attachment_info['name']} is already in attachments directory, using directly"
+                )
+
                 # Get the relative path from sandbox root
                 sandbox_path = str(file_absolute_path.relative_to(sandbox_root))
-                
+
                 # Generate file hash for integrity checking
                 file_hash = self._calculate_file_hash(file_path)
-                
+
                 # Determine MIME type and normalize it
                 mime_type, _ = mimetypes.guess_type(str(file_path))
                 mime_type = normalize_mime_type(mime_type)
-                
+
                 # Create processed attachment info using existing file
                 processed_attachment = {
-                    'file_name': attachment_info['name'],
-                    'original_path': str(file_path),
-                    'sandbox_path': sandbox_path,
-                    'sandbox_absolute_path': str(file_absolute_path),
-                    'file_size': attachment_info['size'],
-                    'mime_type': mime_type,
-                    'hash': file_hash,
-                    'type': attachment_info['type'],
-                    'extension': attachment_info['extension']
+                    "file_name": attachment_info["name"],
+                    "original_path": str(file_path),
+                    "sandbox_path": sandbox_path,
+                    "sandbox_absolute_path": str(file_absolute_path),
+                    "file_size": attachment_info["size"],
+                    "mime_type": mime_type,
+                    "hash": file_hash,
+                    "type": attachment_info["type"],
+                    "extension": attachment_info["extension"],
                 }
-                
-                logger.info(f"Using existing file in attachments: {attachment_info['name']} -> {sandbox_path} ({mime_type}, {file_hash[:8]}...)")
+
+                logger.info(
+                    f"Using existing file in attachments: {attachment_info['name']} -> {sandbox_path} ({mime_type}, {file_hash[:8]}...)"
+                )
                 return processed_attachment
-            
+
             # File is not in attachments directory, proceed with normal copy process
             # Generate a unique filename to avoid conflicts
             import uuid
+
             unique_id = uuid.uuid4().hex[:8]
             file_extension = file_path.suffix
             sandbox_filename = f"{unique_id}_{attachment_info['name']}"
             sandbox_path = f"attachments/{sandbox_filename}"
-            
+
             # Get the absolute path in the sandbox
             sandbox_absolute_path = file_handler.get_absolute_path(sandbox_path)
-            
+
             # Ensure the attachments directory exists
             file_handler.ensure_directory_exists("attachments")
-            
+
             # Copy file directly to sandbox using shutil
             logger.info(f"Copying file to sandbox: {sandbox_path}")
             try:
                 shutil.copy2(file_path, sandbox_absolute_path)
-                logger.info(f"Successfully copied file to sandbox: {sandbox_absolute_path}")
+                logger.info(
+                    f"Successfully copied file to sandbox: {sandbox_absolute_path}"
+                )
             except Exception as e:
                 logger.error(f"Failed to copy file to sandbox: {e}")
                 return None
-            
+
             # Generate file hash for integrity checking
             file_hash = self._calculate_file_hash(file_path)
-            
+
             # Determine MIME type and normalize it
             mime_type, _ = mimetypes.guess_type(str(file_path))
             mime_type = normalize_mime_type(mime_type)
-            
+
             # Create processed attachment info with sandbox path
             processed_attachment = {
-                'file_name': attachment_info['name'],
-                'original_path': str(file_path),
-                'sandbox_path': sandbox_path,
-                'sandbox_absolute_path': sandbox_absolute_path,
-                'file_size': attachment_info['size'],
-                'mime_type': mime_type,
-                'hash': file_hash,
-                'type': attachment_info['type'],
-                'extension': attachment_info['extension']
+                "file_name": attachment_info["name"],
+                "original_path": str(file_path),
+                "sandbox_path": sandbox_path,
+                "sandbox_absolute_path": sandbox_absolute_path,
+                "file_size": attachment_info["size"],
+                "mime_type": mime_type,
+                "hash": file_hash,
+                "type": attachment_info["type"],
+                "extension": attachment_info["extension"],
             }
-            
-            logger.info(f"Successfully processed attachment: {attachment_info['name']} -> {sandbox_path} ({mime_type}, {file_hash[:8]}...)")
+
+            logger.info(
+                f"Successfully processed attachment: {attachment_info['name']} -> {sandbox_path} ({mime_type}, {file_hash[:8]}...)"
+            )
             return processed_attachment
-            
+
         except Exception as e:
             logger.error(f"Failed to process attachment {attachment_info['name']}: {e}")
             return None
@@ -453,20 +489,20 @@ class JeevesApp:
         except Exception as e:
             logger.error(f"Failed to calculate file hash: {e}")
             return ""
-    
+
     def _on_message_added(self, message: Dict):
         """Handle new message added to conversation."""
         # This is called by the chat manager when a message is added to the database
         # We don't need to do anything here since we handle UI updates in _on_send_message
         pass
-    
+
     def _on_thread_changed(self, thread: Dict):
         """Handle thread changes."""
         # Update sidebar if needed
         threads = self.chat_manager.get_threads()
         self.sidebar.load_threads(threads)
         self.chat_display.clear_messages()  # Also clear chat on programmatic thread change
-    
+
     def _load_thread_messages(self, thread_id: int):
         """Load messages for a specific thread."""
         try:
@@ -474,7 +510,7 @@ class JeevesApp:
             self.chat_display.load_messages(messages)
         except Exception as e:
             logger.error(f"Failed to load messages for thread {thread_id}: {e}")
-    
+
     def _on_export_chat(self):
         """Handle chat export."""
         try:
@@ -482,14 +518,14 @@ class JeevesApp:
             if not current_thread:
                 show_info("Info", "No conversation to export")
                 return
-            
+
             # For now, export as JSON
-            export_path = self.chat_manager.export_conversation(format='json')
+            export_path = self.chat_manager.export_conversation(format="json")
             show_info("Export Complete", f"Conversation exported to:\n{export_path}")
         except Exception as e:
             logger.error(f"Failed to export chat: {e}")
             show_error("Error", f"Failed to export chat: {e}")
-    
+
     def _on_search_messages(self):
         """Handle message search."""
         try:
@@ -498,7 +534,7 @@ class JeevesApp:
         except Exception as e:
             logger.error(f"Failed to search messages: {e}")
             show_error("Error", f"Failed to search messages: {e}")
-    
+
     def _toggle_sidebar(self):
         """Toggle sidebar visibility."""
         if self.sidebar_visible:
@@ -507,7 +543,7 @@ class JeevesApp:
         else:
             self.sidebar.grid()
             self.sidebar_visible = True
-    
+
     def _on_closing(self):
         """Handle application closing."""
         try:
@@ -518,7 +554,7 @@ class JeevesApp:
             logger.error(f"Error during window closing: {e}")
             # Only quit if there's an error
             self.root.quit()
-    
+
     def run(self):
         """Run the application."""
         try:
@@ -528,21 +564,21 @@ class JeevesApp:
             show_error("Fatal Error", f"Application error: {e}")
         finally:
             self._on_closing()
-    
+
     def show_window(self):
         """Show the application window."""
         self.root.deiconify()
         self.root.lift()
         self.root.focus_force()
-    
+
     def hide_window(self):
         """Hide the application window."""
         self.root.withdraw()
-    
+
     def is_visible(self) -> bool:
         """Check if the window is visible."""
         return self.root.winfo_viewable()
-    
+
     def shutdown(self):
         """Properly shutdown the application and close database connections."""
         try:
@@ -552,4 +588,4 @@ class JeevesApp:
             self.root.quit()
         except Exception as e:
             logger.error(f"Error during shutdown: {e}")
-            self.root.quit() 
+            self.root.quit()

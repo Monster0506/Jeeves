@@ -666,4 +666,3 @@ class ChatManager:
             logger.info("Chat manager closed")
         except Exception as e:
             logger.error(f"Error closing chat manager: {e}")
-

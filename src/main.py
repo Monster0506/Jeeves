@@ -1,6 +1,7 @@
 """
 Main entry point for the Jeeves AI Assistant.
 """
+
 import customtkinter as ctk
 from .gui.app import JeevesApp
 
@@ -19,4 +20,4 @@ def launch_app():
 
 if __name__ == "__main__":
     root = launch_app()
-    root.mainloop() 
+    root.mainloop()

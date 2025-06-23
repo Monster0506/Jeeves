@@ -1,6 +1,7 @@
 """
 Sidebar component for Jeeves GUI.
 """
+
 import customtkinter as ctk
 from typing import Callable, List, Dict
 from ..config.settings import COLORS, APP_SETTINGS
@@ -8,51 +9,56 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class Sidebar(ctk.CTkFrame):
     """Sidebar component with thread management."""
-    
-    def __init__(self, parent, on_thread_select: Callable = None, 
-                 on_new_thread: Callable = None, on_delete_thread: Callable = None,
-                 on_rename_thread: Callable = None):
-        theme = COLORS['dark']
-        font_family = APP_SETTINGS['font_family']
-        font_large = (font_family, APP_SETTINGS['font_sizes']['large'], 'bold')
-        font_normal = (font_family, APP_SETTINGS['font_sizes']['normal'])
-        super().__init__(parent, width=300, fg_color=theme['bg_sidebar'])
-        
+
+    def __init__(
+        self,
+        parent,
+        on_thread_select: Callable = None,
+        on_new_thread: Callable = None,
+        on_delete_thread: Callable = None,
+        on_rename_thread: Callable = None,
+    ):
+        theme = COLORS["dark"]
+        font_family = APP_SETTINGS["font_family"]
+        font_large = (font_family, APP_SETTINGS["font_sizes"]["large"], "bold")
+        font_normal = (font_family, APP_SETTINGS["font_sizes"]["normal"])
+        super().__init__(parent, width=300, fg_color=theme["bg_sidebar"])
+
         self.on_thread_select = on_thread_select
         self.on_new_thread = on_new_thread
         self.on_delete_thread = on_delete_thread
         self.on_rename_thread = on_rename_thread
-        
+
         self.threads = []
         self.current_thread_id = None
-        
+
         self._setup_ui(theme, font_large, font_normal)
-    
+
     def _setup_ui(self, theme, font_large, font_normal):
         """Setup the user interface."""
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(2, weight=1)  # Give weight to the threads_frame row
-        
+
         # Sidebar header with enhanced styling and consistent spacing
         self.header_frame = ctk.CTkFrame(
-            self, 
-            fg_color=theme['bg_sidebar'],
-            border_width=0,
-            corner_radius=0
+            self, fg_color=theme["bg_sidebar"], border_width=0, corner_radius=0
         )
         self.header_frame.grid(row=0, column=0, sticky="ew", padx=0, pady=0)
         self.header_frame.grid_columnconfigure(0, weight=1)
-        
+
         self.title_label = ctk.CTkLabel(
             self.header_frame,
             text="Conversations",
             font=font_large,
-            text_color=theme['accent_primary']
+            text_color=theme["accent_primary"],
         )
-        self.title_label.grid(row=0, column=0, sticky="w", padx=24, pady=24)  # Increased padding
-        
+        self.title_label.grid(
+            row=0, column=0, sticky="w", padx=24, pady=24
+        )  # Increased padding
+
         self.new_thread_button = ctk.CTkButton(
             self.header_frame,
             text="✨ New Chat",  # Added sparkle icon for better visual appeal
@@ -60,48 +66,51 @@ class Sidebar(ctk.CTkFrame):
             width=140,  # Increased for better proportions with icon
             height=44,  # Increased for better proportions
             font=(font_normal[0], 12, "bold"),  # Made bold for primary action
-            fg_color=theme['button_primary'],
-            text_color=theme['text_inverse'],
-            hover_color=theme['button_primary_hover'],
+            fg_color=theme["button_primary"],
+            text_color=theme["text_inverse"],
+            hover_color=theme["button_primary_hover"],
             corner_radius=22,  # Increased for modern look
             border_width=0,  # Clean look without borders
         )
-        self.new_thread_button.grid(row=0, column=1, padx=(0, 24), pady=16)  # Consistent spacing
-        
+        self.new_thread_button.grid(
+            row=0, column=1, padx=(0, 24), pady=16
+        )  # Consistent spacing
+
         # Add enhanced hover effects to new thread button
         def on_new_button_enter(event):
-            self.new_thread_button.configure(corner_radius=24)  # Slightly larger radius on hover
-        
+            self.new_thread_button.configure(
+                corner_radius=24
+            )  # Slightly larger radius on hover
+
         def on_new_button_leave(event):
-            self.new_thread_button.configure(corner_radius=22)  # Return to normal radius
-        
+            self.new_thread_button.configure(
+                corner_radius=22
+            )  # Return to normal radius
+
         self.new_thread_button.bind("<Enter>", on_new_button_enter)
         self.new_thread_button.bind("<Leave>", on_new_button_leave)
-        
+
         # Add a subtle divider below the header
         self.header_divider = ctk.CTkFrame(
-            self,
-            fg_color=theme['border_divider'],
-            height=1,
-            corner_radius=0
+            self, fg_color=theme["border_divider"], height=1, corner_radius=0
         )
         self.header_divider.grid(row=1, column=0, sticky="ew", padx=16, pady=(0, 0))
-        
+
         # Threads list with enhanced styling and consistent spacing
         self.threads_frame = ctk.CTkScrollableFrame(
-            self, 
-            fg_color=theme['bg_sidebar'],
-            corner_radius=0
+            self, fg_color=theme["bg_sidebar"], corner_radius=0
         )
-        self.threads_frame.grid(row=2, column=0, sticky="nsew", padx=0, pady=0)  # Updated row to 2
+        self.threads_frame.grid(
+            row=2, column=0, sticky="nsew", padx=0, pady=0
+        )  # Updated row to 2
         self.threads_frame.grid_columnconfigure(0, weight=1)
         self.thread_buttons = []
-    
+
     def _create_new_thread(self):
         """Create a new thread."""
         if self.on_new_thread:
             self.on_new_thread()
-    
+
     def load_threads(self, threads: List[Dict]):
         """Load threads into the sidebar."""
         try:
@@ -109,61 +118,77 @@ class Sidebar(ctk.CTkFrame):
             self._update_thread_buttons()
         except Exception as e:
             logger.error(f"Error loading threads: {e}")
-    
+
     def _update_thread_buttons(self):
         try:
             for button in self.thread_buttons:
                 button.destroy()
             self.thread_buttons.clear()
-            theme = COLORS['dark']
-            font_family = APP_SETTINGS['font_family']
-            font_normal = (font_family, APP_SETTINGS['font_sizes']['normal'])
+            theme = COLORS["dark"]
+            font_family = APP_SETTINGS["font_family"]
+            font_normal = (font_family, APP_SETTINGS["font_sizes"]["normal"])
             for i, thread in enumerate(self.threads):
                 button = self._create_thread_button(thread, i, theme, font_normal)
                 self.thread_buttons.append(button)
         except Exception as e:
             logger.error(f"Error updating thread buttons: {e}")
-    
-    def _create_thread_button(self, thread: Dict, index: int, theme, font_normal) -> ctk.CTkButton:
+
+    def _create_thread_button(
+        self, thread: Dict, index: int, theme, font_normal
+    ) -> ctk.CTkButton:
         try:
             button_frame = ctk.CTkFrame(
-                self.threads_frame, 
-                fg_color=theme['bg_sidebar'],
-                corner_radius=0
+                self.threads_frame, fg_color=theme["bg_sidebar"], corner_radius=0
             )
-            button_frame.grid(row=index, column=0, sticky="ew", pady=8, padx=16)  # Consistent spacing
+            button_frame.grid(
+                row=index, column=0, sticky="ew", pady=8, padx=16
+            )  # Consistent spacing
             button_frame.grid_columnconfigure(0, weight=1)
-            
-            is_active = thread['id'] == self.current_thread_id
-            
+
+            is_active = thread["id"] == self.current_thread_id
+
             # Determine thread color based on type
-            thread_type = thread.get('type', 'general')
+            thread_type = thread.get("type", "general")
             thread_color_map = {
-                'general': theme.get('thread_general', theme['accent_primary']),
-                'code': theme.get('thread_code', theme['success']),
-                'planning': theme.get('thread_planning', theme['warning']),
-                'creative': theme.get('thread_creative', theme['accent_primary']),
-                'support': theme.get('thread_support', theme['error']),
-                'docs': theme.get('thread_docs', theme['info'])
+                "general": theme.get("thread_general", theme["accent_primary"]),
+                "code": theme.get("thread_code", theme["success"]),
+                "planning": theme.get("thread_planning", theme["warning"]),
+                "creative": theme.get("thread_creative", theme["accent_primary"]),
+                "support": theme.get("thread_support", theme["error"]),
+                "docs": theme.get("thread_docs", theme["info"]),
             }
-            thread_color = thread_color_map.get(thread_type, theme['accent_primary'])
-            
+            thread_color = thread_color_map.get(thread_type, theme["accent_primary"])
+
             button = ctk.CTkButton(
                 button_frame,
                 text=f"{thread.get('icon', '💬')} {thread.get('name', 'Unknown')}",
-                command=lambda: self._select_thread(thread['id']),
+                command=lambda: self._select_thread(thread["id"]),
                 anchor="w",
                 height=52,  # Increased for better proportions
-                font=(font_normal[0], 12, "bold" if is_active else "normal"),  # Bold for active thread
-                fg_color=thread_color if is_active else theme['button_secondary'],
-                text_color=theme['text_inverse'] if is_active else theme['text_primary'],
-                hover_color=theme['button_primary_hover'] if is_active else theme['button_secondary_hover'],
+                font=(
+                    font_normal[0],
+                    12,
+                    "bold" if is_active else "normal",
+                ),  # Bold for active thread
+                fg_color=thread_color if is_active else theme["button_secondary"],
+                text_color=(
+                    theme["text_inverse"] if is_active else theme["text_primary"]
+                ),
+                hover_color=(
+                    theme["button_primary_hover"]
+                    if is_active
+                    else theme["button_secondary_hover"]
+                ),
                 corner_radius=26,  # Increased for modern look
                 border_width=2 if is_active else 1,  # Thicker border for active state
-                border_color=theme['border_focus'] if is_active else theme['border_secondary']
+                border_color=(
+                    theme["border_focus"] if is_active else theme["border_secondary"]
+                ),
             )
-            button.grid(row=0, column=0, sticky="ew", padx=(0, 8), pady=0)  # Consistent spacing
-            
+            button.grid(
+                row=0, column=0, sticky="ew", padx=(0, 8), pady=0
+            )  # Consistent spacing
+
             menu_button = ctk.CTkButton(
                 button_frame,
                 text="⋮",
@@ -171,24 +196,24 @@ class Sidebar(ctk.CTkFrame):
                 width=44,  # Increased for better proportions
                 height=44,  # Increased for better proportions
                 font=(font_normal[0], 14, "bold"),  # Larger, bold font for menu icon
-                fg_color=theme['button_secondary'],
-                text_color=theme['text_secondary'],
-                hover_color=theme['button_secondary_hover'],
+                fg_color=theme["button_secondary"],
+                text_color=theme["text_secondary"],
+                hover_color=theme["button_secondary_hover"],
                 corner_radius=22,  # Increased for modern look
                 border_width=1,  # Subtle border for definition
-                border_color=theme['border_secondary']
+                border_color=theme["border_secondary"],
             )
             menu_button.grid(row=0, column=1, padx=(0, 0), pady=0)
             return button
         except Exception as e:
             logger.error(f"Error creating thread button: {e}")
             return None
-    
+
     def _select_thread(self, thread_id: int):
         """Select a thread."""
         if self.on_thread_select:
             self.on_thread_select(thread_id)
-    
+
     def _show_thread_menu(self, thread: Dict):
         """Show context menu for a thread."""
         try:
@@ -199,13 +224,13 @@ class Sidebar(ctk.CTkFrame):
             menu.resizable(False, False)
             menu.transient(self)
             menu.grab_set()
-            
+
             # Center the menu
             menu.update_idletasks()
             x = (menu.winfo_screenwidth() // 2) - (200 // 2)
             y = (menu.winfo_screenheight() // 2) - (150 // 2)
             menu.geometry(f"200x150+{x}+{y}")
-            
+
             # Create menu buttons
             rename_button = ctk.CTkButton(
                 menu,
@@ -213,10 +238,10 @@ class Sidebar(ctk.CTkFrame):
                 command=lambda: self._rename_thread(thread, menu),
                 width=180,
                 height=30,
-                font=("Fira Code", 12)
+                font=("Fira Code", 12),
             )
             rename_button.pack(pady=10)
-            
+
             delete_button = ctk.CTkButton(
                 menu,
                 text="Delete",
@@ -225,28 +250,28 @@ class Sidebar(ctk.CTkFrame):
                 height=30,
                 font=("Fira Code", 12),
                 fg_color="#f44336",
-                hover_color="#d32f2f"
+                hover_color="#d32f2f",
             )
             delete_button.pack(pady=10)
-            
+
             cancel_button = ctk.CTkButton(
                 menu,
                 text="Cancel",
                 command=menu.destroy,
                 width=180,
                 height=30,
-                font=("Fira Code", 12)
+                font=("Fira Code", 12),
             )
             cancel_button.pack(pady=10)
-            
+
         except Exception as e:
             logger.error(f"Error showing thread menu: {e}")
-    
+
     def _rename_thread(self, thread: Dict, menu):
         """Rename a thread."""
         try:
             menu.destroy()
-            
+
             # Create rename dialog
             dialog = ctk.CTkToplevel(self)
             dialog.title("Rename Thread")
@@ -254,52 +279,55 @@ class Sidebar(ctk.CTkFrame):
             dialog.resizable(False, False)
             dialog.transient(self)
             dialog.grab_set()
-            
+
             # Center the dialog
             dialog.update_idletasks()
             x = (dialog.winfo_screenwidth() // 2) - (300 // 2)
             y = (dialog.winfo_screenheight() // 2) - (150 // 2)
             dialog.geometry(f"300x150+{x}+{y}")
-            
+
             # Create input field
             label = ctk.CTkLabel(dialog, text="New name:", font=("Fira Code", 12))
             label.pack(pady=10)
-            
+
             entry = ctk.CTkEntry(dialog, font=("Fira Code", 12))
-            entry.insert(0, thread.get('name', ''))
+            entry.insert(0, thread.get("name", ""))
             entry.pack(pady=10)
             entry.focus_set()
-            
+
             # Create buttons
             button_frame = ctk.CTkFrame(dialog)
             button_frame.pack(pady=10)
-            
+
             save_button = ctk.CTkButton(
                 button_frame,
                 text="Save",
-                command=lambda: self._save_rename(thread['id'], entry.get(), dialog),
+                command=lambda: self._save_rename(thread["id"], entry.get(), dialog),
                 width=80,
                 height=30,
-                font=("Fira Code", 12)
+                font=("Fira Code", 12),
             )
             save_button.pack(side="left", padx=5)
-            
+
             cancel_button = ctk.CTkButton(
                 button_frame,
                 text="Cancel",
                 command=dialog.destroy,
                 width=80,
                 height=30,
-                font=("Fira Code", 12)
+                font=("Fira Code", 12),
             )
             cancel_button.pack(side="left", padx=5)
-            
+
             # Bind Enter key
-            entry.bind("<Return>", lambda e: self._save_rename(thread['id'], entry.get(), dialog))
-            
+            entry.bind(
+                "<Return>",
+                lambda e: self._save_rename(thread["id"], entry.get(), dialog),
+            )
+
         except Exception as e:
             logger.error(f"Error renaming thread: {e}")
-    
+
     def _save_rename(self, thread_id: int, new_name: str, dialog):
         """Save the renamed thread."""
         try:
@@ -309,12 +337,12 @@ class Sidebar(ctk.CTkFrame):
             dialog.destroy()
         except Exception as e:
             logger.error(f"Error saving rename: {e}")
-    
+
     def _delete_thread(self, thread: Dict, menu):
         """Delete a thread."""
         try:
             menu.destroy()
-            
+
             # Create confirmation dialog
             dialog = ctk.CTkToplevel(self)
             dialog.title("Delete Thread")
@@ -322,50 +350,50 @@ class Sidebar(ctk.CTkFrame):
             dialog.resizable(False, False)
             dialog.transient(self)
             dialog.grab_set()
-            
+
             # Center the dialog
             dialog.update_idletasks()
             x = (dialog.winfo_screenwidth() // 2) - (300 // 2)
             y = (dialog.winfo_screenheight() // 2) - (150 // 2)
             dialog.geometry(f"300x150+{x}+{y}")
-            
+
             # Create message
             message = ctk.CTkLabel(
-                dialog, 
+                dialog,
                 text=f"Delete '{thread.get('name', 'Unknown')}'?\nThis action cannot be undone.",
-                font=("Fira Code", 12)
+                font=("Fira Code", 12),
             )
             message.pack(pady=20)
-            
+
             # Create buttons
             button_frame = ctk.CTkFrame(dialog)
             button_frame.pack(pady=10)
-            
+
             delete_button = ctk.CTkButton(
                 button_frame,
                 text="Delete",
-                command=lambda: self._confirm_delete(thread['id'], dialog),
+                command=lambda: self._confirm_delete(thread["id"], dialog),
                 width=80,
                 height=30,
                 font=("Fira Code", 12),
                 fg_color="#f44336",
-                hover_color="#d32f2f"
+                hover_color="#d32f2f",
             )
             delete_button.pack(side="left", padx=5)
-            
+
             cancel_button = ctk.CTkButton(
                 button_frame,
                 text="Cancel",
                 command=dialog.destroy,
                 width=80,
                 height=30,
-                font=("Fira Code", 12)
+                font=("Fira Code", 12),
             )
             cancel_button.pack(side="left", padx=5)
-            
+
         except Exception as e:
             logger.error(f"Error deleting thread: {e}")
-    
+
     def _confirm_delete(self, thread_id: int, dialog):
         """Confirm thread deletion."""
         try:
@@ -374,8 +402,8 @@ class Sidebar(ctk.CTkFrame):
             dialog.destroy()
         except Exception as e:
             logger.error(f"Error confirming delete: {e}")
-    
+
     def set_current_thread(self, thread_id: int):
         """Set the current active thread."""
         self.current_thread_id = thread_id
-        self._update_thread_buttons() 
+        self._update_thread_buttons()
