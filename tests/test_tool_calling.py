@@ -7,6 +7,7 @@ import inspect
 from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime
 from typing import Dict, List, Any
+from pathlib import Path
 
 from core.ai_providers import GeminiProvider, PlaceholderProvider, BaseAIProvider
 from core.ai_provider_manager import AIProviderManager
@@ -66,18 +67,29 @@ class TestThreadIdentifierResolution:
         db_manager = DatabaseManager(str(db_path))
         chat_manager = ChatManager(db_manager)
         tools = JeevesTools(chat_manager)
+        
+        # Track exported files for cleanup
+        exported_files = []
 
-        yield tools, chat_manager, db_manager
+        yield tools, chat_manager, db_manager, exported_files
 
-        # Cleanup: close database connections
+        # Cleanup: close database connections and remove exported files
         try:
             db_manager.close_connections()
         except:
             pass
+            
+        # Clean up any exported files
+        for file_path in exported_files:
+            try:
+                if Path(file_path).exists():
+                    Path(file_path).unlink()
+            except Exception as e:
+                print(f"Warning: Could not delete {file_path}: {e}")
 
     def test_resolve_thread_identifier_with_id(self, setup_tools):
         """Test resolving thread identifier with direct ID."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Create a test thread
         thread_id = chat_manager.create_thread("Test Thread", "🧪")
@@ -88,7 +100,7 @@ class TestThreadIdentifierResolution:
 
     def test_resolve_thread_identifier_with_name_unique(self, setup_tools):
         """Test resolving thread identifier with unique name."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Create a test thread
         thread_id = chat_manager.create_thread("Unique Thread Name", "🧪")
@@ -99,7 +111,7 @@ class TestThreadIdentifierResolution:
 
     def test_resolve_thread_identifier_with_name_partial_match(self, setup_tools):
         """Test resolving thread identifier with partial name match."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Create a test thread
         thread_id = chat_manager.create_thread("Project Planning Meeting", "📋")
@@ -110,7 +122,7 @@ class TestThreadIdentifierResolution:
 
     def test_resolve_thread_identifier_with_name_case_insensitive(self, setup_tools):
         """Test resolving thread identifier with case-insensitive name."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Create a test thread
         thread_id = chat_manager.create_thread("Bug Fixes", "🐛")
@@ -121,7 +133,7 @@ class TestThreadIdentifierResolution:
 
     def test_resolve_thread_identifier_with_ambiguous_name(self, setup_tools):
         """Test resolving thread identifier with ambiguous name raises error."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Create multiple threads with similar names
         thread1_id = chat_manager.create_thread("Project Planning", "📋")
@@ -139,7 +151,7 @@ class TestThreadIdentifierResolution:
 
     def test_resolve_thread_identifier_with_none_current_thread(self, setup_tools):
         """Test resolving thread identifier with None (current thread)."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Create a test thread and switch to it
         thread_id = chat_manager.create_thread("Current Thread", "💬")
@@ -151,7 +163,7 @@ class TestThreadIdentifierResolution:
 
     def test_resolve_thread_identifier_with_none_no_current_thread(self, setup_tools):
         """Test resolving thread identifier with None when no current thread."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Test None resolution when no current thread
         result = tools._resolve_thread_identifier(None)
@@ -159,7 +171,7 @@ class TestThreadIdentifierResolution:
 
     def test_resolve_thread_identifier_with_nonexistent_id(self, setup_tools):
         """Test resolving thread identifier with non-existent ID."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Test non-existent ID resolution
         result = tools._resolve_thread_identifier("99999")
@@ -167,7 +179,7 @@ class TestThreadIdentifierResolution:
 
     def test_resolve_thread_identifier_with_nonexistent_name(self, setup_tools):
         """Test resolving thread identifier with non-existent name."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Test non-existent name resolution
         result = tools._resolve_thread_identifier("Non-existent Thread")
@@ -175,7 +187,7 @@ class TestThreadIdentifierResolution:
 
     def test_rename_chat_thread_with_id(self, setup_tools):
         """Test rename_chat_thread with thread ID."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Create a test thread
         thread_id = chat_manager.create_thread("Old Name", "🧪")
@@ -190,7 +202,7 @@ class TestThreadIdentifierResolution:
 
     def test_rename_chat_thread_with_name(self, setup_tools):
         """Test rename_chat_thread with thread name."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Create a test thread
         thread_id = chat_manager.create_thread("Old Name", "🧪")
@@ -205,7 +217,7 @@ class TestThreadIdentifierResolution:
 
     def test_rename_chat_thread_with_ambiguous_name(self, setup_tools):
         """Test rename_chat_thread with ambiguous name returns error."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Create multiple threads with similar names
         chat_manager.create_thread("Project Planning", "📋")
@@ -218,7 +230,7 @@ class TestThreadIdentifierResolution:
 
     def test_rename_chat_thread_with_nonexistent_identifier(self, setup_tools):
         """Test rename_chat_thread with non-existent identifier."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Test renaming with non-existent ID
         result = tools.rename_chat_thread("99999", "New Name")
@@ -230,7 +242,7 @@ class TestThreadIdentifierResolution:
 
     def test_rename_chat_thread_with_empty_name(self, setup_tools):
         """Test rename_chat_thread with empty name."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Create a test thread
         thread_id = chat_manager.create_thread("Test Thread", "🧪")
@@ -242,7 +254,7 @@ class TestThreadIdentifierResolution:
 
     def test_search_chat_history_with_thread_id(self, setup_tools):
         """Test search_chat_history with thread ID."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Create a test thread and add messages
         thread_id = chat_manager.create_thread("Test Thread", "🧪")
@@ -257,7 +269,7 @@ class TestThreadIdentifierResolution:
 
     def test_search_chat_history_with_thread_name(self, setup_tools):
         """Test search_chat_history with thread name."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Create a test thread and add messages
         thread_id = chat_manager.create_thread("Test Thread", "🧪")
@@ -272,7 +284,7 @@ class TestThreadIdentifierResolution:
 
     def test_search_chat_history_with_ambiguous_name(self, setup_tools):
         """Test search_chat_history with ambiguous name returns error."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Create multiple threads with similar names
         chat_manager.create_thread("Project Planning", "📋")
@@ -285,7 +297,7 @@ class TestThreadIdentifierResolution:
 
     def test_search_chat_history_with_nonexistent_identifier(self, setup_tools):
         """Test search_chat_history with non-existent identifier."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Test searching with non-existent ID
         result = tools.search_chat_history("test", thread_identifier="99999")
@@ -299,7 +311,7 @@ class TestThreadIdentifierResolution:
 
     def test_export_current_conversation_with_thread_id(self, setup_tools):
         """Test export_current_conversation with thread ID."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, exported_files = setup_tools
 
         # Create a test thread and add messages
         thread_id = chat_manager.create_thread("Test Thread", "🧪")
@@ -313,9 +325,28 @@ class TestThreadIdentifierResolution:
         )
         assert "Successfully exported" in result
 
+        # Verify the file was created and clean it up
+        file_path = None
+        try:
+            # Extract file path from result string
+            exported_file_path = result.split("Successfully exported conversation to: ")[1]
+            file_path = Path(exported_file_path)
+            
+            assert file_path.exists()
+            assert file_path.is_file()
+            
+            exported_files.append(str(file_path))
+        finally:
+            # Clean up the exported file
+            if file_path and file_path.exists():
+                try:
+                    file_path.unlink()
+                except Exception as e:
+                    print(f"Warning: Could not delete {file_path}: {e}")
+
     def test_export_current_conversation_with_thread_name(self, setup_tools):
         """Test export_current_conversation with thread name."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, exported_files = setup_tools
 
         # Create a test thread and add messages
         thread_id = chat_manager.create_thread("Test Thread", "🧪")
@@ -329,9 +360,28 @@ class TestThreadIdentifierResolution:
         )
         assert "Successfully exported" in result
 
+        # Verify the file was created and clean it up
+        file_path = None
+        try:
+            # Extract file path from result string
+            exported_file_path = result.split("Successfully exported conversation to: ")[1]
+            file_path = Path(exported_file_path)
+            
+            assert file_path.exists()
+            assert file_path.is_file()
+            
+            exported_files.append(str(file_path))
+        finally:
+            # Clean up the exported file
+            if file_path and file_path.exists():
+                try:
+                    file_path.unlink()
+                except Exception as e:
+                    print(f"Warning: Could not delete {file_path}: {e}")
+
     def test_export_current_conversation_with_ambiguous_name(self, setup_tools):
         """Test export_current_conversation with ambiguous name returns error."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Create multiple threads with similar names
         chat_manager.create_thread("Project Planning", "📋")
@@ -346,7 +396,7 @@ class TestThreadIdentifierResolution:
 
     def test_export_current_conversation_with_nonexistent_identifier(self, setup_tools):
         """Test export_current_conversation with non-existent identifier."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Test exporting with non-existent ID
         result = tools.export_current_conversation(
@@ -362,7 +412,7 @@ class TestThreadIdentifierResolution:
 
     def test_export_current_conversation_with_none_no_current_thread(self, setup_tools):
         """Test export_current_conversation with None when no current thread."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Test exporting with None when no current thread
         result = tools.export_current_conversation(
@@ -372,7 +422,7 @@ class TestThreadIdentifierResolution:
 
     def test_thread_identifier_edge_cases(self, setup_tools):
         """Test edge cases for thread identifier resolution."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Test with empty string
         result = tools._resolve_thread_identifier("")
@@ -390,7 +440,7 @@ class TestThreadIdentifierResolution:
 
     def test_thread_identifier_with_special_characters(self, setup_tools):
         """Test thread identifier resolution with special characters."""
-        tools, chat_manager, db_manager = setup_tools
+        tools, chat_manager, db_manager, _ = setup_tools
 
         # Create thread with special characters
         thread_id = chat_manager.create_thread("Thread with @#$%^&*()", "🧪")
