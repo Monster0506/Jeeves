@@ -107,14 +107,19 @@ Jeeves/
 │   │   │   └── placeholder_provider.py
 │   │   ├── ai_provider_manager.py    # Provider and tool management
 │   │   ├── chat_manager.py
-│   │   └── database.py
+│   │   ├── database.py
+│   │   ├── file_handler.py
+│   │   └── tools.py
 │   ├── gui/               # User interface components
 │   │   ├── __init__.py
 │   │   ├── app.py         # Main application class
-│   │   └── components.py  # Reusable UI components
+│   │   ├── chat_display.py
+│   │   ├── components.py  # Reusable UI components
+│   │   └── sidebar.py
 │   ├── utils/             # Utility functions
 │   │   ├── __init__.py
-│   │   └── dialogs.py     # Dialog utilities
+│   │   ├── dialogs.py     # Dialog utilities
+│   │   └── normalize_mime_type.py
 │   ├── __init__.py
 │   └── main.py           # Application entry point
 ├── tests/                 # Comprehensive test suite
@@ -124,6 +129,12 @@ Jeeves/
 │   ├── test_tool_calling_functionality.py  # Additional tool tests
 │   ├── test_integration.py            # Integration tests
 │   ├── test_api.py                    # API integration tests
+│   ├── test_database.py               # Database tests
+│   ├── test_dialogs.py                # Dialog utility tests
+│   ├── test_file_handler.py           # File handler tests
+│   ├── test_main.py                   # Main module tests
+│   ├── test_mime_normalization.py     # MIME type normalization tests
+│   ├── test_settings.py               # Settings tests
 │   └── README.md                      # Testing documentation
 ├── main.py               # Global hotkey launcher
 ├── test_gemini.py        # Gemini integration test script
@@ -134,15 +145,32 @@ Jeeves/
 
 ## Installation
 
+### Prerequisites
+
+- **Python 3.13+** (required by pyproject.toml)
+- **uv** - Fast Python package installer and resolver
+
+### Install uv (if not already installed)
+
+```bash
+# On Windows (PowerShell)
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# On macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### Install Jeeves
+
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
    cd Jeeves
    ```
 
-2. **Install dependencies**
+2. **Install dependencies with uv**
    ```bash
-   uv install
+   uv sync
    ```
 
 3. **Set up Gemini AI** (Optional but recommended)
@@ -156,13 +184,29 @@ Jeeves/
 
 4. **Run the application**
    ```bash
-   python main.py
+   uv run python main.py
    ```
+
+### Development Setup
+
+For development with testing and linting tools:
+
+```bash
+# Install with development dependencies
+uv sync --group dev
+
+# Run tests
+uv run pytest tests/ -v
+
+# Run linting
+uv run flake8 src/
+uv run mypy src/
+```
 
 ## Usage
 
 ### Starting the App
-- Run `python main.py` to start the global hotkey listener
+- Run `uv run python main.py` to start the global hotkey listener
 - Press `Alt+Space` from anywhere to open the chat window
 - Press `Ctrl+C` to exit the application
 
@@ -263,6 +307,9 @@ The application features a clean, modular AI architecture with advanced tool cal
 - **pynput**: Global keyboard listening
 - **pillow**: Image processing (for future features)
 - **google-genai**: Google Gemini AI integration
+- **markdown-it-py**: Markdown rendering
+- **linkify-it-py**: Link detection in markdown
+- **mdit-py-plugins**: Markdown plugins
 - **pytest**: Testing framework
 - **pytest-cov**: Test coverage reporting
 
@@ -338,6 +385,12 @@ tests/
 ├── test_tool_calling_functionality.py  # Additional tool calling tests
 ├── test_integration.py            # Integration tests
 ├── test_api.py                    # API tests (external service calls)
+├── test_database.py               # Database tests
+├── test_dialogs.py                # Dialog utility tests
+├── test_file_handler.py           # File handler tests
+├── test_main.py                   # Main module tests
+├── test_mime_normalization.py     # MIME type normalization tests
+├── test_settings.py               # Settings tests
 └── README.md                      # Detailed testing documentation
 ```
 
@@ -580,14 +633,5 @@ All tools operate within a sandboxed environment (`~/.jeeves/`) and include:
 - **File operation safety** with soft deletes
 - **Parameter filtering** to prevent injection attacks
 - **Logging** for audit trails
-
-### 📊 **Tool Statistics**
-
-- **Total Tools**: 13
-- **Chat Management**: 6 tools
-- **File Management**: 5 tools  
-- **Memory & Logging**: 2 tools
-- **Categories**: 3 main categories
-- **Safety Features**: 5+ security measures
 
 For detailed tool calling documentation and advanced usage examples, see [TOOL_CALLING_GUIDE.md](TOOL_CALLING_GUIDE.md).
