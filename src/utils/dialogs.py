@@ -4,14 +4,14 @@ CustomTkinter-based dialog boxes for user interaction.
 """
 
 import logging
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 import customtkinter as ctk
 
 logger = logging.getLogger(__name__)
 
 
-def show_error(title: str, message: str, parent=None):
+def show_error(title: str, message: str, parent: Any = None) -> None:
     """Show an error dialog."""
     try:
         dialog = ctk.CTkToplevel(parent)
@@ -50,7 +50,7 @@ def show_error(title: str, message: str, parent=None):
         logger.error(f"Error showing error dialog: {e}")
 
 
-def show_info(title: str, message: str, parent=None):
+def show_info(title: str, message: str, parent: Any = None) -> None:
     """Show an info dialog."""
     try:
         dialog = ctk.CTkToplevel(parent)
@@ -89,7 +89,7 @@ def show_info(title: str, message: str, parent=None):
         logger.error(f"Error showing info dialog: {e}")
 
 
-def show_warning(title: str, message: str, parent=None):
+def show_warning(title: str, message: str, parent: Any = None) -> None:
     """Show a warning dialog."""
     try:
         dialog = ctk.CTkToplevel(parent)
@@ -131,9 +131,9 @@ def show_warning(title: str, message: str, parent=None):
 def show_confirmation(
     title: str,
     message: str,
-    parent=None,
-    on_confirm: Callable = None,
-    on_cancel: Callable = None,
+    parent: Any = None,
+    on_confirm: Optional[Callable] = None,
+    on_cancel: Optional[Callable] = None,
 ) -> bool:
     """Show a confirmation dialog."""
     result = [False]  # Use list to store result in nested function
@@ -160,13 +160,13 @@ def show_confirmation(
         button_frame = ctk.CTkFrame(dialog)
         button_frame.pack(pady=20)
 
-        def on_confirm_click():
+        def on_confirm_click() -> None:
             result[0] = True
             if on_confirm:
                 on_confirm()
             dialog.destroy()
 
-        def on_cancel_click():
+        def on_cancel_click() -> None:
             result[0] = False
             if on_cancel:
                 on_cancel()
@@ -210,9 +210,9 @@ def show_input_dialog(
     title: str,
     message: str,
     default_value: str = "",
-    parent=None,
-    on_ok: Callable = None,
-    on_cancel: Callable = None,
+    parent: Any = None,
+    on_ok: Optional[Callable] = None,
+    on_cancel: Optional[Callable] = None,
 ) -> Optional[str]:
     """Show an input dialog."""
     result = [None]  # Use list to store result in nested function
@@ -245,13 +245,13 @@ def show_input_dialog(
         button_frame = ctk.CTkFrame(dialog)
         button_frame.pack(pady=20)
 
-        def on_ok_click():
+        def on_ok_click() -> None:
             result[0] = input_field.get()
             if on_ok:
                 on_ok(result[0])
             dialog.destroy()
 
-        def on_cancel_click():
+        def on_cancel_click() -> None:
             result[0] = None
             if on_cancel:
                 on_cancel()
@@ -293,7 +293,7 @@ def show_input_dialog(
         return None
 
 
-def show_loading_dialog(title: str, message: str, parent=None):
+def show_loading_dialog(title: str, message: str, parent: Any = None) -> Any:
     """Show a loading dialog."""
     try:
         dialog = ctk.CTkToplevel(parent)
@@ -326,7 +326,7 @@ def show_loading_dialog(title: str, message: str, parent=None):
         return None
 
 
-def close_loading_dialog(dialog):
+def close_loading_dialog(dialog: Any) -> None:
     """Close a loading dialog."""
     try:
         if dialog:
@@ -336,11 +336,11 @@ def close_loading_dialog(dialog):
 
 
 # Legacy functions for backward compatibility
-def show_warning_dialog(parent, title: str, message: str):
+def show_warning_dialog(parent: Any, title: str, message: str) -> None:
     """Legacy warning dialog function."""
     show_warning(title, message, parent)
 
 
-def show_confirmation_dialog(parent, title: str, message: str, on_confirm: Callable = None):
+def show_confirmation_dialog(parent: Any, title: str, message: str, on_confirm: Optional[Callable] = None) -> bool:
     """Legacy confirmation dialog function."""
     return show_confirmation(title, message, parent, on_confirm)
