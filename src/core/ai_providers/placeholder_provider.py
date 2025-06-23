@@ -6,7 +6,8 @@ Provides simple keyword-based responses as a fallback when no AI service is avai
 import logging
 import time
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
+
 from .base_provider import BaseAIProvider
 
 logger = logging.getLogger(__name__)

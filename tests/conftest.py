@@ -3,21 +3,22 @@ Pytest configuration and shared fixtures for Jeeves test suite.
 """
 
 import os
-import sys
-import pytest
-import tempfile
 import shutil
+import sys
+import tempfile
+import uuid
 from pathlib import Path
 from unittest.mock import Mock, patch
-import uuid
+
+import pytest
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from core.ai_providers import GeminiProvider, PlaceholderProvider
 from core.ai_provider_manager import AIProviderManager
-from core.database import DatabaseManager
+from core.ai_providers import GeminiProvider, PlaceholderProvider
 from core.chat_manager import ChatManager
+from core.database import DatabaseManager
 
 
 @pytest.fixture(scope="session")

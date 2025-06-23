@@ -3,16 +3,17 @@ Secure file handler for Jeeves AI Assistant.
 Provides safe file operations within the sandbox directory.
 """
 
-import os
-import shutil
-import logging
 import hashlib
+import logging
+import os
 import re
-import zipfile
+import shutil
 import tarfile
-from pathlib import Path
-from typing import List, Dict, Optional, Callable
+import zipfile
 from datetime import datetime
+from pathlib import Path
+from typing import Callable, Dict, List, Optional
+
 from src.config.settings import APP_SETTINGS
 
 logger = logging.getLogger(__name__)

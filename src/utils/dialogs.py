@@ -3,9 +3,10 @@ Dialog utilities for Jeeves AI Assistant.
 CustomTkinter-based dialog boxes for user interaction.
 """
 
-import customtkinter as ctk
 import logging
-from typing import Optional, Callable
+from typing import Callable, Optional
+
+import customtkinter as ctk
 
 logger = logging.getLogger(__name__)
 

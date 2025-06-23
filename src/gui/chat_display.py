@@ -2,23 +2,24 @@
 Chat display component for Jeeves GUI.
 """
 
-import customtkinter as ctk
-import tkinter as tk
-from tkinter import filedialog
-from typing import Callable, List, Dict, Optional
-from datetime import datetime
-from markdown_it import MarkdownIt
-import webbrowser
+import logging
 import os
+import tkinter as tk
+import tkinter.font as tkfont
+import webbrowser
+from datetime import datetime
 from pathlib import Path
+from tkinter import filedialog
+from typing import Callable, Dict, List, Optional
 
-from mdit_py_plugins.footnote import footnote_plugin
+import customtkinter as ctk
+from customtkinter import CTkFont
+from markdown_it import MarkdownIt
 from mdit_py_plugins.deflist import deflist_plugin
 from mdit_py_plugins.dollarmath import dollarmath_plugin
-import logging
-from ..config.settings import COLORS, APP_SETTINGS
-import tkinter.font as tkfont
-from customtkinter import CTkFont
+from mdit_py_plugins.footnote import footnote_plugin
+
+from ..config.settings import APP_SETTINGS, COLORS
 
 logger = logging.getLogger(__name__)
 logging.getLogger("markdown_it").setLevel(logging.WARNING)

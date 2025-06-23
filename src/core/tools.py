@@ -83,10 +83,11 @@ For detailed tool calling documentation, see TOOL_CALLING_GUIDE.md
 """
 
 import logging
-import re
 import os
-from typing import Dict, List, Optional, Union
+import re
 from datetime import datetime
+from typing import Dict, List, Optional, Union
+
 from .chat_manager import ChatManager
 from .file_handler import JeevesFileHandler
 

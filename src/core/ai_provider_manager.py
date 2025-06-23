@@ -4,7 +4,8 @@ Manages multiple AI providers and handles switching between them.
 """
 
 import logging
-from typing import Dict, List, Optional, Any, Type, Callable
+from typing import Any, Callable, Dict, List, Optional, Type
+
 from .ai_providers import BaseAIProvider, GeminiProvider, PlaceholderProvider
 
 logger = logging.getLogger(__name__)

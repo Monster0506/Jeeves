@@ -2,10 +2,12 @@
 Sidebar component for Jeeves GUI.
 """
 
-import customtkinter as ctk
-from typing import Callable, List, Dict
-from ..config.settings import COLORS, APP_SETTINGS
 import logging
+from typing import Callable, Dict, List
+
+import customtkinter as ctk
+
+from ..config.settings import APP_SETTINGS, COLORS
 
 logger = logging.getLogger(__name__)
 

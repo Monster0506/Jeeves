@@ -4,17 +4,17 @@ Handles persistence of threads, messages, and conversation history.
 Enhanced with durability, migrations, and future-proofing.
 """
 
-import sqlite3
 import datetime
+import hashlib
 import json
+import logging
+import sqlite3
 import threading
 import time
-import hashlib
-from pathlib import Path
-from typing import List, Dict, Optional, Tuple, Any, Union
 from contextlib import contextmanager
-import logging
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
@@ -551,7 +551,7 @@ class DatabaseManager:
                     "SELECT id, name, icon, description, tags, created_at, updated_at, "
                     "last_activity, is_active, is_archived, metadata, settings "
                     "FROM threads "
-                    "WHERE " + where_clause + " " # nosec B608
+                    "WHERE " + where_clause + " "  # nosec B608
                     "ORDER BY last_activity DESC"
                 )
                 cursor.execute(query, params)

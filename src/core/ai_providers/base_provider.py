@@ -3,9 +3,9 @@ Base AI Provider interface for Jeeves AI Assistant.
 Defines the contract that all AI providers must implement.
 """
 
-from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Any, Callable, Union
 import logging
+from abc import ABC, abstractmethod
+from typing import Any, Callable, Dict, List, Optional, Union
 
 logger = logging.getLogger(__name__)
 

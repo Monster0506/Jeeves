@@ -193,7 +193,7 @@ For development with testing and linting tools:
 
 ```bash
 # Install with development dependencies
-uv sync --group dev
+uv sync --extra dev
 
 # Run tests
 uv run pytest tests/ -v
@@ -371,7 +371,7 @@ The testing framework provides comprehensive coverage:
 #### Test Dependencies
 All test dependencies are managed through `uv`:
 ```bash
-uv sync --group test
+uv sync --extra test
 ```
 
 ### 📁 Test Structure

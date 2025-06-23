@@ -3,6 +3,7 @@ Main entry point for the Jeeves AI Assistant.
 """
 
 import customtkinter as ctk
+
 from .gui.app import JeevesApp
 
 # Set appearance mode and color theme

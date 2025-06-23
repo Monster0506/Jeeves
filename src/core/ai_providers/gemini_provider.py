@@ -3,15 +3,17 @@ Gemini AI Provider for Jeeves AI Assistant.
 Uses Google's Gemini API via the google-genai SDK.
 """
 
-import os
-import logging
-import inspect
-from typing import Dict, List, Any, Callable, Optional
-from .base_provider import BaseAIProvider
-from datetime import datetime
 import base64
+import inspect
+import logging
+import os
+from datetime import datetime
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
+
 from src.config.settings import APP_SETTINGS
+
+from .base_provider import BaseAIProvider
 
 logger = logging.getLogger(__name__)
 

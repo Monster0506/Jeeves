@@ -2,20 +2,22 @@
 Main application for Jeeves AI Assistant using CustomTkinter.
 """
 
-import customtkinter as ctk
-import threading
-import logging
 import hashlib
-from typing import Dict, List, Optional
-from ..core.database import DatabaseManager
-from ..core.chat_manager import ChatManager
-from ..core.ai_engine import AIEngine
-from .components import ChatDisplay, Sidebar
-from ..utils.dialogs import show_error, show_info
-from ..config.settings import APP_SETTINGS, COLORS
-from pathlib import Path
+import logging
 import shutil
+import threading
+from pathlib import Path
+from typing import Dict, List, Optional
+
+import customtkinter as ctk
+
+from ..config.settings import APP_SETTINGS, COLORS
+from ..core.ai_engine import AIEngine
+from ..core.chat_manager import ChatManager
+from ..core.database import DatabaseManager
 from ..utils import normalize_mime_type
+from ..utils.dialogs import show_error, show_info
+from .components import ChatDisplay, Sidebar
 
 logger = logging.getLogger(__name__)
 ctk.deactivate_automatic_dpi_awareness()
@@ -369,9 +371,10 @@ class JeevesApp:
     def _process_attachment(self, attachment_info: Dict) -> Dict:
         """Process an attachment and prepare it for storage in the sandbox."""
         try:
-            from pathlib import Path
             import hashlib
             import mimetypes
+            from pathlib import Path
+
             from ..core.file_handler import JeevesFileHandler
 
             file_path = Path(attachment_info["path"])

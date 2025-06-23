@@ -5,11 +5,12 @@ Now uses a modular provider system for different AI backends.
 """
 
 import logging
-from typing import Dict, List
-from .chat_manager import ChatManager
-from .ai_provider_manager import AIProviderManager
-from .tools import JeevesTools
 import os
+from typing import Dict, List
+
+from .ai_provider_manager import AIProviderManager
+from .chat_manager import ChatManager
+from .tools import JeevesTools
 
 logger = logging.getLogger(__name__)
 
