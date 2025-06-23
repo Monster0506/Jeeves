@@ -3,53 +3,13 @@ from typing import (
     Any,
     Callable,
     Optional,
-    TypedDict,
 )
 
 import customtkinter as ctk
 
 from ..config.settings import APP_SETTINGS as _APP_SETTINGS_RAW
 from ..config.settings import COLORS as _COLORS_RAW
-
-
-class FontSizes(TypedDict):
-    large: int
-    normal: int
-
-
-class AppSettingsType(TypedDict):
-    font_family: str
-    font_sizes: FontSizes
-
-
-class ColorsTheme(TypedDict):
-    bg_sidebar: str
-    accent_primary: str
-    button_primary: str
-    text_inverse: str
-    button_primary_hover: str
-    border_divider: str
-    thread_general: str
-    thread_code: str
-    thread_planning: str
-    thread_creative: str
-    thread_support: str
-    thread_docs: str
-    button_secondary: str
-    text_primary: str
-    button_secondary_hover: str
-    border_focus: str
-    border_secondary: str
-    text_secondary: str
-    error: str
-    warning: str
-    success: str
-    info: str
-
-
-class ColorsType(TypedDict):
-    dark: ColorsTheme
-
+from ..config.settings import AppSettingsType, ColorsTheme, ColorsType
 
 APP_SETTINGS: AppSettingsType = _APP_SETTINGS_RAW  # type: ignore[assignment]
 COLORS: ColorsType = _COLORS_RAW  # type: ignore[assignment]

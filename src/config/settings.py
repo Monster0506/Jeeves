@@ -2,7 +2,8 @@
 Application settings and configuration constants.
 """
 
-# Icon definitions
+from typing import TypedDict
+
 ICONS = {
     "chat": "💬",
     "send": "➤",
@@ -29,7 +30,6 @@ ICONS = {
     "wave": "👋",
 }
 
-# Enhanced Color System
 COLORS = {
     "dark": {
         # Background Colors
@@ -236,3 +236,42 @@ DEFAULT_THREADS = [
     ("target", "Goal Setting"),
     ("rocket", "Feature Planning"),
 ]
+
+
+class FontSizes(TypedDict):
+    large: int
+    normal: int
+
+
+class AppSettingsType(TypedDict):
+    font_family: str
+    font_sizes: FontSizes
+
+
+class ColorsTheme(TypedDict):
+    bg_sidebar: str
+    accent_primary: str
+    button_primary: str
+    text_inverse: str
+    button_primary_hover: str
+    border_divider: str
+    thread_general: str
+    thread_code: str
+    thread_planning: str
+    thread_creative: str
+    thread_support: str
+    thread_docs: str
+    button_secondary: str
+    text_primary: str
+    button_secondary_hover: str
+    border_focus: str
+    border_secondary: str
+    text_secondary: str
+    error: str
+    warning: str
+    success: str
+    info: str
+
+
+class ColorsType(TypedDict):
+    dark: ColorsTheme
