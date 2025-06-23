@@ -93,7 +93,7 @@ jobs:
         uv sync --extra dev
 
     - name: Run security checks
-        run: |
+      run: | 
                 # Run Bandit security checks
                 uv run bandit -r src/ -f json -o bandit-report.json || true
                 
