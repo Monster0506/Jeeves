@@ -15,7 +15,7 @@ Tool calling enables Jeeves to:
 
 ## Built-in Tools Reference
 
-Jeeves comes with **11 powerful built-in tools** organized into 3 categories. These tools are automatically available and can be called by the AI during conversations.
+Jeeves comes with **13 powerful built-in tools** organized into 3 categories. These tools are automatically available and can be called by the AI during conversations.
 
 ### 🗂️ Chat Management Tools
 
@@ -179,9 +179,58 @@ response = manager.generate_response("Search for 'password' in all .md files")
 response = manager.generate_response("Search for 'test' only in the current directory")
 ```
 
+#### 10. `read_file`
+Read the content of a file within the `~/.jeeves/` sandbox directory. This tool provides safe, read-only access to files within the sandbox.
+
+**Parameters:**
+- `path` (str): The relative path to the file from the sandbox root.
+
+**Examples:**
+```python
+# Read a note file
+response = manager.generate_response("Read the content of notes/meeting_notes.md")
+
+# Read the todo list
+response = manager.generate_response("Show me what's in todo.md")
+```
+
+#### 11. `list_directory`
+List the contents of a directory within the `~/.jeeves/` sandbox. This tool provides a safe way to explore the sandbox's file structure with hierarchical output.
+
+**Parameters:**
+- `path` (str, default="."): The relative path to the directory from the sandbox root.
+- `recursive` (bool, default=True): If True, recursively list contents of subdirectories.
+
+**Examples:**
+```python
+# List the sandbox root directory (recursive by default)
+response = manager.generate_response("List all files in my sandbox")
+
+# List a subdirectory non-recursively
+response = manager.generate_response("Show me the contents of the notes directory without going deeper")
+
+# List recursively (explicit)
+response = manager.generate_response("List everything in the notes directory recursively")
+```
+
+**Output Format:**
+```
+Contents of '.':
+- attachments/
+- notes/
+- Memory.md
+- todo.md
+
+Contents of 'notes/' (recursive):
+- attachments/test.md
+- attachments/test2.md
+- meeting_notes.md
+- project_ideas.md
+```
+
 ### 🧠 Memory & Logging Tools
 
-#### 10. `persistent_memory_manager`
+#### 12. `persistent_memory_manager`
 Manage Jeeves's long-term memory in `~/.jeeves/MEMORY.md`.
 
 **Parameters:**
@@ -204,7 +253,7 @@ response = manager.generate_response("Remove memory entry 5")
 response = manager.generate_response("Clear all my memories")
 ```
 
-#### 11. `scratchpad_logger`
+#### 13. `scratchpad_logger`
 Log internal thoughts to session-specific scratchpad files.
 
 **Parameters:**
@@ -275,7 +324,7 @@ response = manager.generate_response("""
 
 All built-in tools include comprehensive security measures:
 
-- **Sandboxed Environment**: All file operations are restricted to `~/.jeeves/`
+- **Sandboxed Environment**: Most file operations are restricted to `~/.jeeves/`. New file tools provide safe, read-only access to the project directory.
 - **Input Validation**: All parameters are validated before processing
 - **Error Handling**: Graceful error handling with informative messages
 - **Soft Deletes**: File deletions are moved to trash rather than permanent deletion
@@ -285,13 +334,13 @@ All built-in tools include comprehensive security measures:
 
 ### 📊 Tool Statistics
 
-- **Total Tools**: 11
+- **Total Tools**: 13
 - **Chat Management**: 6 tools
-- **File Management**: 3 tools
+- **File Management**: 5 tools
 - **Memory & Logging**: 2 tools
 - **Categories**: 3 main categories
 - **Safety Features**: 5+ security measures
-- **File Operations**: 4 tools with file system access
+- **File Operations**: 6 tools with file system access
 - **Search Capabilities**: 2 tools with search functionality
 - **Memory Operations**: 2 tools with persistent storage
 

@@ -2,7 +2,7 @@
 Tools module for Jeeves AI Assistant.
 Contains all available tools that can be called by the AI.
 
-## Available Tools (11 total)
+## Available Tools (13 total)
 
 ### 🗂️ Chat Management Tools (6)
 1. **rename_chat_thread** - Rename chat threads for better organization
@@ -12,14 +12,16 @@ Contains all available tools that can be called by the AI.
 5. **export_current_conversation** - Export conversation to JSON/text format
 6. **get_conversation_summary** - Get conversation statistics and summary
 
-### 📝 File Management Tools (3)
+### 📝 File Management Tools (5)
 7. **note_manager** - Manage personal notes in ~/.jeeves/notes/
 8. **todo_list_manager** - Manage centralized todo list in ~/.jeeves/todo.md
 9. **content_searcher** - Search files and content within ~/.jeeves/ sandbox
+10. **read_file** - Read content from a file in the project directory
+11. **list_directory** - List contents of a directory in the project
 
 ### 🧠 Memory & Logging Tools (2)
-10. **persistent_memory_manager** - Manage Jeeves's long-term memory
-11. **scratchpad_logger** - Log internal thoughts to session-specific files
+12. **persistent_memory_manager** - Manage Jeeves's long-term memory
+13. **scratchpad_logger** - Log internal thoughts to session-specific files
 
 ## Tool Categories & Usage
 
@@ -82,6 +84,7 @@ For detailed tool calling documentation, see TOOL_CALLING_GUIDE.md
 
 import logging
 import re
+import os
 from typing import Dict, List, Optional, Union
 from datetime import datetime
 from .chat_manager import ChatManager
@@ -94,23 +97,25 @@ class JeevesTools:
     """
     Collection of tools available to Jeeves AI Assistant.
     
-    This class provides 11 powerful tools organized into 3 categories:
+    This class provides 13 powerful tools organized into 3 categories:
     
     **Chat Management (6 tools):**
     - Thread organization and renaming
     - Historical search and retrieval  
     - Conversation export and summaries
     
-    **File Management (3 tools):**
+    **File Management (5 tools):**
     - Personal note management
     - Todo list with task tracking
     - Content search across files
+    - Reading and listing project files
     
     **Memory & Logging (2 tools):**
     - Persistent memory storage
     - Session-specific thought logging
     
-    All tools operate within a secure sandbox (~/.jeeves/) and include
+    Most tools operate within a secure sandbox (~/.jeeves/), while some
+    provide safe, read-only access to the project directory. All tools include
     comprehensive error handling, input validation, and logging.
     """
 
@@ -123,7 +128,8 @@ class JeevesTools:
         """
         self.chat_manager = chat_manager
         self.file_handler = JeevesFileHandler()
-        logger.info("JeevesTools initialized with chat manager and file handler")
+        self.sandbox_root = self.file_handler.get_sandbox_root()
+        logger.info(f"JeevesTools initialized. Sandbox root: {self.sandbox_root}")
 
     def _resolve_thread_identifier(self, thread_identifier: Optional[str]) -> Optional[int]:
         """
@@ -226,9 +232,7 @@ class JeevesTools:
             logger.error(f"Error renaming thread {thread_identifier}: {e}", exc_info=True)
             return f"Error: {str(e)}"
 
-    def search_chat_history(
-        self, query: str, thread_identifier: Optional[str] = None, limit: int = 10
-    ) -> str:
+    def search_chat_history(self, query: str, thread_identifier: Optional[str] = None, limit: int = 10) -> str:
         """
         Search through chat history.
 
@@ -456,48 +460,34 @@ class JeevesTools:
             Dictionary mapping tool names to their functions
         """
         logger.debug("Getting registered tools")
-        tools = {
-            # Existing tools
+        return {
             "rename_chat_thread": self.rename_chat_thread,
             "search_chat_history": self.search_chat_history,
             "get_available_threads": self.get_available_threads,
             "get_current_thread_info": self.get_current_thread_info,
             "export_current_conversation": self.export_current_conversation,
             "get_conversation_summary": self.get_conversation_summary,
-            
-            # New file-based tools
             "note_manager": self.note_manager,
             "todo_list_manager": self.todo_list_manager,
             "content_searcher": self.content_searcher,
             "persistent_memory_manager": self.persistent_memory_manager,
             "scratchpad_logger": self.scratchpad_logger,
+            "read_file": self.read_file,
+            "list_directory": self.list_directory,
         }
-        logger.debug(f"Returning {len(tools)} registered tools")
-        return tools
 
     def get_tool_descriptions(self) -> Dict[str, str]:
         """
-        Get descriptions for all available tools.
-        
+        Get descriptions for all registered tools.
+
         Returns:
-            Dictionary mapping tool names to their descriptions
+            Dictionary mapping tool names to their docstrings
         """
         logger.debug("Getting tool descriptions")
         descriptions = {
-            # Existing tools
-            "rename_chat_thread": "Rename a chat thread. Provide thread_identifier (ID or name) and new_name parameters. Use None for current thread.",
-            "search_chat_history": "Search through chat history. Provide query, optional thread_identifier (ID or name), and optional limit (default 10).",
-            "get_available_threads": "Get a list of all available chat threads.",
-            "get_current_thread_info": "Get information about the current active thread.",
-            "export_current_conversation": 'Export a conversation to a file. Provide optional thread_identifier (ID or name) and format parameter ("json" or "txt").',
-            "get_conversation_summary": "Get a summary of the current conversation.",
-            
-            # New file-based tools
-            "note_manager": "Manage personal notes in ~/.jeeves/notes/. Actions: create, append, read, list, delete. Provide action, filename, content, and optional directory.",
-            "todo_list_manager": "Manage the central ~/.jeeves/todo.md file. Actions: add, list, complete, delete, clear. Provide action, task_content, and optional task_id.",
-            "content_searcher": "Search for files and content within ~/.jeeves/ sandbox. Provide query, search_type (content/filename/both), optional file_pattern, and recursive flag.",
-            "persistent_memory_manager": "Manage Jeeves's long-term memory in ~/.jeeves/MEMORY.md. Actions: add, list, remove, clear. Provide action, content, and optional entry_id.",
-            "scratchpad_logger": "Log internal thoughts to session-specific scratchpad files in ~/.jeeves/scratchpads/. Provide content and optional session_name.",
+            name: func.__doc__
+            for name, func in self.get_registered_tools().items()
+            if func.__doc__
         }
         logger.debug(f"Returning descriptions for {len(descriptions)} tools")
         return descriptions
@@ -1043,4 +1033,73 @@ class JeevesTools:
         except Exception as e:
             logger.error(f"Error in scratchpad_logger: {e}", exc_info=True)
             return f"Error: {str(e)}"
+
+    def read_file(self, path: str) -> str:
+        """
+        Read the content of a file within the ~/.jeeves/ sandbox directory.
+
+        Args:
+            path: The relative path to the file from the sandbox root.
+
+        Returns:
+            The content of the file or an error message.
+        """
+        logger.info(f"Tool called: read_file(path='{path}')")
+        try:
+            content = self.file_handler.read_file_content(path)
+            return f"Content of '{path}':\n\n{content}"
+
+        except Exception as e:
+            logger.exception(f"Error reading file '{path}': {e}")
+            return f"An error occurred while reading the file: {str(e)}"
+
+    def list_directory(self, path: str = ".", recursive: bool = True) -> str:
+        """
+        List the contents of a directory within the ~/.jeeves/ sandbox.
+
+        Args:
+            path: The relative path to the directory from the sandbox root. Defaults to the sandbox root.
+            recursive: If True, recursively list contents of subdirectories. Defaults to True.
+
+        Returns:
+            A hierarchical list of files and directories or an error message.
+        """
+        logger.info(f"Tool called: list_directory(path='{path}', recursive={recursive})")
+        try:
+            contents = self.file_handler.list_directory_contents(path, recursive=recursive, include_files=True, include_directories=True)
+            
+            if not contents:
+                return f"Directory '{path}' is empty."
+            
+            # Sort contents: directories first, then files, both alphabetically
+            directories = []
+            files = []
+            
+            for item in contents:
+                item_path = item["path"]
+                if item["type"] == "directory":
+                    directories.append(item_path)
+                else:
+                    files.append(item_path)
+            
+            # Sort both lists
+            directories.sort()
+            files.sort()
+            
+            # Format the output with proper hierarchy
+            result_lines = [f"Contents of '{path}':\n"]
+            
+            # Add directories first (with trailing slash)
+            for directory in directories:
+                result_lines.append(f"- {directory}/")
+            
+            # Add files
+            for file in files:
+                result_lines.append(f"- {file}")
+            
+            return "\n".join(result_lines)
+
+        except Exception as e:
+            logger.exception(f"Error listing directory '{path}': {e}")
+            return f"An error occurred while listing the directory: {str(e)}"
 

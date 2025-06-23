@@ -383,7 +383,7 @@ This project is licensed under the MIT License.
 
 ## Available Tools
 
-Jeeves comes with **11 powerful built-in tools** that enable advanced functionality and automation. These tools are automatically available in conversations and can be called by the AI to perform various tasks.
+Jeeves comes with **13 powerful built-in tools** that enable advanced functionality and automation. These tools are automatically available in conversations and can be called by the AI to perform various tasks.
 
 ### 🗂️ **Chat Management Tools**
 
@@ -494,6 +494,23 @@ response = manager.generate_response("Search for 'password' in all .md files")
 response = manager.generate_response("Search for 'test' only in the current directory")
 ```
 
+#### `read_file`
+Read the content of a file within the `~/.jeeves/` sandbox directory.
+```python
+# Read a note file
+response = manager.generate_response("Read the content of notes/meeting_notes.md")
+```
+
+#### `list_directory`
+List the contents of a directory within the `~/.jeeves/` sandbox with hierarchical output.
+```python
+# List sandbox contents (recursive by default)
+response = manager.generate_response("Show me everything in my sandbox")
+
+# List non-recursively
+response = manager.generate_response("Show me the contents of the notes directory without going deeper")
+```
+
 ### 🧠 **Memory & Logging Tools**
 
 #### `persistent_memory_manager`
@@ -563,9 +580,9 @@ All tools operate within a sandboxed environment (`~/.jeeves/`) and include:
 
 ### 📊 **Tool Statistics**
 
-- **Total Tools**: 11
+- **Total Tools**: 13
 - **Chat Management**: 6 tools
-- **File Management**: 3 tools  
+- **File Management**: 5 tools  
 - **Memory & Logging**: 2 tools
 - **Categories**: 3 main categories
 - **Safety Features**: 5+ security measures
