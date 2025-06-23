@@ -192,7 +192,7 @@ COLORS = {
 }
 
 # App settings
-APP_SETTINGS = {
+APP_SETTINGS: AppSettingsType = {
     "title": "Jeeves - AI Assistant",
     "default_width": 1200,
     "default_height": 800,
@@ -239,13 +239,23 @@ DEFAULT_THREADS = [
 
 
 class FontSizes(TypedDict):
+    small: int
     large: int
     normal: int
+    medium: int
+    xlarge: int
 
 
 class AppSettingsType(TypedDict):
     font_family: str
     font_sizes: FontSizes
+    title: str
+    default_width: int
+    default_height: int
+    min_width: int
+    min_height: int
+    sidebar_width: int
+    sandbox_directory: str
 
 
 class ColorsTheme(TypedDict):
