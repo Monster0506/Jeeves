@@ -49,23 +49,11 @@ def normalize_mime_type(mime_type: str) -> str:
         mime_type = "image/tiff"
 
     # Document format normalizations
-    elif (
-        mime_type
-        == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    ):
-        mime_type = (
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
-    elif (
-        mime_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    ):
+    elif mime_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        mime_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    elif mime_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
         mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    elif (
-        mime_type
-        == "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-    ):
-        mime_type = (
-            "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-        )
+    elif mime_type == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+        mime_type = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 
     return mime_type

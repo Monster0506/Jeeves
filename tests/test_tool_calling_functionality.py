@@ -2,11 +2,10 @@
 Unit tests for tool calling functionality.
 """
 
-import inspect
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
-from unittest.mock import MagicMock, Mock, patch
+from typing import Dict, List
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -77,7 +76,7 @@ class TestThreadIdentifierResolution:
         # Cleanup: close database connections and remove exported files
         try:
             db_manager.close_connections()
-        except:
+        except Exception:
             pass
 
         # Clean up any exported files
@@ -305,9 +304,7 @@ class TestThreadIdentifierResolution:
         assert "Thread '99999' not found" in result
 
         # Test searching with non-existent name
-        result = tools.search_chat_history(
-            "test", thread_identifier="Non-existent Thread"
-        )
+        result = tools.search_chat_history("test", thread_identifier="Non-existent Thread")
         assert "Thread 'Non-existent Thread' not found" in result
 
     def test_export_current_conversation_with_thread_id(self, setup_tools):
@@ -321,18 +318,14 @@ class TestThreadIdentifierResolution:
         chat_manager.add_ai_message("Hi there!")
 
         # Test exporting with thread ID
-        result = tools.export_current_conversation(
-            thread_identifier=str(thread_id), format="json"
-        )
+        result = tools.export_current_conversation(thread_identifier=str(thread_id), format="json")
         assert "Successfully exported" in result
 
         # Verify the file was created and clean it up
         file_path = None
         try:
             # Extract file path from result string
-            exported_file_path = result.split(
-                "Successfully exported conversation to: "
-            )[1]
+            exported_file_path = result.split("Successfully exported conversation to: ")[1]
             file_path = Path(exported_file_path)
 
             assert file_path.exists()
@@ -359,18 +352,14 @@ class TestThreadIdentifierResolution:
         chat_manager.add_ai_message("Hi there!")
 
         # Test exporting with thread name
-        result = tools.export_current_conversation(
-            thread_identifier="Test Thread", format="json"
-        )
+        result = tools.export_current_conversation(thread_identifier="Test Thread", format="json")
         assert "Successfully exported" in result
 
         # Verify the file was created and clean it up
         file_path = None
         try:
             # Extract file path from result string
-            exported_file_path = result.split(
-                "Successfully exported conversation to: "
-            )[1]
+            exported_file_path = result.split("Successfully exported conversation to: ")[1]
             file_path = Path(exported_file_path)
 
             assert file_path.exists()
@@ -395,9 +384,7 @@ class TestThreadIdentifierResolution:
         chat_manager.create_thread("Project Planning Backup", "📋")
 
         # Test exporting with ambiguous name
-        result = tools.export_current_conversation(
-            thread_identifier="Project Planning", format="json"
-        )
+        result = tools.export_current_conversation(thread_identifier="Project Planning", format="json")
         assert "Error:" in result
         assert "Multiple threads found matching" in result
 
@@ -406,15 +393,11 @@ class TestThreadIdentifierResolution:
         tools, chat_manager, db_manager, _ = setup_tools
 
         # Test exporting with non-existent ID
-        result = tools.export_current_conversation(
-            thread_identifier="99999", format="json"
-        )
+        result = tools.export_current_conversation(thread_identifier="99999", format="json")
         assert "Thread '99999' not found" in result
 
         # Test exporting with non-existent name
-        result = tools.export_current_conversation(
-            thread_identifier="Non-existent Thread", format="json"
-        )
+        result = tools.export_current_conversation(thread_identifier="Non-existent Thread", format="json")
         assert "Thread 'Non-existent Thread' not found" in result
 
     def test_export_current_conversation_with_none_no_current_thread(self, setup_tools):
@@ -422,9 +405,7 @@ class TestThreadIdentifierResolution:
         tools, chat_manager, db_manager, _ = setup_tools
 
         # Test exporting with None when no current thread
-        result = tools.export_current_conversation(
-            thread_identifier=None, format="json"
-        )
+        result = tools.export_current_conversation(thread_identifier=None, format="json")
         assert "No active thread to export" in result
 
 
@@ -439,9 +420,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -462,9 +441,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -488,9 +465,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -508,9 +483,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -537,9 +510,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -558,9 +529,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -578,9 +547,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -599,9 +566,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -622,9 +587,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -648,9 +611,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -710,9 +671,7 @@ class TestGeminiProviderToolCalling:
         assert get_weather in tools_config
 
     @patch("google.genai.Client")
-    def test_gemini_provider_build_automatic_function_calling_config(
-        self, mock_client_class
-    ):
+    def test_gemini_provider_build_automatic_function_calling_config(self, mock_client_class):
         """Test automatic function calling configuration building."""
         # Mock the client
         mock_client = Mock()
@@ -736,9 +695,7 @@ class TestGeminiProviderToolCalling:
         assert config.maximum_remote_calls == 3
 
     @patch("google.genai.Client")
-    def test_gemini_provider_build_automatic_function_calling_config_disabled(
-        self, mock_client_class
-    ):
+    def test_gemini_provider_build_automatic_function_calling_config_disabled(self, mock_client_class):
         """Test automatic function calling configuration when disabled."""
         # Mock the client
         mock_client = Mock()
@@ -792,9 +749,7 @@ class TestGeminiProviderToolCalling:
         assert len(config.tools) > 0
 
     @patch("google.genai.Client")
-    def test_gemini_provider_generate_response_with_function_calls(
-        self, mock_client_class
-    ):
+    def test_gemini_provider_generate_response_with_function_calls(self, mock_client_class):
         """Test response generation with actual function calls."""
         # Mock the client
         mock_client = Mock()
@@ -822,9 +777,7 @@ class TestGeminiProviderToolCalling:
         assert mock_client.models.generate_content.call_count == 1
 
     @patch("google.genai.Client")
-    def test_gemini_provider_generate_response_tool_calling_disabled(
-        self, mock_client_class
-    ):
+    def test_gemini_provider_generate_response_tool_calling_disabled(self, mock_client_class):
         """Test response generation with tool calling disabled."""
         # Mock the client
         mock_client = Mock()
@@ -886,24 +839,18 @@ class TestGeminiProviderToolCalling:
 
     def test_gemini_provider_validate_config_invalid_max_tool_calls(self):
         """Test configuration validation with invalid max_tool_calls."""
-        provider = GeminiProvider(
-            {"api_key": "test_key", "max_tool_calls": 0}  # Invalid
-        )
+        provider = GeminiProvider({"api_key": "test_key", "max_tool_calls": 0})  # Invalid
 
         assert provider.validate_config() is False
 
     def test_gemini_provider_validate_config_negative_max_tool_calls(self):
         """Test configuration validation with negative max_tool_calls."""
-        provider = GeminiProvider(
-            {"api_key": "test_key", "max_tool_calls": -1}  # Invalid
-        )
+        provider = GeminiProvider({"api_key": "test_key", "max_tool_calls": -1})  # Invalid
 
         assert provider.validate_config() is False
 
     @patch("google.genai.Client")
-    def test_gemini_provider_get_provider_info_with_tool_calling(
-        self, mock_client_class
-    ):
+    def test_gemini_provider_get_provider_info_with_tool_calling(self, mock_client_class):
         """Test provider info includes tool calling information."""
         # Mock the client
         mock_client = Mock()
@@ -1223,9 +1170,7 @@ class TestToolCallingEdgeCases:
 
         manager.register_tool("complex_tool", complex_tool_with_lists)
 
-        result = manager.execute_tool(
-            "complex_tool", {"items": ["a", "b", "c"], "count": 2}
-        )
+        result = manager.execute_tool("complex_tool", {"items": ["a", "b", "c"], "count": 2})
 
         assert result == "Processed 3 items, showing 2"
 
@@ -1239,9 +1184,7 @@ class TestToolCallingEdgeCases:
 
         manager.register_tool("dict_tool", dict_tool)
 
-        result = manager.execute_tool(
-            "dict_tool", {"data": {"name": "John", "age": 30}, "key": "name"}
-        )
+        result = manager.execute_tool("dict_tool", {"data": {"name": "John", "age": 30}, "key": "name"})
 
         assert result == "John"
 
@@ -1262,9 +1205,7 @@ class TestToolCallingEdgeCases:
         """Test tool registration with custom description."""
         manager = AIProviderManager()
 
-        result = manager.register_tool(
-            "custom_tool", get_current_time, "Custom description for the tool"
-        )
+        result = manager.register_tool("custom_tool", get_current_time, "Custom description for the tool")
 
         assert result is True
         assert "custom_tool" in manager.registered_tools
@@ -1304,9 +1245,7 @@ class TestToolCallingEdgeCases:
         manager.register_tool("calculate_sum", calculate_sum)
 
         # Should work fine - extra parameters are ignored
-        result = manager.execute_tool(
-            "calculate_sum", {"a": 5, "b": 3, "extra_param": "ignored"}
-        )
+        result = manager.execute_tool("calculate_sum", {"a": 5, "b": 3, "extra_param": "ignored"})
 
         assert result == 8
 

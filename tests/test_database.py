@@ -1,8 +1,6 @@
 import os
-import shutil
 import sqlite3
-import tempfile
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -28,9 +26,7 @@ def test_create_and_get_thread(db):
     # Insert thread directly
     with db._get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO threads (name, icon) VALUES (?, ?)", ("TestThread", "icon")
-        )
+        cursor.execute("INSERT INTO threads (name, icon) VALUES (?, ?)", ("TestThread", "icon"))
         thread_id = cursor.lastrowid
         conn.commit()
     thread = db.get_thread(thread_id)
@@ -90,9 +86,7 @@ def test_update_thread_invalid_key(db):
 def test_get_thread_message_counts(db):
     with db._get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO threads (name, icon) VALUES (?, ?)", ("Epsilon", "e")
-        )
+        cursor.execute("INSERT INTO threads (name, icon) VALUES (?, ?)", ("Epsilon", "e"))
         thread_id = cursor.lastrowid
         cursor.execute(
             "INSERT INTO messages (thread_id, sender, content) VALUES (?, ?, ?)",
@@ -136,9 +130,7 @@ def test_add_message_with_attachments(db):
             "hash": "abc",
         }
     ]
-    msg_id = db.add_message(
-        thread_id, "user", "With attachment", attachments=attachments
-    )
+    msg_id = db.add_message(thread_id, "user", "With attachment", attachments=attachments)
     assert isinstance(msg_id, int)
     with db._get_connection() as conn:
         cursor = conn.cursor()
@@ -182,9 +174,7 @@ def test_update_message_no_fields(db):
 
 # --- USER SETTINGS ---
 def test_set_and_get_user_setting(db):
-    ok = db.set_user_setting(
-        "theme", "dark", value_type="string", description="UI theme"
-    )
+    ok = db.set_user_setting("theme", "dark", value_type="string", description="UI theme")
     assert ok
     val = db.get_user_settings("theme")
     assert val == "dark"
@@ -260,14 +250,12 @@ def test_get_connection_database_locked(db_path):
     for conn in db._connection_pool.values():
         try:
             conn.close()
-        except:
+        except Exception:
             pass
     db._connection_pool.clear()
 
     # Now patch sqlite3.connect to simulate database locked error
-    with patch(
-        "sqlite3.connect", side_effect=sqlite3.OperationalError("database is locked")
-    ):
+    with patch("sqlite3.connect", side_effect=sqlite3.OperationalError("database is locked")):
         with patch.object(db, "max_retries", 2):
             with pytest.raises(DatabaseError):
                 with db._get_connection():
@@ -284,7 +272,7 @@ def test_get_connection_other_error(db_path):
     for conn in db._connection_pool.values():
         try:
             conn.close()
-        except:
+        except Exception:
             pass
     db._connection_pool.clear()
 

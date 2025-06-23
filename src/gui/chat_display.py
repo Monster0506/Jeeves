@@ -3,9 +3,7 @@ Chat display component for Jeeves GUI.
 """
 
 import logging
-import os
 import tkinter as tk
-import tkinter.font as tkfont
 import webbrowser
 from datetime import datetime
 from pathlib import Path
@@ -13,7 +11,6 @@ from tkinter import filedialog
 from typing import Callable, Dict, List, Optional
 
 import customtkinter as ctk
-from customtkinter import CTkFont
 from markdown_it import MarkdownIt
 from mdit_py_plugins.deflist import deflist_plugin
 from mdit_py_plugins.dollarmath import dollarmath_plugin
@@ -56,14 +53,8 @@ class MessageBubble(ctk.CTkFrame):
         if self._bubble:
             self._bubble.destroy()
         # Bubble color and alignment
-        bubble_color = (
-            self.theme["bubble_user"] if self.is_user else self.theme["bubble_ai"]
-        )
-        bubble_hover_color = (
-            self.theme["bubble_user_hover"]
-            if self.is_user
-            else self.theme["bubble_ai_hover"]
-        )
+        bubble_color = self.theme["bubble_user"] if self.is_user else self.theme["bubble_ai"]
+        bubble_hover_color = self.theme["bubble_user_hover"] if self.is_user else self.theme["bubble_ai_hover"]
         text_color = self.theme["text_primary"]
         anchor = "e" if self.is_user else "w"
         padx = (16, 16)
@@ -156,11 +147,7 @@ class MessageBubble(ctk.CTkFrame):
         # Use a Textbox for better markdown rendering with styles
         md_text = ctk.CTkTextbox(
             parent,
-            fg_color=(
-                self.theme["bubble_ai"]
-                if not self.is_user
-                else self.theme["bubble_user"]
-            ),
+            fg_color=(self.theme["bubble_ai"] if not self.is_user else self.theme["bubble_user"]),
             text_color=text_color,
             font=(self.font_family, 13),
             wrap="word",
@@ -207,9 +194,7 @@ class MessageBubble(ctk.CTkFrame):
             lmargin2=20,
             foreground=self.theme["text_secondary"],
         )
-        md_text.tag_config(
-            "link", foreground=self.theme.get("link", "royal blue"), underline=True
-        )
+        md_text.tag_config("link", foreground=self.theme.get("link", "royal blue"), underline=True)
         md_text.tag_config(
             "link_hover",
             foreground=self.theme.get("link_hover", "light blue"),
@@ -265,13 +250,7 @@ class MessageBubble(ctk.CTkFrame):
             spacing3=8,
         )
 
-        md = (
-            MarkdownIt("gfm-like")
-            .enable("table")
-            .use(footnote_plugin)
-            .use(deflist_plugin)
-            .use(dollarmath_plugin)
-        )
+        md = MarkdownIt("gfm-like").enable("table").use(footnote_plugin).use(deflist_plugin).use(dollarmath_plugin)
         tokens = md.parse(text)
 
         def open_link(url):
@@ -331,9 +310,7 @@ class MessageBubble(ctk.CTkFrame):
                     col_widths[i] = max(col_widths[i], len(row[i]))
 
             def format_row(row_data, widths, is_header=False):
-                return " | ".join(
-                    f"{cell:<{widths[i]}}" for i, cell in enumerate(row_data)
-                )
+                return " | ".join(f"{cell:<{widths[i]}}" for i, cell in enumerate(row_data))
 
             output = []
             if header:
@@ -411,17 +388,13 @@ class MessageBubble(ctk.CTkFrame):
                         link_id = f"link-{self._link_counter}"
                         self._link_counter += 1
 
-                        md_text.tag_bind(
-                            link_id, "<Button-1>", lambda e, url=href: open_link(url)
-                        )
+                        md_text.tag_bind(link_id, "<Button-1>", lambda e, url=href: open_link(url))
                         md_text.tag_bind(
                             link_id,
                             "<Enter>",
                             lambda e: md_text.configure(cursor="hand2"),
                         )
-                        md_text.tag_bind(
-                            link_id, "<Leave>", lambda e: md_text.configure(cursor="")
-                        )
+                        md_text.tag_bind(link_id, "<Leave>", lambda e: md_text.configure(cursor=""))
 
                         tag_stack.append(link_id)
                         tag_stack.append("link")
@@ -429,9 +402,7 @@ class MessageBubble(ctk.CTkFrame):
                     elif child.type == "link_close":
                         if "link" in tag_stack:
                             tag_stack.pop(tag_stack.index("link"))
-                        link_id_to_pop = next(
-                            (t for t in tag_stack if t.startswith("link-")), None
-                        )
+                        link_id_to_pop = next((t for t in tag_stack if t.startswith("link-")), None)
                         if link_id_to_pop:
                             tag_stack.pop(tag_stack.index(link_id_to_pop))
 
@@ -467,9 +438,7 @@ class MessageBubble(ctk.CTkFrame):
                             "<Enter>",
                             lambda e: md_text.configure(cursor="hand2"),
                         )
-                        md_text.tag_bind(
-                            fn_id, "<Leave>", lambda e: md_text.configure(cursor="")
-                        )
+                        md_text.tag_bind(fn_id, "<Leave>", lambda e: md_text.configure(cursor=""))
                         apply_tags(f"[{ref_id}]", ["footnote_ref", fn_id])
 
             elif token.type == "fence":
@@ -611,12 +580,8 @@ class ChatDisplay(ctk.CTkFrame):
             border_width=2,  # Increased for better definition
             border_color=self.theme["border_primary"],
         )
-        self.input_frame.grid(
-            row=1, column=0, sticky="ew", padx=16, pady=(16, 8)
-        )  # Consistent spacing, less bottom padding
-        self.input_frame.grid_columnconfigure(
-            1, weight=1
-        )  # Changed to column 1 for paperclip button
+        self.input_frame.grid(row=1, column=0, sticky="ew", padx=16, pady=(16, 8))  # Consistent spacing, less bottom padding
+        self.input_frame.grid_columnconfigure(1, weight=1)  # Changed to column 1 for paperclip button
 
         # Attachment Tray
         self.attachment_tray = ctk.CTkScrollableFrame(
@@ -663,9 +628,7 @@ class ChatDisplay(ctk.CTkFrame):
             border_width=0,  # Clean look without borders
             # Add subtle shadow effect through color
         )
-        self.send_button.grid(
-            row=0, column=2, padx=(8, 16), pady=16
-        )  # Right side of input field
+        self.send_button.grid(row=0, column=2, padx=(8, 16), pady=16)  # Right side of input field
 
         # Toolbar with enhanced styling and consistent spacing
         self.toolbar_frame = ctk.CTkFrame(
@@ -675,9 +638,7 @@ class ChatDisplay(ctk.CTkFrame):
             border_width=2,  # Increased for better definition
             border_color=self.theme["border_secondary"],
         )
-        self.toolbar_frame.grid(
-            row=3, column=0, sticky="ew", padx=16, pady=(0, 16)
-        )  # Consistent spacing, row updated to 3
+        self.toolbar_frame.grid(row=3, column=0, sticky="ew", padx=16, pady=(0, 16))  # Consistent spacing, row updated to 3
 
         self.search_button = ctk.CTkButton(
             self.toolbar_frame,
@@ -740,9 +701,7 @@ class ChatDisplay(ctk.CTkFrame):
             border_width=1,
             corner_radius=12,  # Increased to match button styling
         )
-        self.input_field.grid(
-            row=0, column=1, sticky="ew", padx=(8, 8), pady=16
-        )  # Between paperclip and send button
+        self.input_field.grid(row=0, column=1, sticky="ew", padx=(8, 8), pady=16)  # Between paperclip and send button
 
     def _setup_bindings(self):
         self.input_field.bind("<Return>", lambda e: self._send_message())
@@ -766,9 +725,7 @@ class ChatDisplay(ctk.CTkFrame):
 
         # Send button hover effect
         def on_send_enter(event):
-            self.send_button.configure(
-                corner_radius=14
-            )  # Slightly larger radius on hover
+            self.send_button.configure(corner_radius=14)  # Slightly larger radius on hover
 
         def on_send_leave(event):
             self.send_button.configure(corner_radius=12)  # Return to normal radius
@@ -790,14 +747,10 @@ class ChatDisplay(ctk.CTkFrame):
 
         # Attachment button hover effect
         def on_attachment_enter(event):
-            self.attachment_button.configure(
-                corner_radius=14
-            )  # Slightly larger radius on hover
+            self.attachment_button.configure(corner_radius=14)  # Slightly larger radius on hover
 
         def on_attachment_leave(event):
-            self.attachment_button.configure(
-                corner_radius=12
-            )  # Return to normal radius
+            self.attachment_button.configure(corner_radius=12)  # Return to normal radius
 
         self.attachment_button.bind("<Enter>", on_attachment_enter)
         self.attachment_button.bind("<Leave>", on_attachment_leave)
@@ -887,11 +840,7 @@ class ChatDisplay(ctk.CTkFrame):
                 content = message.get("content", "")
                 timestamp = message.get("timestamp", "")
                 is_user = sender == "user" or sender == "You"
-                display_sender = (
-                    "You"
-                    if is_user
-                    else ("Jeeves" if sender == "ai" else sender.title())
-                )
+                display_sender = "You" if is_user else ("Jeeves" if sender == "ai" else sender.title())
                 max_bubble_width = max(int(self.canvas.winfo_width() * 0.95), 600)
 
                 # Check for attachments and append their info to the content
@@ -1038,9 +987,7 @@ class ChatDisplay(ctk.CTkFrame):
             max_size = 10 * 1024 * 1024  # 10MB
 
             if file_size > max_size:
-                self._show_error_message(
-                    f"File too large: {file_path.name} ({file_size / 1024 / 1024:.1f}MB). Maximum size is 10MB."
-                )
+                self._show_error_message(f"File too large: {file_path.name} ({file_size / 1024 / 1024:.1f}MB). Maximum size is 10MB.")
                 return
 
             # Get file info
@@ -1093,9 +1040,7 @@ class ChatDisplay(ctk.CTkFrame):
         """Add a new attachment pill to the UI."""
         # Show the tray if this is the first attachment
         if not self._current_attachments:
-            self.attachment_tray.grid(
-                row=2, column=0, sticky="ew", padx=16, pady=(0, 8)
-            )
+            self.attachment_tray.grid(row=2, column=0, sticky="ew", padx=16, pady=(0, 8))
 
         # Use the file path as a unique key
         attachment_key = attachment_info["path"]

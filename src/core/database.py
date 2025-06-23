@@ -4,7 +4,6 @@ Handles persistence of threads, messages, and conversation history.
 Enhanced with durability, migrations, and future-proofing.
 """
 
-import datetime
 import hashlib
 import json
 import logging
@@ -14,7 +13,7 @@ import time
 from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +38,7 @@ class MessageType(Enum):
 class DatabaseManager:
     """Manages SQLite database operations for the Jeeves AI Assistant."""
 
-    def __init__(
-        self, db_path: str = "jeeves.db", max_retries: int = 3, timeout: float = 30.0
-    ):
+    def __init__(self, db_path: str = "jeeves.db", max_retries: int = 3, timeout: float = 30.0):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.max_retries = max_retries
@@ -247,9 +244,7 @@ class DatabaseManager:
         # Create new connection with retry logic
         for attempt in range(self.max_retries):
             try:
-                conn = sqlite3.connect(
-                    self.db_path, timeout=self.timeout, check_same_thread=False
-                )
+                conn = sqlite3.connect(self.db_path, timeout=self.timeout, check_same_thread=False)
                 conn.row_factory = sqlite3.Row
 
                 # Configure connection for better performance and durability
@@ -269,14 +264,9 @@ class DatabaseManager:
                 return
 
             except sqlite3.OperationalError as e:
-                if (
-                    "database is locked" in str(e).lower()
-                    and attempt < self.max_retries - 1
-                ):
+                if "database is locked" in str(e).lower() and attempt < self.max_retries - 1:
                     wait_time = (2**attempt) * 0.1  # Exponential backoff
-                    logger.warning(
-                        f"Database locked, retrying in {wait_time}s (attempt {attempt + 1})"
-                    )
+                    logger.warning(f"Database locked, retrying in {wait_time}s (attempt {attempt + 1})")
                     time.sleep(wait_time)
                     continue
                 else:
@@ -293,14 +283,9 @@ class DatabaseManager:
                 with self._lock:
                     return operation(*args, **kwargs)
             except sqlite3.OperationalError as e:
-                if (
-                    "database is locked" in str(e).lower()
-                    and attempt < self.max_retries - 1
-                ):
+                if "database is locked" in str(e).lower() and attempt < self.max_retries - 1:
                     wait_time = (2**attempt) * 0.1
-                    logger.warning(
-                        f"Database locked, retrying in {wait_time}s (attempt {attempt + 1})"
-                    )
+                    logger.warning(f"Database locked, retrying in {wait_time}s (attempt {attempt + 1})")
                     time.sleep(wait_time)
                     continue
                 else:
@@ -308,9 +293,7 @@ class DatabaseManager:
             except Exception as e:
                 raise DatabaseError(f"Database operation failed: {e}")
 
-        raise DatabaseError(
-            "Failed to execute database operation after maximum retries"
-        )
+        raise DatabaseError("Failed to execute database operation after maximum retries")
 
     def create_thread(
         self,
@@ -341,7 +324,7 @@ class DatabaseManager:
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    INSERT INTO threads (name, icon, description, tags, metadata, settings, 
+                    INSERT INTO threads (name, icon, description, tags, metadata, settings,
                                        created_at, updated_at, last_activity)
                     VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 """,
@@ -398,12 +381,10 @@ class DatabaseManager:
                     where_conditions.append("is_archived = ?")
                     params.append(0)
 
-                where_clause = (
-                    " AND ".join(where_conditions) if where_conditions else "1=1"
-                )
+                where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
 
                 query = f"""
-                    SELECT id, name, icon, description, tags, created_at, updated_at, 
+                    SELECT id, name, icon, description, tags, created_at, updated_at,
                            last_activity, is_active, is_archived, metadata, settings
                     FROM threads
                     WHERE {where_clause}
@@ -434,12 +415,8 @@ class DatabaseManager:
                             "last_activity": row["last_activity"],
                             "is_active": bool(row["is_active"]),
                             "is_archived": bool(row["is_archived"]),
-                            "metadata": (
-                                json.loads(row["metadata"]) if row["metadata"] else {}
-                            ),
-                            "settings": (
-                                json.loads(row["settings"]) if row["settings"] else {}
-                            ),
+                            "metadata": (json.loads(row["metadata"]) if row["metadata"] else {}),
+                            "settings": (json.loads(row["settings"]) if row["settings"] else {}),
                         }
                     )
 
@@ -490,7 +467,7 @@ class DatabaseManager:
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    SELECT id, name, icon, description, tags, created_at, updated_at, 
+                    SELECT id, name, icon, description, tags, created_at, updated_at,
                            last_activity, is_active, is_archived, metadata, settings
                     FROM threads
                     WHERE id = ?
@@ -511,12 +488,8 @@ class DatabaseManager:
                         "last_activity": row["last_activity"],
                         "is_active": bool(row["is_active"]),
                         "is_archived": bool(row["is_archived"]),
-                        "metadata": (
-                            json.loads(row["metadata"]) if row["metadata"] else {}
-                        ),
-                        "settings": (
-                            json.loads(row["settings"]) if row["settings"] else {}
-                        ),
+                        "metadata": (json.loads(row["metadata"]) if row["metadata"] else {}),
+                        "settings": (json.loads(row["settings"]) if row["settings"] else {}),
                     }
                 return None
 
@@ -570,12 +543,8 @@ class DatabaseManager:
                             "last_activity": row["last_activity"],
                             "is_active": bool(row["is_active"]),
                             "is_archived": bool(row["is_archived"]),
-                            "metadata": (
-                                json.loads(row["metadata"]) if row["metadata"] else {}
-                            ),
-                            "settings": (
-                                json.loads(row["settings"]) if row["settings"] else {}
-                            ),
+                            "metadata": (json.loads(row["metadata"]) if row["metadata"] else {}),
+                            "settings": (json.loads(row["settings"]) if row["settings"] else {}),
                         }
                     )
 
@@ -617,11 +586,7 @@ class DatabaseManager:
                 for key, value in kwargs.items():
                     if key in allowed_columns:
                         updates.append(f"{key} = ?")
-                        params.append(
-                            json.dumps(value)
-                            if isinstance(value, (dict, list))
-                            else value
-                        )
+                        params.append(json.dumps(value) if isinstance(value, (dict, list)) else value)
 
                 if not updates:
                     return False
@@ -656,8 +621,8 @@ class DatabaseManager:
                 if soft_delete:
                     cursor.execute(
                         """
-                        UPDATE threads 
-                        SET is_active = 0, is_archived = 1, updated_at = CURRENT_TIMESTAMP 
+                        UPDATE threads
+                        SET is_active = 0, is_archived = 1, updated_at = CURRENT_TIMESTAMP
                         WHERE id = ?
                     """,
                         (thread_id,),
@@ -670,9 +635,7 @@ class DatabaseManager:
 
         success = self._execute_with_retry(_delete)
         if success:
-            logger.info(
-                f"{'Soft deleted' if soft_delete else 'Deleted'} thread {thread_id}"
-            )
+            logger.info(f"{'Soft deleted' if soft_delete else 'Deleted'} thread {thread_id}")
         return success
 
     def add_message(
@@ -710,7 +673,7 @@ class DatabaseManager:
                 # Add message
                 cursor.execute(
                     """
-                    INSERT INTO messages (thread_id, sender, content, content_type, 
+                    INSERT INTO messages (thread_id, sender, content, content_type,
                                         metadata, parent_message_id, reply_to_message_id, timestamp)
                     VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """,
@@ -732,7 +695,7 @@ class DatabaseManager:
                     for attachment in attachments:
                         cursor.execute(
                             """
-                            INSERT INTO attachments (message_id, file_name, file_path, 
+                            INSERT INTO attachments (message_id, file_name, file_path,
                                                    file_size, mime_type, hash)
                             VALUES (?, ?, ?, ?, ?, ?)
                         """,
@@ -749,8 +712,8 @@ class DatabaseManager:
                 # Update thread's last activity
                 cursor.execute(
                     """
-                    UPDATE threads 
-                    SET last_activity = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP 
+                    UPDATE threads
+                    SET last_activity = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
                     WHERE id = ?
                 """,
                     (thread_id,),
@@ -828,9 +791,7 @@ class DatabaseManager:
                         "timestamp": row["timestamp"],
                         "edited_at": row["edited_at"],
                         "is_edited": bool(row["is_edited"]),
-                        "metadata": (
-                            json.loads(row["metadata"]) if row["metadata"] else None
-                        ),
+                        "metadata": (json.loads(row["metadata"]) if row["metadata"] else None),
                         "parent_message_id": row["parent_message_id"],
                         "reply_to_message_id": row["reply_to_message_id"],
                         "attachments": [],
@@ -848,9 +809,7 @@ class DatabaseManager:
                         )
 
                         for att_row in cursor.fetchall():
-                            logger.debug(
-                                f"Adding attachment {att_row['id']} to message {row['id']}\n {att_row["file_name"]}"
-                            )
+                            logger.debug(f"Adding attachment {att_row['id']} to message {row['id']}\n {att_row["file_name"]}")
                             message["attachments"].append(
                                 {
                                     "id": att_row["id"],
@@ -862,9 +821,7 @@ class DatabaseManager:
                                 }
                             )
 
-                    logger.debug(
-                        f"Retrieved message: {message['id']} from thread {thread_id}"
-                    )
+                    logger.debug(f"Retrieved message: {message['id']} from thread {thread_id}")
                     messages.append(message)
 
                 return messages
@@ -939,9 +896,7 @@ class DatabaseManager:
                         "timestamp": row["timestamp"],
                         "edited_at": row["edited_at"],
                         "is_edited": bool(row["is_edited"]),
-                        "metadata": (
-                            json.loads(row["metadata"]) if row["metadata"] else None
-                        ),
+                        "metadata": (json.loads(row["metadata"]) if row["metadata"] else None),
                         "thread_name": row["thread_name"],
                         "rank": row["rank"],
                         "attachments": [],
@@ -975,9 +930,7 @@ class DatabaseManager:
 
         return self._execute_with_retry(_search)
 
-    def update_message(
-        self, message_id: int, content: str = None, metadata: Dict = None
-    ) -> bool:
+    def update_message(self, message_id: int, content: str = None, metadata: Dict = None) -> bool:
         """
         Update a message with new content or metadata.
 
@@ -993,9 +946,6 @@ class DatabaseManager:
         def _update():
             with self._get_connection() as conn:
                 cursor = conn.cursor()
-
-                # Whitelist of allowed columns to prevent SQL injection
-                allowed_columns = ["content", "metadata"]
 
                 updates = []
                 params = []
@@ -1080,9 +1030,7 @@ class DatabaseManager:
                         elif row["value_type"] == "float":
                             settings[row["key"]] = float(value) if value else 0.0
                         elif row["value_type"] == "bool":
-                            settings[row["key"]] = (
-                                value.lower() == "true" if value else False
-                            )
+                            settings[row["key"]] = value.lower() == "true" if value else False
                         else:
                             settings[row["key"]] = value
 
@@ -1090,9 +1038,7 @@ class DatabaseManager:
 
         return self._execute_with_retry(_get)
 
-    def set_user_setting(
-        self, key: str, value: Any, value_type: str = "string", description: str = None
-    ) -> bool:
+    def set_user_setting(self, key: str, value: Any, value_type: str = "string", description: str = None) -> bool:
         """
         Set a user setting.
 
@@ -1323,7 +1269,7 @@ class DatabaseManager:
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    DELETE FROM messages 
+                    DELETE FROM messages
                     WHERE timestamp < datetime('now', ?)
                 """,
                     (f"-{days_old} days",),

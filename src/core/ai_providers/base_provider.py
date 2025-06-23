@@ -5,7 +5,7 @@ Defines the contract that all AI providers must implement.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -66,9 +66,7 @@ class BaseAIProvider(ABC):
         """
         pass
 
-    def register_tool(
-        self, name: str, function: Callable, description: str = None
-    ) -> bool:
+    def register_tool(self, name: str, function: Callable, description: str = None) -> bool:
         """
         Register a tool/function that can be used by the provider.
 
@@ -87,9 +85,7 @@ class BaseAIProvider(ABC):
             logger.info(f"Registered tool '{name}' with {self.provider_name}")
             return True
         except Exception as e:
-            logger.error(
-                f"Failed to register tool '{name}' with {self.provider_name}: {e}"
-            )
+            logger.error(f"Failed to register tool '{name}' with {self.provider_name}: {e}")
             return False
 
     def unregister_tool(self, name: str) -> bool:
@@ -112,9 +108,7 @@ class BaseAIProvider(ABC):
             logger.info(f"Unregistered tool '{name}' from {self.provider_name}")
             return found
         except Exception as e:
-            logger.error(
-                f"Failed to unregister tool '{name}' from {self.provider_name}: {e}"
-            )
+            logger.error(f"Failed to unregister tool '{name}' from {self.provider_name}: {e}")
             return False
 
     def get_registered_tools(self) -> Dict[str, Callable]:
@@ -184,9 +178,7 @@ class BaseAIProvider(ABC):
             "is_initialized": self.is_initialized,
             "is_available": self.is_available(),
             "registered_tools_count": len(self.registered_tools),
-            "registered_tools": list(
-                self.registered_tools.keys()
-            ),  # for backward compatibility
+            "registered_tools": list(self.registered_tools.keys()),  # for backward compatibility
             "tool_config": self.tool_config.copy(),  # for backward compatibility
             "config": self.config.copy() if self.config else {},
         }
@@ -233,9 +225,7 @@ class BaseAIProvider(ABC):
             True if successful
         """
         # Base implementation does nothing - subclasses can override
-        logger.debug(
-            f"{self.provider_name} does not support system instruction updates"
-        )
+        logger.debug(f"{self.provider_name} does not support system instruction updates")
         return True
 
     def get_system_instruction(self) -> str:

@@ -4,7 +4,7 @@ Unit tests for AI providers.
 
 from datetime import datetime
 from typing import Dict, List
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -48,9 +48,7 @@ class TestBaseAIProvider:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -71,9 +69,7 @@ class TestBaseAIProvider:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -94,9 +90,7 @@ class TestBaseAIProvider:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -121,9 +115,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -144,9 +136,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -170,9 +160,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -190,9 +178,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -219,9 +205,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -240,9 +224,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -260,9 +242,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -281,9 +261,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -304,9 +282,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -330,9 +306,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(
-                self, user_message: str, context: List[Dict] = None
-            ) -> str:
+            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -528,9 +502,7 @@ class TestGeminiProvider:
 
     def test_gemini_provider_initialize_import_error(self):
         """Test Gemini provider initialization with import error."""
-        with patch(
-            "google.genai.Client", side_effect=ImportError("No module named 'google'")
-        ):
+        with patch("google.genai.Client", side_effect=ImportError("No module named 'google'")):
             provider = GeminiProvider()
             result = provider.initialize()
             assert result is False
@@ -752,9 +724,7 @@ class TestGeminiProviderToolCalling:
         assert get_weather in tools_config
 
     @patch("google.genai.Client")
-    def test_gemini_provider_build_automatic_function_calling_config(
-        self, mock_client_class
-    ):
+    def test_gemini_provider_build_automatic_function_calling_config(self, mock_client_class):
         """Test automatic function calling configuration building."""
         # Mock the client
         mock_client = Mock()
@@ -778,9 +748,7 @@ class TestGeminiProviderToolCalling:
         assert config.maximum_remote_calls == 3
 
     @patch("google.genai.Client")
-    def test_gemini_provider_build_automatic_function_calling_config_disabled(
-        self, mock_client_class
-    ):
+    def test_gemini_provider_build_automatic_function_calling_config_disabled(self, mock_client_class):
         """Test automatic function calling configuration when disabled."""
         # Mock the client
         mock_client = Mock()
@@ -834,9 +802,7 @@ class TestGeminiProviderToolCalling:
         assert len(config.tools) > 0
 
     @patch("google.genai.Client")
-    def test_gemini_provider_generate_response_with_function_calls(
-        self, mock_client_class
-    ):
+    def test_gemini_provider_generate_response_with_function_calls(self, mock_client_class):
         """Test response generation with actual function calls."""
         # Mock the client
         mock_client = Mock()
@@ -864,9 +830,7 @@ class TestGeminiProviderToolCalling:
         assert mock_client.models.generate_content.call_count == 1
 
     @patch("google.genai.Client")
-    def test_gemini_provider_generate_response_tool_calling_disabled(
-        self, mock_client_class
-    ):
+    def test_gemini_provider_generate_response_tool_calling_disabled(self, mock_client_class):
         """Test response generation with tool calling disabled."""
         # Mock the client
         mock_client = Mock()
@@ -927,24 +891,18 @@ class TestGeminiProviderToolCalling:
 
     def test_gemini_provider_validate_config_invalid_max_tool_calls(self):
         """Test configuration validation with invalid max_tool_calls."""
-        provider = GeminiProvider(
-            {"api_key": "test_key", "max_tool_calls": 0}  # Invalid
-        )
+        provider = GeminiProvider({"api_key": "test_key", "max_tool_calls": 0})  # Invalid
 
         assert provider.validate_config() is False
 
     def test_gemini_provider_validate_config_negative_max_tool_calls(self):
         """Test configuration validation with negative max_tool_calls."""
-        provider = GeminiProvider(
-            {"api_key": "test_key", "max_tool_calls": -1}  # Invalid
-        )
+        provider = GeminiProvider({"api_key": "test_key", "max_tool_calls": -1})  # Invalid
 
         assert provider.validate_config() is False
 
     @patch("google.genai.Client")
-    def test_gemini_provider_get_provider_info_with_tool_calling(
-        self, mock_client_class
-    ):
+    def test_gemini_provider_get_provider_info_with_tool_calling(self, mock_client_class):
         """Test provider info includes tool calling information."""
         # Mock the client
         mock_client = Mock()

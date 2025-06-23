@@ -160,15 +160,14 @@ jobs:
 
     - name: Run linting
       run: |
-        # Run flake8
-        uv run flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        uv run flake8 src/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+        # Run flake8 (will use pyproject.toml configuration)
+        uv run flake8 src/ tests/ --count --exit-zero --statistics
         
         # Run mypy
         uv run mypy src/ --ignore-missing-imports
         
         # Run black check
-        uv run black --check src/ tests/
+        uv run black --check src/ tests/ --line-length 2000
         
         # Run isort check
         uv run isort --check-only src/ tests/

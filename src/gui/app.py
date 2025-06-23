@@ -7,7 +7,7 @@ import logging
 import shutil
 import threading
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import customtkinter as ctk
 
@@ -64,7 +64,6 @@ class JeevesApp:
         theme = COLORS["dark"]
         font_family = APP_SETTINGS["font_family"]
         font_large = (font_family, APP_SETTINGS["font_sizes"]["large"], "bold")
-        font_normal = (font_family, APP_SETTINGS["font_sizes"]["normal"])
 
         # Configure grid for header, sidebar, and main content
         self.root.grid_rowconfigure(0, weight=0)  # Header
@@ -85,12 +84,8 @@ class JeevesApp:
         self.header.grid_columnconfigure(1, weight=0)
 
         # Add a subtle border at the bottom of the header
-        self.header_border = ctk.CTkFrame(
-            self.root, fg_color=theme["border_divider"], height=1, corner_radius=0
-        )
-        self.header_border.grid(
-            row=0, column=0, columnspan=2, sticky="ew", pady=(63, 0)
-        )
+        self.header_border = ctk.CTkFrame(self.root, fg_color=theme["border_divider"], height=1, corner_radius=0)
+        self.header_border.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(63, 0))
 
         # App name/logo with enhanced styling and better spacing
         self.header_label = ctk.CTkLabel(
@@ -99,9 +94,7 @@ class JeevesApp:
             font=font_large,
             text_color=theme["accent_primary"],
         )
-        self.header_label.grid(
-            row=0, column=0, sticky="w", padx=24, pady=16
-        )  # Increased padding
+        self.header_label.grid(row=0, column=0, sticky="w", padx=24, pady=16)  # Increased padding
 
         # Global actions with enhanced styling and consistent spacing
         self.settings_button = ctk.CTkButton(
@@ -118,15 +111,11 @@ class JeevesApp:
             border_color=theme["border_secondary"],
             command=lambda: show_info("Settings", "Settings coming soon!"),
         )
-        self.settings_button.grid(
-            row=0, column=1, sticky="e", padx=(0, 24), pady=8
-        )  # Consistent padding
+        self.settings_button.grid(row=0, column=1, sticky="e", padx=(0, 24), pady=8)  # Consistent padding
 
         # Add enhanced hover effects to settings button
         def on_settings_enter(event):
-            self.settings_button.configure(
-                corner_radius=30
-            )  # Slightly larger radius on hover
+            self.settings_button.configure(corner_radius=30)  # Slightly larger radius on hover
 
         def on_settings_leave(event):
             self.settings_button.configure(corner_radius=28)  # Return to normal radius
@@ -135,12 +124,8 @@ class JeevesApp:
         self.settings_button.bind("<Leave>", on_settings_leave)
 
         # Main content area with enhanced styling and better spacing
-        self.main_frame = ctk.CTkFrame(
-            self.root, fg_color=theme["bg_primary"], corner_radius=0, border_width=0
-        )
-        self.main_frame.grid(
-            row=1, column=0, sticky="nsew", padx=16, pady=16
-        )  # Consistent margins
+        self.main_frame = ctk.CTkFrame(self.root, fg_color=theme["bg_primary"], corner_radius=0, border_width=0)
+        self.main_frame.grid(row=1, column=0, sticky="nsew", padx=16, pady=16)  # Consistent margins
         self.main_frame.grid_columnconfigure(0, weight=1)
         self.main_frame.grid_rowconfigure(0, weight=1)
 
@@ -152,9 +137,7 @@ class JeevesApp:
             on_search_messages=self._on_search_messages,
             on_attachment=self._on_attachment,
         )
-        self.chat_display.grid(
-            row=0, column=0, sticky="nsew", padx=8, pady=8
-        )  # Consistent internal spacing
+        self.chat_display.grid(row=0, column=0, sticky="nsew", padx=8, pady=8)  # Consistent internal spacing
 
         # Sidebar with better spacing
         self.sidebar = Sidebar(
@@ -164,9 +147,7 @@ class JeevesApp:
             on_delete_thread=self._on_delete_thread,
             on_rename_thread=self._on_rename_thread,
         )
-        self.sidebar.grid(
-            row=1, column=1, sticky="nsew", padx=(8, 16), pady=16
-        )  # Consistent spacing
+        self.sidebar.grid(row=1, column=1, sticky="nsew", padx=(8, 16), pady=16)  # Consistent spacing
 
         # Sidebar toggle button with enhanced styling and better positioning
         self.sidebar_toggle = ctk.CTkButton(
@@ -183,15 +164,11 @@ class JeevesApp:
             border_width=1,  # Subtle border for definition
             border_color=theme["border_secondary"],
         )
-        self.sidebar_toggle.grid(
-            row=1, column=1, sticky="ne", padx=(0, 24), pady=(24, 0)
-        )  # Better positioning
+        self.sidebar_toggle.grid(row=1, column=1, sticky="ne", padx=(0, 24), pady=(24, 0))  # Better positioning
 
         # Add enhanced hover effects to sidebar toggle button
         def on_toggle_enter(event):
-            self.sidebar_toggle.configure(
-                corner_radius=30
-            )  # Slightly larger radius on hover
+            self.sidebar_toggle.configure(corner_radius=30)  # Slightly larger radius on hover
 
         def on_toggle_leave(event):
             self.sidebar_toggle.configure(corner_radius=28)  # Return to normal radius
@@ -253,9 +230,7 @@ class JeevesApp:
         """Handle new thread creation."""
         try:
             thread_id = self.chat_manager.create_thread("New Chat", "💬")
-            self.chat_manager.switch_thread(
-                thread_id
-            )  # Ensure backend switches to new thread
+            self.chat_manager.switch_thread(thread_id)  # Ensure backend switches to new thread
             threads = self.chat_manager.get_threads()
             self.sidebar.load_threads(threads)
             self.sidebar.set_current_thread(thread_id)
@@ -308,9 +283,7 @@ class JeevesApp:
                 attachment_text = "\n\n**Attachments:**\n"
                 for att in attachments:
                     file_size_mb = att.get("size", 0) / 1024 / 1024
-                    attachment_text += (
-                        f"- {att.get('name', '...')} ({file_size_mb:.1f}MB)\n"
-                    )
+                    attachment_text += f"- {att.get('name', '...')} ({file_size_mb:.1f}MB)\n"
                 display_message += attachment_text
 
             self.chat_display.add_user_message(display_message)
@@ -326,19 +299,13 @@ class JeevesApp:
             # Generate AI response in a separate thread
             def generate_response():
                 try:
-                    response = self.ai_engine.generate_response(
-                        message, attachments=processed_attachments
-                    )
+                    response = self.ai_engine.generate_response(message, attachments=processed_attachments)
                     # Update UI in main thread
-                    self.root.after(
-                        0, lambda: self.chat_display.add_ai_message(response)
-                    )
+                    self.root.after(0, lambda: self.chat_display.add_ai_message(response))
                 except Exception as e:
                     logger.error(f"Failed to generate response: {e}")
                     error_msg = f"Sorry, I encountered an error: {e}"
-                    self.root.after(
-                        0, lambda: self.chat_display.add_ai_message(error_msg)
-                    )
+                    self.root.after(0, lambda: self.chat_display.add_ai_message(error_msg))
 
             threading.Thread(target=generate_response, daemon=True).start()
 
@@ -354,9 +321,7 @@ class JeevesApp:
             # - Copying files to a secure location
             # - Processing file content for AI analysis
             # - Storing file metadata in the database
-            logger.info(
-                f"Processing attachment: {attachment_info['name']} ({attachment_info['size']} bytes)"
-            )
+            logger.info(f"Processing attachment: {attachment_info['name']} ({attachment_info['size']} bytes)")
 
             # You could add file processing logic here
             # For example, copying to sandbox directory:
@@ -371,7 +336,6 @@ class JeevesApp:
     def _process_attachment(self, attachment_info: Dict) -> Dict:
         """Process an attachment and prepare it for storage in the sandbox."""
         try:
-            import hashlib
             import mimetypes
             from pathlib import Path
 
@@ -379,9 +343,7 @@ class JeevesApp:
 
             file_path = Path(attachment_info["path"])
 
-            logger.info(
-                f"Processing attachment: {attachment_info['name']} from {file_path}"
-            )
+            logger.info(f"Processing attachment: {attachment_info['name']} from {file_path}")
 
             # Initialize file handler for sandbox operations
             file_handler = JeevesFileHandler()
@@ -391,12 +353,8 @@ class JeevesApp:
             file_absolute_path = file_path.resolve()
 
             # Check if the file is already within the attachments directory
-            if str(file_absolute_path).startswith(
-                str(Path(sandbox_root) / "attachments")
-            ):
-                logger.info(
-                    f"File {attachment_info['name']} is already in attachments directory, using directly"
-                )
+            if str(file_absolute_path).startswith(str(Path(sandbox_root) / "attachments")):
+                logger.info(f"File {attachment_info['name']} is already in attachments directory, using directly")
 
                 # Get the relative path from sandbox root
                 sandbox_path = str(file_absolute_path.relative_to(sandbox_root))
@@ -421,9 +379,7 @@ class JeevesApp:
                     "extension": attachment_info["extension"],
                 }
 
-                logger.info(
-                    f"Using existing file in attachments: {attachment_info['name']} -> {sandbox_path} ({mime_type}, {file_hash[:8]}...)"
-                )
+                logger.info(f"Using existing file in attachments: {attachment_info['name']} -> {sandbox_path} ({mime_type}, {file_hash[:8]}...)")
                 return processed_attachment
 
             # File is not in attachments directory, proceed with normal copy process
@@ -431,7 +387,6 @@ class JeevesApp:
             import uuid
 
             unique_id = uuid.uuid4().hex[:8]
-            file_extension = file_path.suffix
             sandbox_filename = f"{unique_id}_{attachment_info['name']}"
             sandbox_path = f"attachments/{sandbox_filename}"
 
@@ -445,9 +400,7 @@ class JeevesApp:
             logger.info(f"Copying file to sandbox: {sandbox_path}")
             try:
                 shutil.copy2(file_path, sandbox_absolute_path)
-                logger.info(
-                    f"Successfully copied file to sandbox: {sandbox_absolute_path}"
-                )
+                logger.info(f"Successfully copied file to sandbox: {sandbox_absolute_path}")
             except Exception as e:
                 logger.error(f"Failed to copy file to sandbox: {e}")
                 return None
@@ -472,9 +425,7 @@ class JeevesApp:
                 "extension": attachment_info["extension"],
             }
 
-            logger.info(
-                f"Successfully processed attachment: {attachment_info['name']} -> {sandbox_path} ({mime_type}, {file_hash[:8]}...)"
-            )
+            logger.info(f"Successfully processed attachment: {attachment_info['name']} -> {sandbox_path} ({mime_type}, {file_hash[:8]}...)")
             return processed_attachment
 
         except Exception as e:

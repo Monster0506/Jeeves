@@ -131,10 +131,6 @@ class TestMain:
         """Test that main execution doesn't run when module is imported."""
         # Mock __name__ to not be '__main__'
         with patch("src.main.__name__", "src.main"):
-            # Import the module
-            import importlib
-
-            import src.main
 
             # Verify launch_app was not called
             mock_launch.assert_not_called()

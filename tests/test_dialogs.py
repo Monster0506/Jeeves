@@ -2,9 +2,8 @@
 Tests for the dialogs module.
 """
 
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
-import pytest
 
 from src.utils.dialogs import (
     close_loading_dialog,
@@ -146,9 +145,7 @@ class TestDialogs:
     @patch("src.utils.dialogs.ctk.CTkLabel")
     @patch("src.utils.dialogs.ctk.CTkFrame")
     @patch("src.utils.dialogs.ctk.CTkButton")
-    def test_show_confirmation_dialog(
-        self, mock_button, mock_frame, mock_label, mock_toplevel
-    ):
+    def test_show_confirmation_dialog(self, mock_button, mock_frame, mock_label, mock_toplevel):
         """Test show_confirmation dialog creation."""
         # Setup mocks
         mock_dialog = MagicMock()
@@ -166,9 +163,7 @@ class TestDialogs:
         mock_button.return_value = mock_button_instance
 
         # Call the function
-        result = show_confirmation(
-            "Test Confirm", "This is a test confirmation message"
-        )
+        result = show_confirmation("Test Confirm", "This is a test confirmation message")
 
         # Verify dialog creation
         mock_toplevel.assert_called_once()
@@ -201,9 +196,7 @@ class TestDialogs:
     @patch("src.utils.dialogs.ctk.CTkEntry")
     @patch("src.utils.dialogs.ctk.CTkFrame")
     @patch("src.utils.dialogs.ctk.CTkButton")
-    def test_show_input_dialog(
-        self, mock_button, mock_frame, mock_entry, mock_label, mock_toplevel
-    ):
+    def test_show_input_dialog(self, mock_button, mock_frame, mock_entry, mock_label, mock_toplevel):
         """Test show_input_dialog creation."""
         # Setup mocks
         mock_dialog = MagicMock()
@@ -225,9 +218,7 @@ class TestDialogs:
         mock_button.return_value = mock_button_instance
 
         # Call the function
-        result = show_input_dialog(
-            "Test Input", "Please enter some text:", "default value"
-        )
+        result = show_input_dialog("Test Input", "Please enter some text:", "default value")
 
         # Verify dialog creation
         mock_toplevel.assert_called_once()
@@ -318,9 +309,7 @@ class TestDialogs:
         show_warning_dialog(mock_parent, "Test Warning", "This is a test warning")
 
         # Verify show_warning was called with correct parameters
-        mock_show_warning.assert_called_once_with(
-            "Test Warning", "This is a test warning", mock_parent
-        )
+        mock_show_warning.assert_called_once_with("Test Warning", "This is a test warning", mock_parent)
 
     @patch("src.utils.dialogs.show_confirmation")
     def test_show_confirmation_dialog_wrapper(self, mock_show_confirmation):
@@ -330,14 +319,10 @@ class TestDialogs:
         mock_callback = MagicMock()
 
         # Call the function
-        show_confirmation_dialog(
-            mock_parent, "Test Confirm", "This is a test confirmation", mock_callback
-        )
+        show_confirmation_dialog(mock_parent, "Test Confirm", "This is a test confirmation", mock_callback)
 
         # Verify show_confirmation was called with correct parameters
-        mock_show_confirmation.assert_called_once_with(
-            "Test Confirm", "This is a test confirmation", mock_parent, mock_callback
-        )
+        mock_show_confirmation.assert_called_once_with("Test Confirm", "This is a test confirmation", mock_parent, mock_callback)
 
     @patch("src.utils.dialogs.logger")
     @patch("src.utils.dialogs.ctk.CTkToplevel")
@@ -385,9 +370,7 @@ class TestDialogs:
     @patch("src.utils.dialogs.ctk.CTkLabel")
     @patch("src.utils.dialogs.ctk.CTkFrame")
     @patch("src.utils.dialogs.ctk.CTkButton")
-    def test_show_confirmation_with_callbacks(
-        self, mock_button, mock_frame, mock_label, mock_toplevel
-    ):
+    def test_show_confirmation_with_callbacks(self, mock_button, mock_frame, mock_label, mock_toplevel):
         """Test show_confirmation with callback functions."""
         # Setup mocks
         mock_dialog = MagicMock()
@@ -428,9 +411,7 @@ class TestDialogs:
     @patch("src.utils.dialogs.ctk.CTkEntry")
     @patch("src.utils.dialogs.ctk.CTkFrame")
     @patch("src.utils.dialogs.ctk.CTkButton")
-    def test_show_input_dialog_with_callbacks(
-        self, mock_button, mock_frame, mock_entry, mock_label, mock_toplevel
-    ):
+    def test_show_input_dialog_with_callbacks(self, mock_button, mock_frame, mock_entry, mock_label, mock_toplevel):
         """Test show_input_dialog with callback functions."""
         # Setup mocks
         mock_dialog = MagicMock()
@@ -498,20 +479,14 @@ class TestDialogs:
         """Test show_warning_dialog wrapper with None parent."""
         with patch("src.utils.dialogs.show_warning") as mock_show_warning:
             show_warning_dialog(None, "Test Warning", "This is a test warning")
-            mock_show_warning.assert_called_once_with(
-                "Test Warning", "This is a test warning", None
-            )
+            mock_show_warning.assert_called_once_with("Test Warning", "This is a test warning", None)
 
     def test_show_confirmation_dialog_wrapper_with_none_parent(self):
         """Test show_confirmation_dialog wrapper with None parent."""
         with patch("src.utils.dialogs.show_confirmation") as mock_show_confirmation:
             mock_show_confirmation.return_value = False
-            result = show_confirmation_dialog(
-                None, "Test Confirm", "This is a test confirmation"
-            )
-            mock_show_confirmation.assert_called_once_with(
-                "Test Confirm", "This is a test confirmation", None, None
-            )
+            result = show_confirmation_dialog(None, "Test Confirm", "This is a test confirmation")
+            mock_show_confirmation.assert_called_once_with("Test Confirm", "This is a test confirmation", None, None)
             assert result is False
 
     def test_show_confirmation_dialog_wrapper_with_callback(self):
@@ -519,12 +494,8 @@ class TestDialogs:
         with patch("src.utils.dialogs.show_confirmation") as mock_show_confirmation:
             mock_show_confirmation.return_value = False
             mock_callback = MagicMock()
-            result = show_confirmation_dialog(
-                None, "Test Confirm", "This is a test confirmation", mock_callback
-            )
-            mock_show_confirmation.assert_called_once_with(
-                "Test Confirm", "This is a test confirmation", None, mock_callback
-            )
+            result = show_confirmation_dialog(None, "Test Confirm", "This is a test confirmation", mock_callback)
+            mock_show_confirmation.assert_called_once_with("Test Confirm", "This is a test confirmation", None, mock_callback)
             assert result is False
 
     def test_dialogs_module_import(self):

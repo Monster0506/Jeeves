@@ -8,17 +8,17 @@ import sys
 import tempfile
 import uuid
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from core.ai_provider_manager import AIProviderManager
-from core.ai_providers import GeminiProvider, PlaceholderProvider
-from core.chat_manager import ChatManager
-from core.database import DatabaseManager
+from core.ai_provider_manager import AIProviderManager  # noqa: E402
+from core.ai_providers import GeminiProvider, PlaceholderProvider  # noqa: E402
+from core.chat_manager import ChatManager  # noqa: E402
+from core.database import DatabaseManager  # noqa: E402
 
 
 @pytest.fixture(scope="session")

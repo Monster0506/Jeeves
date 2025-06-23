@@ -6,7 +6,7 @@ Provides simple keyword-based responses as a fallback when no AI service is avai
 import logging
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from .base_provider import BaseAIProvider
 
@@ -65,13 +65,7 @@ class PlaceholderProvider(BaseAIProvider):
 
         # Check if user is asking about tools and we have tools registered
         message_lower = user_message.lower()
-        if (
-            any(
-                word in message_lower
-                for word in ["tools", "functions", "what can you do"]
-            )
-            and self.registered_tools
-        ):
+        if any(word in message_lower for word in ["tools", "functions", "what can you do"]) and self.registered_tools:
             return "PLACEHOLDER: I have several tools available! I can help you with calculations, weather information, and more. Just ask me to use them!"
 
         # Handle attachments if present

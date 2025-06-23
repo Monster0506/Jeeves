@@ -4,8 +4,6 @@ Tests for the settings module.
 
 import os
 
-import pytest
-
 from src.config.settings import (
     AI_PROVIDER_SETTINGS,
     APP_SETTINGS,
@@ -260,6 +258,4 @@ def test_file_handler_custom_directory():
     file_handler = JeevesFileHandler(custom_dir)
     sandbox_root = file_handler.get_sandbox_root()
 
-    assert os.path.abspath(os.path.normpath(sandbox_root)) == os.path.abspath(
-        os.path.normpath(custom_dir)
-    )
+    assert os.path.abspath(os.path.normpath(sandbox_root)) == os.path.abspath(os.path.normpath(custom_dir))

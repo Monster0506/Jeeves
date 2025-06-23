@@ -82,9 +82,7 @@ class ChatManager:
             Thread ID
         """
         try:
-            thread_id = self.db.create_thread(
-                name, icon, description, tags, metadata, settings
-            )
+            thread_id = self.db.create_thread(name, icon, description, tags, metadata, settings)
             thread = self.db.get_thread(thread_id)
 
             if thread:
@@ -202,9 +200,7 @@ class ChatManager:
             return []
 
         try:
-            return self.db.get_messages(
-                thread_id, limit, include_attachments=include_attachments
-            )
+            return self.db.get_messages(thread_id, limit, include_attachments=include_attachments)
         except DatabaseError as e:
             logger.error(f"Failed to get messages for thread {thread_id}: {e}")
             return []
@@ -297,9 +293,7 @@ class ChatManager:
             logger.error(f"Failed to add AI message: {e}")
             raise
 
-    def add_system_message(
-        self, content: str, content_type: str = "text", metadata: Dict = None
-    ) -> int:
+    def add_system_message(self, content: str, content_type: str = "text", metadata: Dict = None) -> int:
         """
         Add a system message to the current thread.
 
@@ -316,9 +310,7 @@ class ChatManager:
             return -1
 
         try:
-            message_id = self.db.add_message(
-                self.current_thread_id, "system", content, content_type, metadata
-            )
+            message_id = self.db.add_message(self.current_thread_id, "system", content, content_type, metadata)
 
             # Get the full message data
             messages = self.db.get_messages(self.current_thread_id, limit=1)
@@ -464,16 +456,10 @@ class ChatManager:
                 "user_messages": sender_counts.get("user", 0),
                 "ai_messages": sender_counts.get("ai", 0),
                 "system_messages": sender_counts.get("system", 0),
-                "other_messages": sum(
-                    count
-                    for sender, count in sender_counts.items()
-                    if sender not in ["user", "ai", "system"]
-                ),
+                "other_messages": sum(count for sender, count in sender_counts.items() if sender not in ["user", "ai", "system"]),
             }
         except DatabaseError as e:
-            logger.error(
-                f"Failed to get conversation summary for thread {thread_id}: {e}"
-            )
+            logger.error(f"Failed to get conversation summary for thread {thread_id}: {e}")
             return {}
 
     def export_conversation(self, thread_id: int = None, format: str = "json") -> str:
@@ -498,9 +484,7 @@ class ChatManager:
             messages = self.db.get_messages(thread_id)
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = (
-                f"conversation_{thread['name'].replace(' ', '_')}_{timestamp}.{format}"
-            )
+            filename = f"conversation_{thread['name'].replace(' ', '_')}_{timestamp}.{format}"
 
             if format == "json":
                 import json
@@ -516,15 +500,11 @@ class ChatManager:
             elif format == "txt":
                 with open(filename, "w", encoding="utf-8") as f:
                     f.write(f"Conversation: {thread['name']}\n")
-                    f.write(
-                        f"Exported: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-                    )
+                    f.write(f"Exported: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                     f.write("=" * 50 + "\n\n")
 
                     for message in messages:
-                        sender_icon = {"user": "👤", "ai": "🤖", "system": "⚙️"}.get(
-                            message["sender"], "💬"
-                        )
+                        sender_icon = {"user": "👤", "ai": "🤖", "system": "⚙️"}.get(message["sender"], "💬")
 
                         f.write(f"{sender_icon} {message['sender'].upper()}\n")
                         f.write(f"{message['content']}\n\n")
@@ -551,9 +531,7 @@ class ChatManager:
             logger.error(f"Failed to get user settings: {e}")
             return {} if key is None else None
 
-    def set_user_setting(
-        self, key: str, value: Any, value_type: str = "string", description: str = None
-    ) -> bool:
+    def set_user_setting(self, key: str, value: Any, value_type: str = "string", description: str = None) -> bool:
         """
         Set a user setting.
 

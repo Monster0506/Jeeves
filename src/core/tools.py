@@ -86,7 +86,7 @@ import logging
 import os
 import re
 from datetime import datetime
-from typing import Dict, List, Optional, Union
+from typing import Dict, Optional
 
 from .chat_manager import ChatManager
 from .file_handler import JeevesFileHandler
@@ -132,9 +132,7 @@ class JeevesTools:
         self.sandbox_root = self.file_handler.get_sandbox_root()
         logger.info(f"JeevesTools initialized. Sandbox root: {self.sandbox_root}")
 
-    def _resolve_thread_identifier(
-        self, thread_identifier: Optional[str]
-    ) -> Optional[int]:
+    def _resolve_thread_identifier(self, thread_identifier: Optional[str]) -> Optional[int]:
         """
         Resolve a thread identifier to a thread ID.
 
@@ -145,9 +143,7 @@ class JeevesTools:
             Thread ID if found, or None if not found or ambiguous
         """
         # Treat empty string or whitespace as None
-        if thread_identifier is None or (
-            isinstance(thread_identifier, str) and thread_identifier.strip() == ""
-        ):
+        if thread_identifier is None or (isinstance(thread_identifier, str) and thread_identifier.strip() == ""):
             # If None, use current thread
             current_thread_id = self.chat_manager.get_current_thread_id()
             return current_thread_id
@@ -172,21 +168,13 @@ class JeevesTools:
             # Multiple matches - raise error with details
             thread_details = []
             for thread in matching_threads:
-                thread_details.append(
-                    f"ID {thread['id']}: '{thread['name']}' (last activity: {thread['last_activity']})"
-                )
+                thread_details.append(f"ID {thread['id']}: '{thread['name']}' (last activity: {thread['last_activity']})")
 
-            raise ValueError(
-                f"Multiple threads found matching '{thread_identifier}':\n"
-                + "\n".join(thread_details)
-                + "\n\nPlease specify the exact thread ID or use a more specific name."
-            )
+            raise ValueError(f"Multiple threads found matching '{thread_identifier}':\n" + "\n".join(thread_details) + "\n\nPlease specify the exact thread ID or use a more specific name.")
 
         return None
 
-    def rename_chat_thread(
-        self, thread_identifier: Optional[str], new_name: str
-    ) -> str:
+    def rename_chat_thread(self, thread_identifier: Optional[str], new_name: str) -> str:
         """
         Rename a chat thread.
 
@@ -197,15 +185,11 @@ class JeevesTools:
         Returns:
             Success or error message
         """
-        logger.info(
-            f"Tool called: rename_chat_thread(thread_identifier={thread_identifier}, new_name='{new_name}')"
-        )
+        logger.info(f"Tool called: rename_chat_thread(thread_identifier={thread_identifier}, new_name='{new_name}')")
 
         try:
             if not new_name or not new_name.strip():
-                logger.warning(
-                    "rename_chat_thread: New name is empty or whitespace only"
-                )
+                logger.warning("rename_chat_thread: New name is empty or whitespace only")
                 return "Error: New name cannot be empty"
 
             # Resolve thread identifier
@@ -220,9 +204,7 @@ class JeevesTools:
                 else:
                     return f"Thread '{thread_identifier}' not found."
 
-            logger.debug(
-                f"Attempting to rename thread {thread_id} to '{new_name.strip()}'"
-            )
+            logger.debug(f"Attempting to rename thread {thread_id} to '{new_name.strip()}'")
 
             success = self.chat_manager.update_thread_name(thread_id, new_name.strip())
 
@@ -230,22 +212,14 @@ class JeevesTools:
                 logger.info(f"Successfully renamed thread {thread_id} to '{new_name}'")
                 return f"Successfully renamed thread {thread_id} to '{new_name}'"
             else:
-                logger.warning(
-                    f"Failed to rename thread {thread_id} - thread may not exist"
-                )
-                return (
-                    f"Error: Failed to rename thread {thread_id}. Thread may not exist."
-                )
+                logger.warning(f"Failed to rename thread {thread_id} - thread may not exist")
+                return f"Error: Failed to rename thread {thread_id}. Thread may not exist."
 
         except Exception as e:
-            logger.error(
-                f"Error renaming thread {thread_identifier}: {e}", exc_info=True
-            )
+            logger.error(f"Error renaming thread {thread_identifier}: {e}", exc_info=True)
             return f"Error: {str(e)}"
 
-    def search_chat_history(
-        self, query: str, thread_identifier: Optional[str] = None, limit: int = 10
-    ) -> str:
+    def search_chat_history(self, query: str, thread_identifier: Optional[str] = None, limit: int = 10) -> str:
         """
         Search through chat history.
 
@@ -257,9 +231,7 @@ class JeevesTools:
         Returns:
             Formatted search results or error message
         """
-        logger.info(
-            f"Tool called: search_chat_history(query='{query}', thread_identifier={thread_identifier}, limit={limit})"
-        )
+        logger.info(f"Tool called: search_chat_history(query='{query}', thread_identifier={thread_identifier}, limit={limit})")
 
         try:
             if not query or not query.strip():
@@ -277,12 +249,8 @@ class JeevesTools:
                 if thread_id is None:
                     return f"Thread '{thread_identifier}' not found."
 
-            logger.debug(
-                f"Searching for '{query.strip()}' in thread {thread_id} with limit {limit}"
-            )
-            results = self.chat_manager.search_messages(
-                query.strip(), thread_id=thread_id, limit=limit
-            )
+            logger.debug(f"Searching for '{query.strip()}' in thread {thread_id} with limit {limit}")
+            results = self.chat_manager.search_messages(query.strip(), thread_id=thread_id, limit=limit)
 
             logger.info(f"Search returned {len(results)} results")
 
@@ -299,15 +267,11 @@ class JeevesTools:
                 timestamp = message.get("timestamp", "")
                 thread_name = message.get("thread_name", "Unknown Thread")
 
-                formatted_results.append(
-                    f"{i}. [{thread_name}] {sender}: {content}... ({timestamp})"
-                )
+                formatted_results.append(f"{i}. [{thread_name}] {sender}: {content}... ({timestamp})")
 
             logger.debug(f"Formatted {len(formatted_results)} search results")
             logger.debug(formatted_results)
-            return f"Found {len(results)} messages matching '{query}':\n" + "\n".join(
-                formatted_results
-            )
+            return f"Found {len(results)} messages matching '{query}':\n" + "\n".join(formatted_results)
 
         except Exception as e:
             logger.error(f"Error searching chat history: {e}", exc_info=True)
@@ -343,12 +307,10 @@ class JeevesTools:
                 message_count = message_counts.get(thread_id, 0)
                 last_activity = thread.get("last_activity", "Unknown")
 
-                formatted_threads.append(
-                    f"{i}. Thread {thread_id}: '{name}' ({message_count} messages, last: {last_activity})"
-                )
+                formatted_threads.append(f"{i}. Thread {thread_id}: '{name}' ({message_count} messages, last: {last_activity})")
 
             logger.debug(f"Formatted {len(formatted_threads)} thread entries")
-            return f"Available chat threads:\n" + "\n".join(formatted_threads)
+            return f"Available chat threads:\n{"\n".join(formatted_threads)}"
 
         except Exception as e:
             logger.error(f"Error getting available threads: {e}", exc_info=True)
@@ -381,9 +343,7 @@ class JeevesTools:
             last_activity = current_thread.get("last_activity", "Unknown")
             created_at = current_thread.get("created_at", "Unknown")
 
-            logger.info(
-                f"Current thread: {thread_id} ('{name}') with {message_count} messages"
-            )
+            logger.info(f"Current thread: {thread_id} ('{name}') with {message_count} messages")
 
             return f"Current thread: {thread_id}\nName: {name}\nMessages: {message_count}\nCreated: {created_at}\nLast activity: {last_activity}"
 
@@ -391,9 +351,7 @@ class JeevesTools:
             logger.error(f"Error getting current thread info: {e}", exc_info=True)
             return f"Error: {str(e)}"
 
-    def export_current_conversation(
-        self, thread_identifier: Optional[str] = None, format: str = "json"
-    ) -> str:
+    def export_current_conversation(self, thread_identifier: Optional[str] = None, format: str = "json") -> str:
         """
         Export a conversation to a file.
 
@@ -404,9 +362,7 @@ class JeevesTools:
         Returns:
             Success message with file path or error message
         """
-        logger.info(
-            f"Tool called: export_current_conversation(thread_identifier={thread_identifier}, format='{format}')"
-        )
+        logger.info(f"Tool called: export_current_conversation(thread_identifier={thread_identifier}, format='{format}')")
 
         try:
             # Resolve thread identifier
@@ -426,12 +382,8 @@ class JeevesTools:
                     return "No active thread to export."
                 thread_id = current_thread.get("id")
 
-            logger.debug(
-                f"Exporting conversation for thread {thread_id} in {format} format"
-            )
-            export_path = self.chat_manager.export_conversation(
-                thread_id=thread_id, format=format
-            )
+            logger.debug(f"Exporting conversation for thread {thread_id} in {format} format")
+            export_path = self.chat_manager.export_conversation(thread_id=thread_id, format=format)
 
             logger.info(f"Successfully exported conversation to: {export_path}")
             return f"Successfully exported conversation to: {export_path}"
@@ -463,9 +415,7 @@ class JeevesTools:
             user_messages = summary.get("user_messages", 0)
             ai_messages = summary.get("ai_messages", 0)
 
-            logger.info(
-                f"Conversation summary: {thread_name} - {message_count} total messages ({user_messages} user, {ai_messages} AI)"
-            )
+            logger.info(f"Conversation summary: {thread_name} - {message_count} total messages ({user_messages} user, {ai_messages} AI)")
 
             return f"Conversation Summary:\nThread: {thread_name}\nTotal messages: {message_count}\nUser messages: {user_messages}\nAI messages: {ai_messages}"
 
@@ -505,11 +455,7 @@ class JeevesTools:
             Dictionary mapping tool names to their docstrings
         """
         logger.debug("Getting tool descriptions")
-        descriptions = {
-            name: func.__doc__
-            for name, func in self.get_registered_tools().items()
-            if func.__doc__
-        }
+        descriptions = {name: func.__doc__ for name, func in self.get_registered_tools().items() if func.__doc__}
         logger.debug(f"Returning descriptions for {len(descriptions)} tools")
         return descriptions
 
@@ -534,9 +480,7 @@ class JeevesTools:
         Returns:
             Success message or file content
         """
-        logger.info(
-            f"Tool called: note_manager(action='{action}', filename='{filename}', directory='{directory}')"
-        )
+        logger.info(f"Tool called: note_manager(action='{action}', filename='{filename}', directory='{directory}')")
 
         try:
             logger.debug(f"Processing note manager action: {action}")
@@ -549,9 +493,7 @@ class JeevesTools:
             if action == "list":
                 logger.debug("Listing notes in directory")
                 # List all notes in directory
-                files = self.file_handler.list_directory_contents(
-                    notes_dir, include_directories=False
-                )
+                files = self.file_handler.list_directory_contents(notes_dir, include_directories=False)
                 if not files:
                     logger.debug(f"No files found in {directory}/ directory")
                     return f"No notes found in {directory}/ directory."
@@ -564,9 +506,7 @@ class JeevesTools:
                 logger.info(f"Found {len(note_list)} markdown notes in {directory}/")
 
                 if note_list:
-                    return f"Notes in {directory}/:\n" + "\n".join(
-                        f"- {note}" for note in note_list
-                    )
+                    return f"Notes in {directory}/:\n" + "\n".join(f"- {note}" for note in note_list)
                 else:
                     return f"No markdown notes found in {directory}/ directory."
 
@@ -584,17 +524,11 @@ class JeevesTools:
 
             if action == "create":
                 if not content:
-                    logger.warning(
-                        "note_manager: content is required for create action but not provided"
-                    )
+                    logger.warning("note_manager: content is required for create action but not provided")
                     return "Error: content is required for create action."
 
-                logger.debug(
-                    f"Creating note with content length: {len(content)} characters"
-                )
-                success = self.file_handler.write_file(
-                    file_path, content, overwrite=True
-                )
+                logger.debug(f"Creating note with content length: {len(content)} characters")
+                success = self.file_handler.write_file(file_path, content, overwrite=True)
                 if success:
                     logger.info(f"Successfully created note: {file_path}")
                     return f"Successfully created note '{filename}' in {directory}/ directory."
@@ -604,14 +538,10 @@ class JeevesTools:
 
             elif action == "append":
                 if not content:
-                    logger.warning(
-                        "note_manager: content is required for append action but not provided"
-                    )
+                    logger.warning("note_manager: content is required for append action but not provided")
                     return "Error: content is required for append action."
 
-                logger.debug(
-                    f"Appending content with length: {len(content)} characters"
-                )
+                logger.debug(f"Appending content with length: {len(content)} characters")
                 success = self.file_handler.append_to_file(file_path, f"\n{content}")
                 if success:
                     logger.info(f"Successfully appended to note: {file_path}")
@@ -628,9 +558,7 @@ class JeevesTools:
 
                 content = self.file_handler.read_file_content(file_path)
                 if content:
-                    logger.info(
-                        f"Successfully read note: {file_path} ({len(content)} characters)"
-                    )
+                    logger.info(f"Successfully read note: {file_path} ({len(content)} characters)")
                     return f"Content of '{filename}':\n\n{content}"
                 else:
                     logger.debug(f"Note is empty: {file_path}")
@@ -640,9 +568,7 @@ class JeevesTools:
                 logger.debug(f"Deleting note: {file_path}")
                 success = self.file_handler.delete_file(file_path, soft=True)
                 if success:
-                    logger.info(
-                        f"Successfully deleted note (moved to trash): {file_path}"
-                    )
+                    logger.info(f"Successfully deleted note (moved to trash): {file_path}")
                     return f"Successfully deleted note '{filename}' (moved to trash)."
                 else:
                     logger.error(f"Failed to delete note: {file_path}")
@@ -673,9 +599,7 @@ class JeevesTools:
         Returns:
             Success message or current todo list
         """
-        logger.info(
-            f"Tool called: todo_list_manager(action='{action}', task_id={task_id})"
-        )
+        logger.info(f"Tool called: todo_list_manager(action='{action}', task_id={task_id})")
 
         try:
             todo_file = "todo.md"
@@ -697,9 +621,7 @@ class JeevesTools:
 
             elif action == "add":
                 if not task_content:
-                    logger.warning(
-                        "todo_list_manager: task_content is required for add action but not provided"
-                    )
+                    logger.warning("todo_list_manager: task_content is required for add action but not provided")
                     return "Error: task_content is required for add action."
 
                 logger.debug(f"Adding new task: {task_content}")
@@ -708,17 +630,13 @@ class JeevesTools:
                 existing_content = ""
                 if self.file_handler.file_exists(todo_file):
                     existing_content = self.file_handler.read_file_content(todo_file)
-                    logger.debug(
-                        f"Read existing todo content: {len(existing_content)} characters"
-                    )
+                    logger.debug(f"Read existing todo content: {len(existing_content)} characters")
 
                 # Find next available ID
                 next_id = 1
                 if existing_content:
                     id_pattern = r"^\d+\."
-                    existing_ids = re.findall(
-                        id_pattern, existing_content, re.MULTILINE
-                    )
+                    existing_ids = re.findall(id_pattern, existing_content, re.MULTILINE)
                     if existing_ids:
                         max_id = max(int(id_.rstrip(".")) for id_ in existing_ids)
                         next_id = max_id + 1
@@ -734,14 +652,10 @@ class JeevesTools:
                 else:
                     # Create new file
                     logger.debug("Creating new todo file")
-                    success = self.file_handler.write_file(
-                        todo_file, new_task, overwrite=True
-                    )
+                    success = self.file_handler.write_file(todo_file, new_task, overwrite=True)
 
                 if success:
-                    logger.info(
-                        f"Successfully added todo task {next_id}: {task_content}"
-                    )
+                    logger.info(f"Successfully added todo task {next_id}: {task_content}")
                     return f"Added task {next_id}: {task_content}"
                 else:
                     logger.error(f"Failed to add todo task: {task_content}")
@@ -749,9 +663,7 @@ class JeevesTools:
 
             elif action == "complete":
                 if not task_id:
-                    logger.warning(
-                        "todo_list_manager: task_id is required for complete action but not provided"
-                    )
+                    logger.warning("todo_list_manager: task_id is required for complete action but not provided")
                     return "Error: task_id is required for complete action."
 
                 logger.debug(f"Completing task ID: {task_id}")
@@ -782,9 +694,7 @@ class JeevesTools:
                     return f"Error: Task {task_id} not found."
 
                 new_content = "\n".join(lines)
-                success = self.file_handler.write_file(
-                    todo_file, new_content, overwrite=True
-                )
+                success = self.file_handler.write_file(todo_file, new_content, overwrite=True)
 
                 if success:
                     logger.info(f"Successfully completed todo task {task_id}")
@@ -795,9 +705,7 @@ class JeevesTools:
 
             elif action == "delete":
                 if not task_id:
-                    logger.warning(
-                        "todo_list_manager: task_id is required for delete action but not provided"
-                    )
+                    logger.warning("todo_list_manager: task_id is required for delete action but not provided")
                     return "Error: task_id is required for delete action."
 
                 logger.debug(f"Deleting task ID: {task_id}")
@@ -824,9 +732,7 @@ class JeevesTools:
                     return f"Error: Task {task_id} not found."
 
                 new_content = "\n".join(new_lines)
-                success = self.file_handler.write_file(
-                    todo_file, new_content, overwrite=True
-                )
+                success = self.file_handler.write_file(todo_file, new_content, overwrite=True)
 
                 if success:
                     logger.info(f"Successfully deleted todo task {task_id}")
@@ -872,9 +778,7 @@ class JeevesTools:
         Returns:
             Search results
         """
-        logger.info(
-            f"Tool called: content_searcher(query='{query}', search_type='{search_type}', pattern='{file_pattern}', recursive={recursive})"
-        )
+        logger.info(f"Tool called: content_searcher(query='{query}', search_type='{search_type}', pattern='{file_pattern}', recursive={recursive})")
 
         try:
             logger.debug(f"Starting content search with query: '{query}'")
@@ -901,35 +805,23 @@ class JeevesTools:
                 content_results = self.file_handler.search_file_contents("", query)
                 logger.debug(f"Found {len(content_results)} content results")
                 for result in content_results:
-                    file_path = result.get(
-                        "file_path", "Unknown"
-                    )  # Changed from 'file' to 'file_path'
-                    line_number = result.get(
-                        "line_number", "Unknown"
-                    )  # Changed from 'line' to 'line_number'
-                    line_content = result.get("line_content", "")[
-                        :100
-                    ]  # Changed from 'content' to 'line_content'
-                    results.append(
-                        f"Content in {file_path}:{line_number} - {line_content}..."
-                    )
+                    file_path = result.get("file_path", "Unknown")  # Changed from 'file' to 'file_path'
+                    line_number = result.get("line_number", "Unknown")  # Changed from 'line' to 'line_number'
+                    line_content = result.get("line_content", "")[:100]  # Changed from 'content' to 'line_content'
+                    results.append(f"Content in {file_path}:{line_number} - {line_content}...")
 
             if not results:
                 logger.debug(f"No results found for query: '{query}'")
                 return f"No results found for query '{query}'."
 
-            logger.info(
-                f"Content search returned {len(results)} results for query: '{query}'"
-            )
+            logger.info(f"Content search returned {len(results)} results for query: '{query}'")
             return f"Search results for '{query}':\n\n" + "\n".join(results)
 
         except Exception as e:
             logger.error(f"Error in content_searcher: {e}", exc_info=True)
             return f"Error: {str(e)}"
 
-    def persistent_memory_manager(
-        self, action: str, content: Optional[str] = None, entry_id: Optional[int] = None
-    ) -> str:
+    def persistent_memory_manager(self, action: str, content: Optional[str] = None, entry_id: Optional[int] = None) -> str:
         """
         Manage Jeeves's long-term persistent memory in sandbox/MEMORY.md.
 
@@ -941,9 +833,7 @@ class JeevesTools:
         Returns:
             Success message or memory content
         """
-        logger.info(
-            f"Tool called: persistent_memory_manager(action='{action}', entry_id={entry_id})"
-        )
+        logger.info(f"Tool called: persistent_memory_manager(action='{action}', entry_id={entry_id})")
 
         try:
             memory_file = "MEMORY.md"
@@ -957,9 +847,7 @@ class JeevesTools:
 
                 content = self.file_handler.read_file_content(memory_file)
                 if content.strip():
-                    logger.info(
-                        f"Retrieved persistent memory with {len(content)} characters"
-                    )
+                    logger.info(f"Retrieved persistent memory with {len(content)} characters")
                     return f"Persistent Memory:\n\n{content}"
                 else:
                     logger.debug("Persistent memory is empty")
@@ -967,9 +855,7 @@ class JeevesTools:
 
             elif action == "add":
                 if not content:
-                    logger.warning(
-                        "persistent_memory_manager: content is required for add action but not provided"
-                    )
+                    logger.warning("persistent_memory_manager: content is required for add action but not provided")
                     return "Error: content is required for add action."
 
                 logger.debug(f"Adding memory entry: {content}")
@@ -978,17 +864,13 @@ class JeevesTools:
                 existing_content = ""
                 if self.file_handler.file_exists(memory_file):
                     existing_content = self.file_handler.read_file_content(memory_file)
-                    logger.debug(
-                        f"Read existing memory content: {len(existing_content)} characters"
-                    )
+                    logger.debug(f"Read existing memory content: {len(existing_content)} characters")
 
                 # Find next available ID
                 next_id = 1
                 if existing_content:
                     id_pattern = r"^\d+\."
-                    existing_ids = re.findall(
-                        id_pattern, existing_content, re.MULTILINE
-                    )
+                    existing_ids = re.findall(id_pattern, existing_content, re.MULTILINE)
                     if existing_ids:
                         max_id = max(int(id_.rstrip(".")) for id_ in existing_ids)
                         next_id = max_id + 1
@@ -1005,9 +887,7 @@ class JeevesTools:
                 else:
                     # Create new file
                     logger.debug("Creating new memory file")
-                    success = self.file_handler.write_file(
-                        memory_file, new_entry, overwrite=True
-                    )
+                    success = self.file_handler.write_file(memory_file, new_entry, overwrite=True)
 
                 if success:
                     logger.info(f"Successfully added memory entry {next_id}: {content}")
@@ -1018,9 +898,7 @@ class JeevesTools:
 
             elif action == "remove":
                 if not entry_id:
-                    logger.warning(
-                        "persistent_memory_manager: entry_id is required for remove action but not provided"
-                    )
+                    logger.warning("persistent_memory_manager: entry_id is required for remove action but not provided")
                     return "Error: entry_id is required for remove action."
 
                 logger.debug(f"Removing memory entry ID: {entry_id}")
@@ -1047,9 +925,7 @@ class JeevesTools:
                     return f"Error: Memory entry {entry_id} not found."
 
                 new_content = "\n".join(new_lines)
-                success = self.file_handler.write_file(
-                    memory_file, new_content, overwrite=True
-                )
+                success = self.file_handler.write_file(memory_file, new_content, overwrite=True)
 
                 if success:
                     logger.info(f"Successfully removed memory entry {entry_id}")
@@ -1076,9 +952,7 @@ class JeevesTools:
             logger.error(f"Error in persistent_memory_manager: {e}", exc_info=True)
             return f"Error: {str(e)}"
 
-    def scratchpad_logger(
-        self, content: str, session_name: Optional[str] = None
-    ) -> str:
+    def scratchpad_logger(self, content: str, session_name: Optional[str] = None) -> str:
         """
         Log internal thought processes to session-specific scratchpad files.
 
@@ -1092,9 +966,7 @@ class JeevesTools:
         logger.info(f"Tool called: scratchpad_logger(session_name='{session_name}')")
 
         try:
-            logger.debug(
-                f"Logging scratchpad content with length: {len(content)} characters"
-            )
+            logger.debug(f"Logging scratchpad content with length: {len(content)} characters")
 
             # Get current thread info if no session name provided
             if not session_name:
@@ -1113,9 +985,7 @@ class JeevesTools:
             original_session_name = session_name
             session_name = re.sub(r"[^\w\-_]", "_", session_name)
             if original_session_name != session_name:
-                logger.debug(
-                    f"Sanitized session name: '{original_session_name}' -> '{session_name}'"
-                )
+                logger.debug(f"Sanitized session name: '{original_session_name}' -> '{session_name}'")
 
             # Ensure scratchpads directory exists
             logger.debug("Ensuring scratchpads directory exists")
@@ -1128,7 +998,7 @@ class JeevesTools:
 
             # Add timestamp to content
             log_entry = f"## {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n{content}\n\n---\n\n"
-            logger.debug(f"Created log entry with timestamp")
+            logger.debug("Created log entry with timestamp")
 
             # Append to scratchpad file
             success = self.file_handler.append_to_file(filename, log_entry)
@@ -1161,15 +1031,11 @@ class JeevesTools:
             logger.debug(f"Processing read_file request for path: '{path}'")
 
             # Check if this is an attachment file
-            is_attachment_path = path.startswith("attachments/") or path.startswith(
-                "/attachments/"
-            )
+            is_attachment_path = path.startswith("attachments/") or path.startswith("/attachments/")
             logger.debug(f"Path '{path}' is attachment path: {is_attachment_path}")
 
             if is_attachment_path:
-                logger.info(
-                    f"Detected attachment file: '{path}' - informing user to use attach button"
-                )
+                logger.info(f"Detected attachment file: '{path}' - informing user to use attach button")
 
                 # Get file info for better user feedback
                 file_info = self.file_handler.get_file_info(path)
@@ -1177,10 +1043,7 @@ class JeevesTools:
                     # Simple MIME type detection
                     import mimetypes
 
-                    file_extension = os.path.splitext(path)[1].lower()
-                    mime_type = (
-                        mimetypes.guess_type(path)[0] or "application/octet-stream"
-                    )
+                    mime_type = mimetypes.guess_type(path)[0] or "application/octet-stream"
                     file_size = file_info.get("size_bytes", 0)
                     file_name = os.path.basename(path)
 
@@ -1193,9 +1056,7 @@ class JeevesTools:
             # For regular files, return content as before
             logger.debug(f"Reading file content for '{path}' as regular text file")
             content = self.file_handler.read_file_content(path)
-            logger.info(
-                f"Successfully read file '{path}' with {len(content)} characters"
-            )
+            logger.info(f"Successfully read file '{path}' with {len(content)} characters")
             return f"Content of '{path}':\n\n{content}"
 
         except Exception as e:
@@ -1213,13 +1074,9 @@ class JeevesTools:
         Returns:
             A hierarchical list of files and directories or an error message.
         """
-        logger.info(
-            f"Tool called: list_directory(path='{path}', recursive={recursive})"
-        )
+        logger.info(f"Tool called: list_directory(path='{path}', recursive={recursive})")
         try:
-            contents = self.file_handler.list_directory_contents(
-                path, recursive=recursive, include_files=True, include_directories=True
-            )
+            contents = self.file_handler.list_directory_contents(path, recursive=recursive, include_files=True, include_directories=True)
 
             if not contents:
                 return f"Directory '{path}' is empty."

@@ -3,18 +3,12 @@ Integration tests for Jeeves AI Assistant.
 Tests the interaction between different components.
 """
 
-import os
-import shutil
-import tempfile
 import uuid
 from unittest.mock import Mock, patch
-
-import pytest
 
 from core.ai_engine import AIEngine
 from core.ai_provider_manager import AIProviderManager
 from core.chat_manager import ChatManager
-from core.database import DatabaseManager
 
 
 class TestAIEngineIntegration:
@@ -344,9 +338,7 @@ class TestChatManagerIntegration:
         assert user_message_id is not None
 
         # Add an AI response
-        ai_message_id = chat_manager.add_ai_message(
-            "I don't have access to real-time weather data, but I can help you with other questions!"
-        )
+        ai_message_id = chat_manager.add_ai_message("I don't have access to real-time weather data, but I can help you with other questions!")
         assert ai_message_id is not None
 
         # Get all messages

@@ -59,11 +59,7 @@ class TestGeminiAPI:
         response_lower = response.lower()
 
         # Check if response contains expected content or error message
-        assert (
-            "alice" in response_lower
-            or "name" in response_lower
-            or "error" in response_lower
-        )
+        assert "alice" in response_lower or "name" in response_lower or "error" in response_lower
 
     @pytest.mark.api
     @pytest.mark.slow
@@ -75,9 +71,7 @@ class TestGeminiAPI:
 
         custom_instruction = "You are a helpful coding assistant. Always respond with code examples when relevant."
 
-        provider = GeminiProvider(
-            {"api_key": api_key, "system_instruction": custom_instruction}
-        )
+        provider = GeminiProvider({"api_key": api_key, "system_instruction": custom_instruction})
         provider.initialize()
 
         # Test with a coding question
@@ -87,9 +81,7 @@ class TestGeminiAPI:
 
         # The response should be coding-focused
         response_lower = response.lower()
-        assert any(
-            term in response_lower for term in ["def ", "function", "code", "python"]
-        )
+        assert any(term in response_lower for term in ["def ", "function", "code", "python"])
 
         provider.cleanup()
 
@@ -274,10 +266,7 @@ class TestProviderManagerAPI:
                 current_provider = manager.get_current_provider()
                 assert current_provider is not None
                 # Check if provider name contains the expected substring
-                assert (
-                    provider_name.lower() in current_provider.provider_name.lower()
-                    or current_provider.provider_name.lower() in provider_name.lower()
-                )
+                assert provider_name.lower() in current_provider.provider_name.lower() or current_provider.provider_name.lower() in provider_name.lower()
 
         manager.cleanup()
 

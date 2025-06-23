@@ -28,9 +28,7 @@ def show_error(title: str, message: str, parent=None):
         dialog.geometry(f"400x200+{x}+{y}")
 
         # Create message
-        message_label = ctk.CTkLabel(
-            dialog, text=message, font=("Fira Code", 12), wraplength=350
-        )
+        message_label = ctk.CTkLabel(dialog, text=message, font=("Fira Code", 12), wraplength=350)
         message_label.pack(pady=30)
 
         # Create OK button
@@ -69,9 +67,7 @@ def show_info(title: str, message: str, parent=None):
         dialog.geometry(f"400x200+{x}+{y}")
 
         # Create message
-        message_label = ctk.CTkLabel(
-            dialog, text=message, font=("Fira Code", 12), wraplength=350
-        )
+        message_label = ctk.CTkLabel(dialog, text=message, font=("Fira Code", 12), wraplength=350)
         message_label.pack(pady=30)
 
         # Create OK button
@@ -110,9 +106,7 @@ def show_warning(title: str, message: str, parent=None):
         dialog.geometry(f"400x200+{x}+{y}")
 
         # Create message
-        message_label = ctk.CTkLabel(
-            dialog, text=message, font=("Fira Code", 12), wraplength=350
-        )
+        message_label = ctk.CTkLabel(dialog, text=message, font=("Fira Code", 12), wraplength=350)
         message_label.pack(pady=30)
 
         # Create OK button
@@ -159,9 +153,7 @@ def show_confirmation(
         dialog.geometry(f"400x250+{x}+{y}")
 
         # Create message
-        message_label = ctk.CTkLabel(
-            dialog, text=message, font=("Fira Code", 12), wraplength=350
-        )
+        message_label = ctk.CTkLabel(dialog, text=message, font=("Fira Code", 12), wraplength=350)
         message_label.pack(pady=30)
 
         # Create button frame
@@ -240,9 +232,7 @@ def show_input_dialog(
         dialog.geometry(f"400x250+{x}+{y}")
 
         # Create message
-        message_label = ctk.CTkLabel(
-            dialog, text=message, font=("Fira Code", 12), wraplength=350
-        )
+        message_label = ctk.CTkLabel(dialog, text=message, font=("Fira Code", 12), wraplength=350)
         message_label.pack(pady=20)
 
         # Create input field
@@ -351,8 +341,6 @@ def show_warning_dialog(parent, title: str, message: str):
     show_warning(title, message, parent)
 
 
-def show_confirmation_dialog(
-    parent, title: str, message: str, on_confirm: Callable = None
-):
+def show_confirmation_dialog(parent, title: str, message: str, on_confirm: Callable = None):
     """Legacy confirmation dialog function."""
     return show_confirmation(title, message, parent, on_confirm)

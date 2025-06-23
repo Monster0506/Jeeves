@@ -5,7 +5,6 @@ Now uses a modular provider system for different AI backends.
 """
 
 import logging
-import os
 from typing import Dict, List
 
 from .ai_provider_manager import AIProviderManager
@@ -44,9 +43,7 @@ class AIEngine:
         try:
             if self.provider_manager.initialize():
                 current_provider = self.provider_manager.get_current_provider()
-                logger.info(
-                    f"AI Engine initialized with provider: {current_provider.provider_name}"
-                )
+                logger.info(f"AI Engine initialized with provider: {current_provider.provider_name}")
 
                 # Register tools
                 self._register_tools()
@@ -82,9 +79,7 @@ class AIEngine:
         # No longer needed: self.conversation_history = []
         pass
 
-    def generate_response(
-        self, user_message: str, attachments: List[Dict] = None
-    ) -> str:
+    def generate_response(self, user_message: str, attachments: List[Dict] = None) -> str:
         """
         Generate an AI response to the user's message.
 
@@ -95,9 +90,7 @@ class AIEngine:
         Returns:
             Generated AI response
         """
-        logger.info(
-            f"Generating response for message with {len(attachments) if attachments else 0} attachments"
-        )
+        logger.info(f"Generating response for message with " f"{len(attachments) if attachments else 0} attachments")
 
         # Format new attachments for database storage
         db_attachments = None
@@ -114,9 +107,7 @@ class AIEngine:
             ]
 
         # Add user message to database
-        message_id = self.chat_manager.add_user_message(
-            user_message, content_type="text", attachments=db_attachments
-        )
+        message_id = self.chat_manager.add_user_message(user_message, content_type="text", attachments=db_attachments)
 
         # Refresh memory at the beginning of each chat session
         self._refresh_memory_if_needed()
@@ -141,9 +132,7 @@ class AIEngine:
                         ai_attachments.append(
                             {
                                 "file_name": att.get("file_name"),
-                                "file_path": file_handler.get_absolute_path(
-                                    sandbox_path
-                                ),
+                                "file_path": file_handler.get_absolute_path(sandbox_path),
                                 "mime_type": att.get("mime_type"),
                                 "file_size": att.get("file_size"),
                             }
@@ -163,17 +152,13 @@ class AIEngine:
                 )
 
         # Pass full context and all attachments to the provider
-        response = self.provider_manager.generate_response(
-            user_message, context, ai_attachments
-        )
+        response = self.provider_manager.generate_response(user_message, context, ai_attachments)
 
         # log context
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug("-- SENDING CONTEXT TO AI --")
             for msg in context:
-                logger.debug(
-                    f"[{msg.get('sender','unknown')}]: {msg.get('content', 'NONE')}"
-                )
+                logger.debug(f"[{msg.get('sender', 'unknown')}]: {msg.get('content', 'NONE')}")
             if ai_attachments:
                 logger.debug(f"-- With {len(ai_attachments)} attachments --")
                 for att in ai_attachments:
@@ -181,11 +166,9 @@ class AIEngine:
             logger.debug("-" * 35)
 
         # Add AI message
-        ai_message_id = self.chat_manager.add_ai_message(response)
+        self.chat_manager.add_ai_message(response)
 
-        logger.info(
-            f"Generated response for message {message_id} using {self.provider_manager.get_current_provider().provider_name}"
-        )
+        logger.info(f"Generated response for message {message_id} using " f"{self.provider_manager.get_current_provider().provider_name}")
         return response
 
     def _refresh_memory_if_needed(self):
@@ -344,12 +327,8 @@ class AIEngine:
         try:
             from datetime import datetime
 
-            first_time = datetime.fromisoformat(
-                messages[0]["timestamp"].replace("Z", "+00:00")
-            )
-            last_time = datetime.fromisoformat(
-                messages[-1]["timestamp"].replace("Z", "+00:00")
-            )
+            first_time = datetime.fromisoformat(messages[0]["timestamp"].replace("Z", "+00:00"))
+            last_time = datetime.fromisoformat(messages[-1]["timestamp"].replace("Z", "+00:00"))
             duration = last_time - first_time
 
             minutes = duration.total_seconds() / 60
@@ -382,12 +361,8 @@ class AIEngine:
 
             for i in range(1, len(messages)):
                 try:
-                    time1 = datetime.fromisoformat(
-                        messages[i - 1]["timestamp"].replace("Z", "+00:00")
-                    )
-                    time2 = datetime.fromisoformat(
-                        messages[i]["timestamp"].replace("Z", "+00:00")
-                    )
+                    time1 = datetime.fromisoformat(messages[i - 1]["timestamp"].replace("Z", "+00:00"))
+                    time2 = datetime.fromisoformat(messages[i]["timestamp"].replace("Z", "+00:00"))
                     if (time2 - time1).total_seconds() < 60:
                         rapid_exchanges += 1
                 except (ValueError, KeyError) as e:
@@ -441,9 +416,7 @@ class AIEngine:
         return {
             "provider": provider_info.get("name", "Unknown"),
             "model": provider_info.get("model", "Unknown"),
-            "total_responses": self.chat_manager.get_stats().get(
-                "total_ai_messages", 0
-            ),
+            "total_responses": self.chat_manager.get_stats().get("total_ai_messages", 0),
             "average_response_time": 0,  # Placeholder
         }
 

@@ -11,24 +11,17 @@ Tests all file handler functionality including:
 - Utility methods
 """
 
-import json
 import os
-import shutil
 import sys
-import tarfile
-import tempfile
-import uuid
-import zipfile
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from core.file_handler import JeevesFileHandler, SandboxViolationError
+from core.file_handler import JeevesFileHandler, SandboxViolationError  # noqa: E402
 
 
 class TestJeevesFileHandler:
@@ -164,9 +157,7 @@ class TestJeevesFileHandler:
         """Test sandbox boundary check for invalid paths."""
         # Test path outside sandbox
         assert not self.file_handler.is_within_sandbox("/etc/passwd")
-        assert not self.file_handler.is_within_sandbox(
-            str(Path.home() / "some_file.txt")
-        )
+        assert not self.file_handler.is_within_sandbox(str(Path.home() / "some_file.txt"))
 
         # Test non-existent path
         assert not self.file_handler.is_within_sandbox("/non/existent/path")
@@ -221,10 +212,7 @@ class TestJeevesFileHandler:
         success = self.file_handler.write_file("test.txt", new_content, overwrite=False)
         # JeevesFileHandler appends when overwrite=False
         assert success
-        assert (
-            self.file_handler.read_file_content("test.txt")
-            == initial_content + new_content
-        )
+        assert self.file_handler.read_file_content("test.txt") == initial_content + new_content
 
     def test_write_file_with_line_number(self):
         """Test writing file content at specific line."""
@@ -234,9 +222,7 @@ class TestJeevesFileHandler:
 
         # Insert content at line 2
         insert_content = "Inserted line"
-        success = self.file_handler.write_file(
-            "test.txt", insert_content, line_number=2
-        )
+        success = self.file_handler.write_file("test.txt", insert_content, line_number=2)
 
         assert success
         expected_content = "Line 1\nInserted line\nLine 2\nLine 3\nLine 4"
@@ -256,9 +242,7 @@ class TestJeevesFileHandler:
         self.file_handler.write_file("test.txt", content)
 
         # Read lines 2-4
-        result = self.file_handler.read_file_content(
-            "test.txt", start_line=2, end_line=4
-        )
+        result = self.file_handler.read_file_content("test.txt", start_line=2, end_line=4)
         # JeevesFileHandler includes trailing newline
         assert result.strip() == "Line 2\nLine 3\nLine 4"
 
@@ -478,11 +462,7 @@ class TestJeevesFileHandler:
 
         # Should only contain .backups and .trash directories
         assert len(contents) == 2
-        dir_paths = [
-            item["path"].replace("\\", "/")
-            for item in contents
-            if item["type"] == "directory"
-        ]
+        dir_paths = [item["path"].replace("\\", "/") for item in contents if item["type"] == "directory"]
         assert ".backups" in dir_paths
         assert ".trash" in dir_paths
 
@@ -550,9 +530,7 @@ class TestJeevesFileHandler:
         self.create_test_directories(["dir1"])
         self.create_test_files({"file1.txt": "content"})
 
-        contents = self.file_handler.list_directory_contents(
-            ".", include_files=True, include_directories=False
-        )
+        contents = self.file_handler.list_directory_contents(".", include_files=True, include_directories=False)
 
         file_count = len([item for item in contents if item["type"] == "file"])
         assert file_count == 1
@@ -567,9 +545,7 @@ class TestJeevesFileHandler:
         self.create_test_directories(["dir1", "dir2"])
         self.create_test_files({"file1.txt": "content"})
 
-        contents = self.file_handler.list_directory_contents(
-            ".", include_files=False, include_directories=True
-        )
+        contents = self.file_handler.list_directory_contents(".", include_files=False, include_directories=True)
 
         dir_count = len([item for item in contents if item["type"] == "directory"])
         assert dir_count >= 4  # .backups, .trash, dir1, dir2
@@ -640,16 +616,12 @@ class TestJeevesFileHandler:
         """Test hard deletion of directory."""
         # Create directory with files
         self.create_test_directories(["test_dir"])
-        self.create_test_files(
-            {"test_dir/file1.txt": "content1", "test_dir/file2.txt": "content2"}
-        )
+        self.create_test_files({"test_dir/file1.txt": "content1", "test_dir/file2.txt": "content2"})
 
         assert (self.sandbox_path / "test_dir").exists()
 
         # Delete directory
-        success = self.file_handler.delete_directory(
-            "test_dir", recursive=True, soft=False
-        )
+        success = self.file_handler.delete_directory("test_dir", recursive=True, soft=False)
 
         assert success
         assert not (self.sandbox_path / "test_dir").exists()
@@ -664,9 +636,7 @@ class TestJeevesFileHandler:
         assert original_path.exists()
 
         # Soft delete directory
-        success = self.file_handler.delete_directory(
-            "test_dir", recursive=True, soft=True
-        )
+        success = self.file_handler.delete_directory("test_dir", recursive=True, soft=True)
 
         assert success
         assert not original_path.exists()
@@ -746,9 +716,7 @@ class TestJeevesFileHandler:
         )
 
         # Find files matching pattern recursively
-        files = self.file_handler.find_files_by_pattern(
-            ".", "test*.txt", recursive=True
-        )
+        files = self.file_handler.find_files_by_pattern(".", "test*.txt", recursive=True)
 
         assert len(files) == 3
         assert "test1.txt" in files
@@ -771,9 +739,7 @@ class TestJeevesFileHandler:
         )
 
         # Find files matching pattern non-recursively
-        files = self.file_handler.find_files_by_pattern(
-            ".", "test*.txt", recursive=False
-        )
+        files = self.file_handler.find_files_by_pattern(".", "test*.txt", recursive=False)
 
         assert len(files) == 1
         assert "test1.txt" in files
@@ -781,9 +747,7 @@ class TestJeevesFileHandler:
 
     def test_find_files_by_pattern_no_matches(self):
         """Test finding files by pattern with no matches."""
-        self.create_test_files(
-            {"data.json": '{"key": "value"}', "config.ini": "config content"}
-        )
+        self.create_test_files({"data.json": '{"key": "value"}', "config.ini": "config content"})
 
         files = self.file_handler.find_files_by_pattern(".", "test*.txt")
 
@@ -835,9 +799,7 @@ class TestJeevesFileHandler:
 
     def test_find_files_by_extension_no_matches(self):
         """Test finding files by extension with no matches."""
-        self.create_test_files(
-            {"data.json": '{"key": "value"}', "config.ini": "config content"}
-        )
+        self.create_test_files({"data.json": '{"key": "value"}', "config.ini": "config content"})
 
         files = self.file_handler.find_files_by_extension(".", ".txt")
 
@@ -893,9 +855,7 @@ class TestJeevesFileHandler:
         )
 
         # Search only in specific files
-        results = self.file_handler.search_file_contents(
-            ".", "python", file_paths=["file1.txt"]
-        )
+        results = self.file_handler.search_file_contents(".", "python", file_paths=["file1.txt"])
 
         assert len(results) == 1
         assert results[0]["file_path"].replace("\\", "/") == "file1.txt"
@@ -924,9 +884,7 @@ class TestJeevesFileHandler:
         )
 
         # Search for email pattern
-        results = self.file_handler.search_file_contents(
-            ".", r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
-        )
+        results = self.file_handler.search_file_contents(".", r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 
         assert len(results) == 1
         assert results[0]["file_path"].replace("\\", "/") == "file1.txt"
@@ -1217,9 +1175,7 @@ class TestJeevesFileHandler:
         self.create_test_files({"test_dir/file1.txt": "content1"})
 
         # Compress to custom path
-        archive_path = self.file_handler.compress_directory(
-            "test_dir", "custom_archive.zip"
-        )
+        archive_path = self.file_handler.compress_directory("test_dir", "custom_archive.zip")
 
         assert archive_path == "custom_archive.zip"
         assert (self.sandbox_path / "custom_archive.zip").exists()
@@ -1231,9 +1187,7 @@ class TestJeevesFileHandler:
         self.create_test_files({"test_dir/file1.txt": "content1"})
 
         # Compress in tar format
-        archive_path = self.file_handler.compress_directory(
-            "test_dir", archive_format="tar"
-        )
+        archive_path = self.file_handler.compress_directory("test_dir", archive_format="tar")
 
         assert archive_path is not None
         assert archive_path.endswith(".tar")
@@ -1447,9 +1401,7 @@ class TestJeevesFileHandler:
         """Test directory preloading."""
         # Create test directory with files
         self.create_test_directories(["preload_dir"])
-        self.create_test_files(
-            {"preload_dir/file1.txt": "content1", "preload_dir/file2.txt": "content2"}
-        )
+        self.create_test_files({"preload_dir/file1.txt": "content1", "preload_dir/file2.txt": "content2"})
 
         # Preload directory
         self.file_handler.preload_directory("preload_dir")
@@ -1523,9 +1475,7 @@ class TestJeevesFileHandler:
         assert "initial" in result
         # Only check that at least one line per thread is present
         for i in range(3):
-            found = any(
-                f"Thread {i} - iteration" in line for line in result.splitlines()
-            )
+            found = any(f"Thread {i} - iteration" in line for line in result.splitlines())
             assert found
 
     def test_nested_directory_operations(self):
@@ -1535,9 +1485,7 @@ class TestJeevesFileHandler:
         self.file_handler.create_directory(nested_path)
 
         # Create file in nested directory
-        success = self.file_handler.write_file(
-            f"{nested_path}/file.txt", "nested content"
-        )
+        success = self.file_handler.write_file(f"{nested_path}/file.txt", "nested content")
         assert success
 
         # Read file from nested directory
@@ -1598,9 +1546,7 @@ class TestJeevesFileHandler:
 
         # Try to write to the same file multiple times
         for i in range(3):
-            success = self.file_handler.write_file(
-                "lock_test.txt", f"content {i}", overwrite=True
-            )
+            success = self.file_handler.write_file("lock_test.txt", f"content {i}", overwrite=True)
             assert success
 
         # Verify final content
@@ -1648,9 +1594,7 @@ class TestJeevesFileHandler:
     def test_file_handler_cleanup(self):
         """Test file handler cleanup behavior."""
         # Create files and directories
-        self.create_test_files(
-            {"cleanup_test1.txt": "content1", "cleanup_test2.txt": "content2"}
-        )
+        self.create_test_files({"cleanup_test1.txt": "content1", "cleanup_test2.txt": "content2"})
         self.create_test_directories(["cleanup_dir"])
 
         # Verify they exist
@@ -1672,12 +1616,8 @@ class TestJeevesFileHandler:
         self.file_handler.create_directory("project/src")
         self.file_handler.create_directory("project/docs")
         # 2. Create files
-        self.file_handler.write_file(
-            "project/src/main.py", "def main():\n    print('Hello, World!')"
-        )
-        self.file_handler.write_file(
-            "project/README.md", "# Test Project\n\nThis is a test project."
-        )
+        self.file_handler.write_file("project/src/main.py", "def main():\n    print('Hello, World!')")
+        self.file_handler.write_file("project/README.md", "# Test Project\n\nThis is a test project.")
         # 3. Create backup
         backup_path = self.file_handler.create_backup("project/src/main.py")
         assert backup_path is not None

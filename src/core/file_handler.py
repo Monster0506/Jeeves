@@ -56,9 +56,7 @@ class JeevesFileHandler:
 
         # Verify it's a directory
         if not pathObject.is_dir():
-            raise FileExistsError(
-                f"WARNING: Specified root dir '{sandbox_root_dir}' is already a non-directory path: {pathObject}"
-            )
+            raise FileExistsError(f"WARNING: Specified root dir '{sandbox_root_dir}' is already a non-directory path: {pathObject}")
         self.sandbox = pathObject
         logger.info(f"JeevesFileHandler initialized with sandbox: {self.sandbox}")
 
@@ -118,14 +116,8 @@ class JeevesFileHandler:
 
         # SECURITY CHECK: Verify that the resolved path is actually within the sandbox.
         if not self.is_within_sandbox(str(resolved_full_path)):
-            logger.warning(
-                f"Attempted sandbox escape: '{relative_path}' resolves to "
-                f"'{resolved_full_path}' which is outside the sandbox boundary '{self.sandbox}'."
-            )
-            raise SandboxViolationError(
-                f"Path '{relative_path}' resolves to '{resolved_full_path}' "
-                "which is outside the sandbox boundary."
-            )
+            logger.warning(f"Attempted sandbox escape: '{relative_path}' resolves to " f"'{resolved_full_path}' which is outside the sandbox boundary '{self.sandbox}'.")
+            raise SandboxViolationError(f"Path '{relative_path}' resolves to '{resolved_full_path}' " "which is outside the sandbox boundary.")
         return str(resolved_full_path)
 
     def get_relative_path(self, absolute_path: str) -> str:
@@ -146,13 +138,8 @@ class JeevesFileHandler:
 
         # Check if the resolved absolute path is actually within the sandbox.
         if not self.is_within_sandbox(str(resolved_absolute_path)):
-            logger.warning(
-                f"Path '{absolute_path}' is outside sandbox when getting relative path."
-            )
-            raise SandboxViolationError(
-                f"Path '{absolute_path}' is not within the sandbox "
-                f"'{self.sandbox}'."
-            )
+            logger.warning(f"Path '{absolute_path}' is outside sandbox when getting relative path.")
+            raise SandboxViolationError(f"Path '{absolute_path}' is not within the sandbox " f"'{self.sandbox}'.")
 
         # Use Path.relative_to() to get the path relative to the sandbox.
         # This method will raise ValueError if it's not relative, but our
@@ -184,17 +171,11 @@ class JeevesFileHandler:
             # It returns True if `resolved_input_path` is the same as `self.sandbox`
             # or a subdirectory/file within `self.sandbox`.
             return resolved_input_path.is_relative_to(self.sandbox)
-        except (
-            OSError
-        ) as e:  # Catch errors like broken symlinks which .resolve() might raise
-            logger.debug(
-                f"Could not resolve path '{absolute_path}': {e}. Considering it outside sandbox."
-            )
+        except OSError as e:  # Catch errors like broken symlinks which .resolve() might raise
+            logger.debug(f"Could not resolve path '{absolute_path}': {e}. Considering it outside sandbox.")
             return False
         except Exception as e:
-            logger.error(
-                f"Unexpected error checking sandbox boundary for '{absolute_path}': {e}"
-            )
+            logger.error(f"Unexpected error checking sandbox boundary for '{absolute_path}': {e}")
             return False
 
     # File Operations
@@ -225,12 +206,8 @@ class JeevesFileHandler:
             abs_file_path = Path(self.get_absolute_path(relative_file_path))
 
             if not abs_file_path.is_file():
-                logger.error(
-                    f"Attempted to read non-existent or non-file path: {abs_file_path}"
-                )
-                raise FileNotFoundError(
-                    f"File not found or is not a file: {relative_file_path}"
-                )
+                logger.error(f"Attempted to read non-existent or non-file path: {abs_file_path}")
+                raise FileNotFoundError(f"File not found or is not a file: {relative_file_path}")
 
             content_lines: List[str] = []
             with open(abs_file_path, "r", encoding=self._default_encoding) as f:
@@ -241,11 +218,7 @@ class JeevesFileHandler:
                         raise ValueError("start_line must be 1 or greater.")
                     if end_line is not None and end_line < 1:
                         raise ValueError("end_line must be 1 or greater.")
-                    if (
-                        start_line is not None
-                        and end_line is not None
-                        and start_line > end_line
-                    ):
+                    if start_line is not None and end_line is not None and start_line > end_line:
                         raise ValueError("start_line cannot be greater than end_line.")
 
                     for i, line in enumerate(f, 1):
@@ -268,14 +241,10 @@ class JeevesFileHandler:
             logger.error(f"Permission denied to read {relative_file_path}: {e}")
             raise
         except UnicodeDecodeError as e:
-            logger.error(
-                f"Failed to decode file {relative_file_path} with encoding {self._default_encoding}: {e}"
-            )
+            logger.error(f"Failed to decode file {relative_file_path} with encoding {self._default_encoding}: {e}")
             raise
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while reading {relative_file_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while reading {relative_file_path}: {e}")
             raise
 
     def write_file(
@@ -311,23 +280,16 @@ class JeevesFileHandler:
             abs_file_path = Path(self.get_absolute_path(relative_file_path))
 
             # Ensure parent directory exists
-            self.ensure_directory_exists(
-                str(abs_file_path.parent.relative_to(self.sandbox))
-            )
+            self.ensure_directory_exists(str(abs_file_path.parent.relative_to(self.sandbox)))
 
             # Check file size limit
             if len(content.encode(self._default_encoding)) > self._max_file_size_bytes:
-                logger.error(
-                    f"Content size ({len(content.encode(self._default_encoding))} bytes) "
-                    f"exceeds maximum allowed file size ({self._max_file_size_bytes} bytes)."
-                )
+                logger.error(f"Content size ({len(content.encode(self._default_encoding))} bytes) " f"exceeds maximum allowed file size ({self._max_file_size_bytes} bytes).")
                 return False
 
             # Validate file extension
             if not self._validate_file_type(str(abs_file_path)):
-                logger.warning(
-                    f"File extension for {relative_file_path} is not allowed."
-                )
+                logger.warning(f"File extension for {relative_file_path} is not allowed.")
                 return False
 
             # If line_number is not None, we need to read and rewrite
@@ -339,14 +301,10 @@ class JeevesFileHandler:
                 current_lines: List[str] = []
                 if abs_file_path.exists() and abs_file_path.is_file():
                     try:
-                        with open(
-                            abs_file_path, "r", encoding=self._default_encoding
-                        ) as f:
+                        with open(abs_file_path, "r", encoding=self._default_encoding) as f:
                             current_lines = f.readlines()
                     except Exception as e:
-                        logger.warning(
-                            f"Could not read existing file for line insertion {abs_file_path}: {e}"
-                        )
+                        logger.warning(f"Could not read existing file for line insertion {abs_file_path}: {e}")
                         # If we can't read, we'll treat it as empty and overwrite
                         current_lines = []
 
@@ -355,33 +313,21 @@ class JeevesFileHandler:
 
                 # Split content into lines to correctly insert if it contains newlines
                 content_lines = content.splitlines(keepends=True)
-                if (
-                    not content_lines and content
-                ):  # If content is not empty but splitlines makes it empty (e.g., just " "), handle it
+                if not content_lines and content:  # If content is not empty but splitlines makes it empty (e.g., just " "), handle it
                     content_lines = [content]
 
                 # Ensure the last line has a newline if it's meant to be a full line insertion
                 # and it's not the very end of the file.
-                if (
-                    content_lines
-                    and not content_lines[-1].endswith("\n")
-                    and insert_idx < len(current_lines)
-                ):
+                if content_lines and not content_lines[-1].endswith("\n") and insert_idx < len(current_lines):
                     content_lines[-1] += "\n"
 
-                new_lines = (
-                    current_lines[:insert_idx]
-                    + content_lines
-                    + current_lines[insert_idx:]
-                )
+                new_lines = current_lines[:insert_idx] + content_lines + current_lines[insert_idx:]
 
                 # Write the modified content back
                 mode = "w"
                 with open(abs_file_path, mode, encoding=self._default_encoding) as f:
                     f.writelines(new_lines)
-                logger.info(
-                    f"Content written/inserted at line {line_number} in {relative_file_path}"
-                )
+                logger.info(f"Content written/inserted at line {line_number} in {relative_file_path}")
                 return True
 
             else:  # No line_number specified
@@ -394,9 +340,7 @@ class JeevesFileHandler:
                 mode = "w"  # Overwrite or create new file
                 with open(abs_file_path, mode, encoding=self._default_encoding) as f:
                     f.write(content)
-                logger.info(
-                    f"Content {'overwritten' if overwrite else 'written'} to {relative_file_path}"
-                )
+                logger.info(f"Content {'overwritten' if overwrite else 'written'} to {relative_file_path}")
                 return True
 
         except SandboxViolationError as e:
@@ -407,9 +351,7 @@ class JeevesFileHandler:
             logger.error(f"OS error writing to {relative_file_path}: {e}")
             return False
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while writing to {relative_file_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while writing to {relative_file_path}: {e}")
             return False
 
     def append_to_file(self, relative_file_path: str, content: str) -> bool:
@@ -427,29 +369,17 @@ class JeevesFileHandler:
             abs_file_path = Path(self.get_absolute_path(relative_file_path))
 
             # Ensure parent directory exists
-            self.ensure_directory_exists(
-                str(abs_file_path.parent.relative_to(self.sandbox))
-            )
+            self.ensure_directory_exists(str(abs_file_path.parent.relative_to(self.sandbox)))
 
             # Check file size limit (after appending)
-            current_size = (
-                abs_file_path.stat().st_size if abs_file_path.is_file() else 0
-            )
-            if (
-                current_size + len(content.encode(self._default_encoding))
-                > self._max_file_size_bytes
-            ):
-                logger.error(
-                    f"Appending content to {relative_file_path} would exceed "
-                    f"maximum allowed file size ({self._max_file_size_bytes} bytes)."
-                )
+            current_size = abs_file_path.stat().st_size if abs_file_path.is_file() else 0
+            if current_size + len(content.encode(self._default_encoding)) > self._max_file_size_bytes:
+                logger.error(f"Appending content to {relative_file_path} would exceed " f"maximum allowed file size ({self._max_file_size_bytes} bytes).")
                 return False
 
             # Validate file extension
             if not self._validate_file_type(str(abs_file_path)):
-                logger.warning(
-                    f"File extension for {relative_file_path} is not allowed."
-                )
+                logger.warning(f"File extension for {relative_file_path} is not allowed.")
                 return False
 
             with open(abs_file_path, "a", encoding=self._default_encoding) as f:
@@ -464,9 +394,7 @@ class JeevesFileHandler:
             logger.error(f"OS error appending to {relative_file_path}: {e}")
             return False
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while appending to {relative_file_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while appending to {relative_file_path}: {e}")
             return False
 
     def delete_file(self, relative_path: str, soft: bool = True) -> bool:
@@ -485,15 +413,11 @@ class JeevesFileHandler:
             abs_file_path = Path(self.get_absolute_path(relative_path))
 
             if not abs_file_path.is_file():
-                logger.warning(
-                    f"Attempted to delete non-existent or non-file: {abs_file_path}"
-                )
+                logger.warning(f"Attempted to delete non-existent or non-file: {abs_file_path}")
                 return False
 
             if soft:
-                self._trash_dir.mkdir(
-                    parents=True, exist_ok=True
-                )  # Ensure trash dir exists
+                self._trash_dir.mkdir(parents=True, exist_ok=True)  # Ensure trash dir exists
                 # Create a unique name for the trashed file to avoid collisions
                 timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
                 # Store original relative path in the filename or a metadata file
@@ -503,9 +427,7 @@ class JeevesFileHandler:
 
                 destination_path = self._trash_dir / trashed_name
                 shutil.move(abs_file_path, destination_path)
-                logger.info(
-                    f"Soft deleted file: {relative_path} moved to {destination_path}"
-                )
+                logger.info(f"Soft deleted file: {relative_path} moved to {destination_path}")
             else:
                 os.remove(abs_file_path)
                 logger.info(f"Permanently deleted file: {relative_path}")
@@ -518,9 +440,7 @@ class JeevesFileHandler:
             logger.error(f"OS error deleting file {relative_path}: {e}")
             return False
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while deleting {relative_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while deleting {relative_path}: {e}")
             return False
 
     def copy_file(self, source_relative_path: str, dest_relative_path: str) -> bool:
@@ -539,46 +459,32 @@ class JeevesFileHandler:
             abs_dest_path = Path(self.get_absolute_path(dest_relative_path))
 
             if not abs_source_path.is_file():
-                logger.error(
-                    f"Source file not found or is not a file: {source_relative_path}"
-                )
+                logger.error(f"Source file not found or is not a file: {source_relative_path}")
                 return False
 
             # Ensure destination directory exists
-            self.ensure_directory_exists(
-                str(abs_dest_path.parent.relative_to(self.sandbox))
-            )
+            self.ensure_directory_exists(str(abs_dest_path.parent.relative_to(self.sandbox)))
 
             # Validate file extension of destination
             if not self._validate_file_type(str(abs_dest_path)):
-                logger.warning(
-                    f"Destination file extension for {dest_relative_path} is not allowed."
-                )
+                logger.warning(f"Destination file extension for {dest_relative_path} is not allowed.")
                 return False
 
             shutil.copy2(abs_source_path, abs_dest_path)  # copy2 preserves metadata
-            logger.info(
-                f"Copied file from {source_relative_path} to {dest_relative_path}"
-            )
+            logger.info(f"Copied file from {source_relative_path} to {dest_relative_path}")
             return True
 
         except SandboxViolationError as e:
             logger.error(f"Copy file failed due to sandbox violation: {e}")
             return False
         except FileNotFoundError as e:
-            logger.error(
-                f"Source file not found for copy: {source_relative_path} - {e}"
-            )
+            logger.error(f"Source file not found for copy: {source_relative_path} - {e}")
             return False
         except OSError as e:
-            logger.error(
-                f"OS error copying file from {source_relative_path} to {dest_relative_path}: {e}"
-            )
+            logger.error(f"OS error copying file from {source_relative_path} to {dest_relative_path}: {e}")
             return False
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while copying {source_relative_path} to {dest_relative_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while copying {source_relative_path} to {dest_relative_path}: {e}")
             return False
 
     def move_file(self, source_relative_path: str, dest_relative_path: str) -> bool:
@@ -601,42 +507,28 @@ class JeevesFileHandler:
                 return False
 
             # Ensure destination directory exists
-            self.ensure_directory_exists(
-                str(abs_dest_path.parent.relative_to(self.sandbox))
-            )
+            self.ensure_directory_exists(str(abs_dest_path.parent.relative_to(self.sandbox)))
 
             # Validate file extension of destination if it's a file move
-            if abs_source_path.is_file() and not self._validate_file_type(
-                str(abs_dest_path)
-            ):
-                logger.warning(
-                    f"Destination file extension for {dest_relative_path} is not allowed."
-                )
+            if abs_source_path.is_file() and not self._validate_file_type(str(abs_dest_path)):
+                logger.warning(f"Destination file extension for {dest_relative_path} is not allowed.")
                 return False
 
             shutil.move(abs_source_path, abs_dest_path)
-            logger.info(
-                f"Moved file/directory from {source_relative_path} to {dest_relative_path}"
-            )
+            logger.info(f"Moved file/directory from {source_relative_path} to {dest_relative_path}")
             return True
 
         except SandboxViolationError as e:
             logger.error(f"Move file/directory failed due to sandbox violation: {e}")
             return False
         except FileNotFoundError as e:
-            logger.error(
-                f"Source path not found for move: {source_relative_path} - {e}"
-            )
+            logger.error(f"Source path not found for move: {source_relative_path} - {e}")
             return False
         except OSError as e:
-            logger.error(
-                f"OS error moving file/directory from {source_relative_path} to {dest_relative_path}: {e}"
-            )
+            logger.error(f"OS error moving file/directory from {source_relative_path} to {dest_relative_path}: {e}")
             return False
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while moving {source_relative_path} to {dest_relative_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while moving {source_relative_path} to {dest_relative_path}: {e}")
             return False
 
     # Directory Operations
@@ -664,9 +556,7 @@ class JeevesFileHandler:
             abs_dir_path = Path(self.get_absolute_path(relative_directory_path))
 
             if not abs_dir_path.is_dir():
-                logger.warning(
-                    f"Cannot list contents of non-directory path: {relative_directory_path}"
-                )
+                logger.warning(f"Cannot list contents of non-directory path: {relative_directory_path}")
                 return []
 
             contents: List[Dict] = []
@@ -719,24 +609,16 @@ class JeevesFileHandler:
             return contents
 
         except SandboxViolationError as e:
-            logger.error(
-                f"List directory contents failed due to sandbox violation: {e}"
-            )
+            logger.error(f"List directory contents failed due to sandbox violation: {e}")
             return []
         except FileNotFoundError:
-            logger.warning(
-                f"Directory not found for listing: {relative_directory_path}"
-            )
+            logger.warning(f"Directory not found for listing: {relative_directory_path}")
             return []
         except PermissionError as e:
-            logger.error(
-                f"Permission denied to list directory {relative_directory_path}: {e}"
-            )
+            logger.error(f"Permission denied to list directory {relative_directory_path}: {e}")
             return []
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while listing directory {relative_directory_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while listing directory {relative_directory_path}: {e}")
             return []
 
     def ensure_directory_exists(self, relative_directory_path: str) -> bool:
@@ -761,10 +643,7 @@ class JeevesFileHandler:
 
             if abs_dir_path.exists():
                 if not abs_dir_path.is_dir():
-                    logger.error(
-                        f"Error: Path '{relative_directory_path}' resolves to '{abs_dir_path}' "
-                        "which is an existing file, not a directory. Cannot create directory."
-                    )
+                    logger.error(f"Error: Path '{relative_directory_path}' resolves to '{abs_dir_path}' " "which is an existing file, not a directory. Cannot create directory.")
                     return False
                 else:
                     logger.debug(f"Directory already exists: {relative_directory_path}")
@@ -776,20 +655,13 @@ class JeevesFileHandler:
             return True
 
         except SandboxViolationError as e:
-            logger.error(
-                f"Security Error: Cannot ensure directory '{relative_directory_path}'. "
-                f"Path attempts to escape sandbox: {e}"
-            )
+            logger.error(f"Security Error: Cannot ensure directory '{relative_directory_path}'. " f"Path attempts to escape sandbox: {e}")
             return False
         except OSError as e:
-            logger.error(
-                f"OS Error: Could not ensure directory '{relative_directory_path}': {e}"
-            )
+            logger.error(f"OS Error: Could not ensure directory '{relative_directory_path}': {e}")
             return False
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while ensuring directory {relative_directory_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while ensuring directory {relative_directory_path}: {e}")
             return False
 
     def create_directory(self, relative_directory_path: str) -> bool:
@@ -808,41 +680,27 @@ class JeevesFileHandler:
             abs_dir_path = Path(self.get_absolute_path(relative_directory_path))
 
             if abs_dir_path.exists():
-                logger.warning(
-                    f"Cannot create directory, path already exists: {relative_directory_path}"
-                )
+                logger.warning(f"Cannot create directory, path already exists: {relative_directory_path}")
                 return False
 
-            abs_dir_path.mkdir(
-                parents=True, exist_ok=False
-            )  # exist_ok=False ensures it fails if it exists
+            abs_dir_path.mkdir(parents=True, exist_ok=False)  # exist_ok=False ensures it fails if it exists
             logger.info(f"New directory created: {relative_directory_path}")
             return True
 
         except SandboxViolationError as e:
             logger.error(f"Create directory failed due to sandbox violation: {e}")
             return False
-        except (
-            FileExistsError
-        ):  # Specifically caught when exist_ok=False and directory exists
-            logger.warning(
-                f"Cannot create directory; '{relative_directory_path}' already exists."
-            )
+        except FileExistsError:  # Specifically caught when exist_ok=False and directory exists
+            logger.warning(f"Cannot create directory; '{relative_directory_path}' already exists.")
             return False
         except OSError as e:
-            logger.error(
-                f"OS Error creating directory '{relative_directory_path}': {e}"
-            )
+            logger.error(f"OS Error creating directory '{relative_directory_path}': {e}")
             return False
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while creating directory {relative_directory_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while creating directory {relative_directory_path}: {e}")
             return False
 
-    def delete_directory(
-        self, relative_path: str, recursive: bool = False, soft: bool = True
-    ) -> bool:
+    def delete_directory(self, relative_path: str, recursive: bool = False, soft: bool = True) -> bool:
         """
         Delete directory (move to .trash if soft=True, else permanently delete).
 
@@ -860,18 +718,12 @@ class JeevesFileHandler:
             abs_dir_path = Path(self.get_absolute_path(relative_path))
 
             if not abs_dir_path.is_dir():
-                logger.warning(
-                    f"Attempted to delete non-existent or non-directory: {relative_path}"
-                )
+                logger.warning(f"Attempted to delete non-existent or non-directory: {relative_path}")
                 return False
 
             # Check if directory is empty if not recursive
-            if not recursive and list(
-                abs_dir_path.iterdir()
-            ):  # if generator is not empty
-                logger.warning(
-                    f"Cannot delete non-empty directory non-recursively: {relative_path}"
-                )
+            if not recursive and list(abs_dir_path.iterdir()):  # if generator is not empty
+                logger.warning(f"Cannot delete non-empty directory non-recursively: {relative_path}")
                 return False
 
             if soft:
@@ -880,13 +732,9 @@ class JeevesFileHandler:
                 trashed_name = f"{abs_dir_path.name}_{timestamp}_DIR__{abs_dir_path.parent.name.replace(os.sep, '_')}"
                 destination_path = self._trash_dir / trashed_name
                 shutil.move(abs_dir_path, destination_path)
-                logger.info(
-                    f"Soft deleted directory: {relative_path} moved to {destination_path}"
-                )
+                logger.info(f"Soft deleted directory: {relative_path} moved to {destination_path}")
             else:
-                shutil.rmtree(
-                    abs_dir_path
-                )  # Recursively delete directory and its contents
+                shutil.rmtree(abs_dir_path)  # Recursively delete directory and its contents
                 logger.info(f"Permanently deleted directory: {relative_path}")
             return True
 
@@ -897,15 +745,11 @@ class JeevesFileHandler:
             logger.error(f"OS error deleting directory {relative_path}: {e}")
             return False
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while deleting directory {relative_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while deleting directory {relative_path}: {e}")
             return False
 
     # Search & Discovery
-    def find_files_by_pattern(
-        self, root_relative_path: str, pattern: str, recursive: bool = True
-    ) -> List[str]:
+    def find_files_by_pattern(self, root_relative_path: str, pattern: str, recursive: bool = True) -> List[str]:
         """
         Find files matching pattern (glob-style) within the sandbox.
 
@@ -932,28 +776,20 @@ class JeevesFileHandler:
                 if fpath.is_file() and self.is_within_sandbox(str(fpath)):
                     found_files.append(self.get_relative_path(str(fpath)))
 
-            logger.info(
-                f"Found {len(found_files)} files matching pattern '{pattern}' in {root_relative_path}."
-            )
+            logger.info(f"Found {len(found_files)} files matching pattern '{pattern}' in {root_relative_path}.")
             return found_files
 
         except SandboxViolationError as e:
             logger.error(f"Find files by pattern failed due to sandbox violation: {e}")
             return []
         except OSError as e:
-            logger.error(
-                f"OS error finding files by pattern in {root_relative_path}: {e}"
-            )
+            logger.error(f"OS error finding files by pattern in {root_relative_path}: {e}")
             return []
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while finding files by pattern in {root_relative_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while finding files by pattern in {root_relative_path}: {e}")
             return []
 
-    def find_files_by_extension(
-        self, root_relative_path: str, extension: str, recursive: bool = True
-    ) -> List[str]:
+    def find_files_by_extension(self, root_relative_path: str, extension: str, recursive: bool = True) -> List[str]:
         """
         Find files with specific extension within the sandbox.
 
@@ -970,9 +806,7 @@ class JeevesFileHandler:
             extension = "." + extension
 
         # Delegate to find_files_by_pattern
-        return self.find_files_by_pattern(
-            root_relative_path, f"*{extension}", recursive
-        )
+        return self.find_files_by_pattern(root_relative_path, f"*{extension}", recursive)
 
     def search_file_contents(
         self,
@@ -1004,9 +838,7 @@ class JeevesFileHandler:
             files_to_search: List[str]
             if file_paths is None:
                 # If no specific files, find all files in the root_relative_path recursively
-                files_to_search = self.find_files_by_pattern(
-                    relative_root_path, "*", recursive=True
-                )
+                files_to_search = self.find_files_by_pattern(relative_root_path, "*", recursive=True)
             else:
                 files_to_search = file_paths
 
@@ -1014,9 +846,7 @@ class JeevesFileHandler:
                 abs_file_path = Path(self.get_absolute_path(rel_file_path))
 
                 if not abs_file_path.is_file():
-                    logger.warning(
-                        f"Skipping non-file or non-existent path during search: {rel_file_path}"
-                    )
+                    logger.warning(f"Skipping non-file or non-existent path during search: {rel_file_path}")
                     continue
 
                 try:
@@ -1027,25 +857,17 @@ class JeevesFileHandler:
                                     {
                                         "file_path": rel_file_path,
                                         "line_number": i,
-                                        "line_content": line.rstrip(
-                                            "\n"
-                                        ),  # Remove trailing newline for cleaner output
+                                        "line_content": line.rstrip("\n"),  # Remove trailing newline for cleaner output
                                         "match_start": match.start(),
                                         "match_end": match.end(),
                                     }
                                 )
                 except UnicodeDecodeError:
-                    logger.warning(
-                        f"Skipping binary or undecodable file: {rel_file_path}"
-                    )
+                    logger.warning(f"Skipping binary or undecodable file: {rel_file_path}")
                 except Exception as e:
-                    logger.warning(
-                        f"Error reading file {rel_file_path} for content search: {e}"
-                    )
+                    logger.warning(f"Error reading file {rel_file_path} for content search: {e}")
 
-            logger.info(
-                f"Completed content search for pattern '{pattern}'. Found {len(results)} matches."
-            )
+            logger.info(f"Completed content search for pattern '{pattern}'. Found {len(results)} matches.")
             return results
 
         except SandboxViolationError as e:
@@ -1055,9 +877,7 @@ class JeevesFileHandler:
             logger.error(f"Invalid regex pattern '{pattern}': {e}")
             return []
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred during search file contents: {e}"
-            )
+            logger.error(f"An unexpected error occurred during search file contents: {e}")
             return []
 
     def get_file_info(self, relative_file_path: str) -> Dict:
@@ -1082,18 +902,14 @@ class JeevesFileHandler:
             abs_path = Path(self.get_absolute_path(relative_file_path))
 
             if not abs_path.exists():
-                logger.warning(
-                    f"File or directory not found for info: {relative_file_path}"
-                )
+                logger.warning(f"File or directory not found for info: {relative_file_path}")
                 return {}
 
             stats = abs_path.stat()
 
             info = {
                 "size_bytes": stats.st_size,
-                "created_time": datetime.fromtimestamp(
-                    stats.st_ctime
-                ),  # ctime is creation time on some systems, change time on others
+                "created_time": datetime.fromtimestamp(stats.st_ctime),  # ctime is creation time on some systems, change time on others
                 "modified_time": datetime.fromtimestamp(stats.st_mtime),
                 "accessed_time": datetime.fromtimestamp(stats.st_atime),
                 "is_file": abs_path.is_file(),
@@ -1113,9 +929,7 @@ class JeevesFileHandler:
             logger.error(f"Permission denied to get info for {relative_file_path}: {e}")
             return {}
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while getting info for {relative_file_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while getting info for {relative_file_path}: {e}")
             return {}
 
     # File Management
@@ -1154,9 +968,7 @@ class JeevesFileHandler:
         except SandboxViolationError:
             return False  # Path outside sandbox means it doesn't "exist" for us
         except Exception as e:
-            logger.error(
-                f"Error checking if directory exists for {relative_directory_path}: {e}"
-            )
+            logger.error(f"Error checking if directory exists for {relative_directory_path}: {e}")
             return False
 
     def get_file_size(self, relative_file_path: str) -> int:
@@ -1172,15 +984,11 @@ class JeevesFileHandler:
         try:
             abs_file_path = Path(self.get_absolute_path(relative_file_path))
             if not abs_file_path.is_file():
-                logger.warning(
-                    f"Cannot get size of non-existent or non-file path: {relative_file_path}"
-                )
+                logger.warning(f"Cannot get size of non-existent or non-file path: {relative_file_path}")
                 return -1
             return abs_file_path.stat().st_size
         except SandboxViolationError:
-            logger.error(
-                f"Get file size failed due to sandbox violation: {relative_file_path}"
-            )
+            logger.error(f"Get file size failed due to sandbox violation: {relative_file_path}")
             return -1
         except FileNotFoundError:
             logger.warning(f"File not found for size check: {relative_file_path}")
@@ -1189,9 +997,7 @@ class JeevesFileHandler:
             logger.error(f"Permission denied to get size for {relative_file_path}: {e}")
             return -1
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while getting file size for {relative_file_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while getting file size for {relative_file_path}: {e}")
             return -1
 
     def get_file_modified_time(self, relative_file_path: str) -> Optional[datetime]:
@@ -1207,30 +1013,20 @@ class JeevesFileHandler:
         try:
             abs_file_path = Path(self.get_absolute_path(relative_file_path))
             if not abs_file_path.is_file():
-                logger.warning(
-                    f"Cannot get modified time of non-existent or non-file path: {relative_file_path}"
-                )
+                logger.warning(f"Cannot get modified time of non-existent or non-file path: {relative_file_path}")
                 return None
             return datetime.fromtimestamp(abs_file_path.stat().st_mtime)
         except SandboxViolationError:
-            logger.error(
-                f"Get file modified time failed due to sandbox violation: {relative_file_path}"
-            )
+            logger.error(f"Get file modified time failed due to sandbox violation: {relative_file_path}")
             return None
         except FileNotFoundError:
-            logger.warning(
-                f"File not found for modified time check: {relative_file_path}"
-            )
+            logger.warning(f"File not found for modified time check: {relative_file_path}")
             return None
         except PermissionError as e:
-            logger.error(
-                f"Permission denied to get modified time for {relative_file_path}: {e}"
-            )
+            logger.error(f"Permission denied to get modified time for {relative_file_path}: {e}")
             return None
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while getting modified time for {relative_file_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while getting modified time for {relative_file_path}: {e}")
             return None
 
     def touch_file(self, relative_file_path: str) -> bool:
@@ -1247,9 +1043,7 @@ class JeevesFileHandler:
             abs_file_path = Path(self.get_absolute_path(relative_file_path))
 
             # Ensure parent directory exists
-            self.ensure_directory_exists(
-                str(abs_file_path.parent.relative_to(self.sandbox))
-            )
+            self.ensure_directory_exists(str(abs_file_path.parent.relative_to(self.sandbox)))
 
             abs_file_path.touch()
             logger.info(f"Touched file: {relative_file_path}")
@@ -1261,9 +1055,7 @@ class JeevesFileHandler:
             logger.error(f"OS error touching file {relative_file_path}: {e}")
             return False
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while touching {relative_file_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while touching {relative_file_path}: {e}")
             return False
 
     # Trash Management
@@ -1278,9 +1070,7 @@ class JeevesFileHandler:
         deleted_count = 0
         try:
             if not self._trash_dir.is_dir():
-                logger.info(
-                    "Trash directory does not exist or is not a directory. Nothing to empty."
-                )
+                logger.info("Trash directory does not exist or is not a directory. Nothing to empty.")
                 return 0
 
             for item in self._trash_dir.iterdir():
@@ -1322,14 +1112,10 @@ class JeevesFileHandler:
             logger.error(f"OS error listing trash contents: {e}")
             return []
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while listing trash contents: {e}"
-            )
+            logger.error(f"An unexpected error occurred while listing trash contents: {e}")
             return []
 
-    def restore_from_trash(
-        self, trashed_item_name: str, original_relative_path: Optional[str] = None
-    ) -> bool:
+    def restore_from_trash(self, trashed_item_name: str, original_relative_path: Optional[str] = None) -> bool:
         """
         Restore file/directory from trash.
 
@@ -1367,60 +1153,35 @@ class JeevesFileHandler:
                         if len(name_parts_no_ts) >= 2:  # "filename_timestamp"
                             original_file_name = "_".join(name_parts_no_ts[:-1])
                         elif "DIR" in original_file_name_part:  # for directories
-                            original_file_name = (
-                                "_".join(name_parts_no_ts[:-2])
-                                if len(name_parts_no_ts) >= 3
-                                else ""
-                            )  # _DIR_ removed
-                            if (
-                                not original_file_name
-                            ):  # if it was just name_timestamp_DIR
+                            original_file_name = "_".join(name_parts_no_ts[:-2]) if len(name_parts_no_ts) >= 3 else ""  # _DIR_ removed
+                            if not original_file_name:  # if it was just name_timestamp_DIR
                                 original_file_name = name_parts_no_ts[0]
                         else:
                             original_file_name = original_file_name_part
 
-                        dest_path_str = os.path.join(
-                            original_parent_name, original_file_name
-                        )
+                        dest_path_str = os.path.join(original_parent_name, original_file_name)
                     else:  # If no os.sep, it was likely just the file name in sandbox root
                         dest_path_str = parts[0].rsplit("_", 1)[0]  # remove timestamp
                 else:  # Fallback: assume it was originally in the sandbox root and try to remove timestamp
                     # Attempt to remove _YYYYMMDDHHMMSS and _DIR_ suffix
                     if "_DIR__" in trashed_item_name:
                         dest_path_str = trashed_item_name.rsplit("_DIR__", 1)[0]
-                        dest_path_str = (
-                            dest_path_str.rsplit("_", 1)[0]
-                            if "_" in dest_path_str
-                            else dest_path_str
-                        )
+                        dest_path_str = dest_path_str.rsplit("_", 1)[0] if "_" in dest_path_str else dest_path_str
                     else:
-                        dest_path_str = trashed_item_name.rsplit("_", 1)[
-                            0
-                        ]  # remove _timestamp
-                logger.warning(
-                    f"No original path provided for '{trashed_item_name}'. "
-                    f"Attempting to infer destination to: {dest_path_str}"
-                )
+                        dest_path_str = trashed_item_name.rsplit("_", 1)[0]  # remove _timestamp
+                logger.warning(f"No original path provided for '{trashed_item_name}'. " f"Attempting to infer destination to: {dest_path_str}")
                 if not dest_path_str:
-                    logger.error(
-                        f"Failed to infer original path for '{trashed_item_name}'. Restore failed."
-                    )
+                    logger.error(f"Failed to infer original path for '{trashed_item_name}'. Restore failed.")
                     return False
 
-            abs_dest_path = Path(
-                self.get_absolute_path(dest_path_str)
-            )  # Validate inferred/provided path
+            abs_dest_path = Path(self.get_absolute_path(dest_path_str))  # Validate inferred/provided path
 
             # Ensure parent directory exists for restoration
-            self.ensure_directory_exists(
-                str(abs_dest_path.parent.relative_to(self.sandbox))
-            )
+            self.ensure_directory_exists(str(abs_dest_path.parent.relative_to(self.sandbox)))
 
             # If target exists, prevent overwriting
             if abs_dest_path.exists():
-                logger.warning(
-                    f"Cannot restore '{trashed_item_name}' to '{abs_dest_path}', destination already exists."
-                )
+                logger.warning(f"Cannot restore '{trashed_item_name}' to '{abs_dest_path}', destination already exists.")
                 return False
 
             shutil.move(source_trash_path, abs_dest_path)
@@ -1434,14 +1195,10 @@ class JeevesFileHandler:
             logger.error(f"Source item not found in trash: {trashed_item_name} - {e}")
             return False
         except OSError as e:
-            logger.error(
-                f"OS error restoring '{trashed_item_name}' to {original_relative_path}: {e}"
-            )
+            logger.error(f"OS error restoring '{trashed_item_name}' to {original_relative_path}: {e}")
             return False
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while restoring '{trashed_item_name}': {e}"
-            )
+            logger.error(f"An unexpected error occurred while restoring '{trashed_item_name}': {e}")
             return False
 
     def get_trash_size(self) -> int:
@@ -1470,9 +1227,7 @@ class JeevesFileHandler:
             return -1
 
     # Backup & Versioning
-    def create_backup(
-        self, relative_file_path: str, backup_suffix: str = ".bak"
-    ) -> Optional[str]:
+    def create_backup(self, relative_file_path: str, backup_suffix: str = ".bak") -> Optional[str]:
         """
         Create backup of file with timestamp in the .backups directory.
 
@@ -1487,17 +1242,13 @@ class JeevesFileHandler:
             abs_file_path = Path(self.get_absolute_path(relative_file_path))
 
             if not abs_file_path.is_file():
-                logger.warning(
-                    f"Cannot create backup: file not found or is not a file: {relative_file_path}"
-                )
+                logger.warning(f"Cannot create backup: file not found or is not a file: {relative_file_path}")
                 return None
 
             self._backups_dir.mkdir(parents=True, exist_ok=True)
 
             # Create a backup path structure: backups/<relative_path_to_file>/filename.suffix.timestamp
-            backup_sub_dir_path = self._backups_dir / self.get_relative_path(
-                str(abs_file_path.parent)
-            )
+            backup_sub_dir_path = self._backups_dir / self.get_relative_path(str(abs_file_path.parent))
             backup_sub_dir_path.mkdir(parents=True, exist_ok=True)
 
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -1507,9 +1258,7 @@ class JeevesFileHandler:
             shutil.copy2(abs_file_path, backup_abs_path)
 
             backup_relative_path = self.get_relative_path(str(backup_abs_path))
-            logger.info(
-                f"Created backup for {relative_file_path} at {backup_relative_path}"
-            )
+            logger.info(f"Created backup for {relative_file_path} at {backup_relative_path}")
             return backup_relative_path
 
         except SandboxViolationError as e:
@@ -1522,9 +1271,7 @@ class JeevesFileHandler:
             logger.error(f"OS error creating backup for {relative_file_path}: {e}")
             return None
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while creating backup for {relative_file_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while creating backup for {relative_file_path}: {e}")
             return None
 
     def list_backups(self, relative_file_path: str) -> List[str]:
@@ -1541,9 +1288,7 @@ class JeevesFileHandler:
         try:
             abs_file_path = Path(self.get_absolute_path(relative_file_path))
 
-            backup_sub_dir_path = self._backups_dir / self.get_relative_path(
-                str(abs_file_path.parent)
-            )
+            backup_sub_dir_path = self._backups_dir / self.get_relative_path(str(abs_file_path.parent))
 
             if not backup_sub_dir_path.is_dir():
                 return []  # No backups directory for this file's parent
@@ -1564,14 +1309,10 @@ class JeevesFileHandler:
             logger.error(f"List backups failed due to sandbox violation: {e}")
             return []
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while listing backups for {relative_file_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while listing backups for {relative_file_path}: {e}")
             return []
 
-    def restore_from_backup(
-        self, backup_relative_path: str, target_relative_path: Optional[str] = None
-    ) -> bool:
+    def restore_from_backup(self, backup_relative_path: str, target_relative_path: Optional[str] = None) -> bool:
         """
         Restore file from backup.
 
@@ -1588,9 +1329,7 @@ class JeevesFileHandler:
             abs_backup_path = Path(self.get_absolute_path(backup_relative_path))
 
             if not abs_backup_path.is_file():
-                logger.warning(
-                    f"Backup file not found or is not a file: {backup_relative_path}"
-                )
+                logger.warning(f"Backup file not found or is not a file: {backup_relative_path}")
                 return False
 
             abs_target_path: Path
@@ -1621,18 +1360,11 @@ class JeevesFileHandler:
                 # Reconstruct the original parent path by stripping the filename
                 inferred_parent_path = relative_to_backups.parent
 
-                abs_target_path = (
-                    self.sandbox / inferred_parent_path / inferred_filename
-                )
-                logger.info(
-                    f"No target path provided for restoration. Inferred target: "
-                    f"'{self.get_relative_path(str(abs_target_path))}'"
-                )
+                abs_target_path = self.sandbox / inferred_parent_path / inferred_filename
+                logger.info(f"No target path provided for restoration. Inferred target: " f"'{self.get_relative_path(str(abs_target_path))}'")
 
             # Ensure target parent directory exists
-            self.ensure_directory_exists(
-                str(abs_target_path.parent.relative_to(self.sandbox))
-            )
+            self.ensure_directory_exists(str(abs_target_path.parent.relative_to(self.sandbox)))
 
             # If target exists, overwrite it. A backup restoration usually means replacing the current.
             if abs_target_path.exists():
@@ -1640,16 +1372,11 @@ class JeevesFileHandler:
                     os.remove(abs_target_path)
                 elif abs_target_path.is_dir():
                     # If target is a directory but we're restoring a file, this is an issue.
-                    logger.error(
-                        f"Cannot restore file '{backup_relative_path}' to '{abs_target_path}', "
-                        f"which is an existing directory."
-                    )
+                    logger.error(f"Cannot restore file '{backup_relative_path}' to '{abs_target_path}', " f"which is an existing directory.")
                     return False
 
             shutil.copy2(abs_backup_path, abs_target_path)
-            logger.info(
-                f"Restored file from backup {backup_relative_path} to {self.get_relative_path(str(abs_target_path))}"
-            )
+            logger.info(f"Restored file from backup {backup_relative_path} to {self.get_relative_path(str(abs_target_path))}")
             return True
 
         except SandboxViolationError as e:
@@ -1662,9 +1389,7 @@ class JeevesFileHandler:
             logger.error(f"OS error restoring from backup {backup_relative_path}: {e}")
             return False
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while restoring from backup {backup_relative_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while restoring from backup {backup_relative_path}: {e}")
             return False
 
     # Utility Methods
@@ -1691,9 +1416,7 @@ class JeevesFileHandler:
             logger.debug(f"Available space in sandbox: {free} bytes.")
             return free
         except OSError as e:
-            logger.error(
-                f"OS error getting available space for sandbox {self.sandbox}: {e}"
-            )
+            logger.error(f"OS error getting available space for sandbox {self.sandbox}: {e}")
             return -1
         except Exception as e:
             logger.error(f"An unexpected error occurred getting available space: {e}")
@@ -1736,9 +1459,7 @@ class JeevesFileHandler:
                         if last_modified is None or mod_time > last_modified:
                             last_modified = mod_time
                     except OSError as e:
-                        logger.warning(
-                            f"Could not get stats for directory {item_path}: {e}"
-                        )
+                        logger.warning(f"Could not get stats for directory {item_path}: {e}")
 
             available_space = self.get_available_space()
 
@@ -1754,9 +1475,7 @@ class JeevesFileHandler:
             return stats
 
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while getting sandbox statistics: {e}"
-            )
+            logger.error(f"An unexpected error occurred while getting sandbox statistics: {e}")
             return {
                 "total_files": -1,
                 "total_directories": -1,
@@ -1783,17 +1502,11 @@ class JeevesFileHandler:
         Returns:
             False, indicating that this feature is not fully implemented or requires external setup.
         """
-        logger.warning(
-            "The `watch_directory` function is a placeholder and not fully implemented "
-            "for robust real-time file system monitoring. Consider using libraries "
-            "like 'watchdog' for production use cases."
-        )
+        logger.warning("The `watch_directory` function is a placeholder and not fully implemented " "for robust real-time file system monitoring. Consider using libraries " "like 'watchdog' for production use cases.")
         try:
             abs_dir_path = Path(self.get_absolute_path(relative_directory_path))
             if not abs_dir_path.is_dir():
-                logger.error(
-                    f"Cannot watch non-existent or non-directory path: {relative_directory_path}"
-                )
+                logger.error(f"Cannot watch non-existent or non-directory path: {relative_directory_path}")
                 return False
 
             # Simple, inefficient polling example (DO NOT USE FOR PRODUCTION):
@@ -1828,14 +1541,10 @@ class JeevesFileHandler:
             logger.error(f"Watch directory failed due to sandbox violation: {e}")
             return False
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred trying to set up watch for {relative_directory_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred trying to set up watch for {relative_directory_path}: {e}")
             return False
 
-    def create_symlink(
-        self, target_relative_path: str, link_relative_path: str
-    ) -> bool:
+    def create_symlink(self, target_relative_path: str, link_relative_path: str) -> bool:
         """
         Create symbolic link within the sandbox.
 
@@ -1855,41 +1564,29 @@ class JeevesFileHandler:
                 return False
 
             if abs_link_path.exists():
-                logger.warning(
-                    f"Symlink creation failed: link path already exists: {link_relative_path}"
-                )
+                logger.warning(f"Symlink creation failed: link path already exists: {link_relative_path}")
                 return False
 
             # Ensure parent directory for the symlink exists
-            self.ensure_directory_exists(
-                str(abs_link_path.parent.relative_to(self.sandbox))
-            )
+            self.ensure_directory_exists(str(abs_link_path.parent.relative_to(self.sandbox)))
 
             # Note: os.symlink target can be absolute or relative.
             # Using absolute target path here as sandbox means all targets should be inside.
             os.symlink(abs_target_path, abs_link_path)
-            logger.info(
-                f"Created symlink from {link_relative_path} to {target_relative_path}"
-            )
+            logger.info(f"Created symlink from {link_relative_path} to {target_relative_path}")
             return True
 
         except SandboxViolationError as e:
             logger.error(f"Create symlink failed due to sandbox violation: {e}")
             return False
         except OSError as e:
-            logger.error(
-                f"OS error creating symlink from {link_relative_path} to {target_relative_path}: {e}"
-            )
+            logger.error(f"OS error creating symlink from {link_relative_path} to {target_relative_path}: {e}")
             return False
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while creating symlink {link_relative_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while creating symlink {link_relative_path}: {e}")
             return False
 
-    def get_file_hash(
-        self, relative_file_path: str, algorithm: str = "sha256"
-    ) -> Optional[str]:
+    def get_file_hash(self, relative_file_path: str, algorithm: str = "sha256") -> Optional[str]:
         """
         Calculate file hash for integrity checking.
 
@@ -1904,17 +1601,13 @@ class JeevesFileHandler:
             abs_file_path = Path(self.get_absolute_path(relative_file_path))
 
             if not abs_file_path.is_file():
-                logger.warning(
-                    f"Cannot calculate hash for non-existent or non-file path: {relative_file_path}"
-                )
+                logger.warning(f"Cannot calculate hash for non-existent or non-file path: {relative_file_path}")
                 return None
 
             # Get hash function from hashlib
             hash_func = getattr(hashlib, algorithm, None)
             if hash_func is None:
-                logger.error(
-                    f"Unsupported hashing algorithm: {algorithm}. Supported: {hashlib.algorithms_available}"
-                )
+                logger.error(f"Unsupported hashing algorithm: {algorithm}. Supported: {hashlib.algorithms_available}")
                 return None
 
             hasher = hash_func()
@@ -1932,14 +1625,10 @@ class JeevesFileHandler:
             logger.warning(f"File not found for hash calculation: {relative_file_path}")
             return None
         except PermissionError as e:
-            logger.error(
-                f"Permission denied to read file for hash: {relative_file_path} - {e}"
-            )
+            logger.error(f"Permission denied to read file for hash: {relative_file_path} - {e}")
             return None
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while calculating hash for {relative_file_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while calculating hash for {relative_file_path}: {e}")
             return None
 
     def compress_directory(
@@ -1964,9 +1653,7 @@ class JeevesFileHandler:
             abs_dir_path = Path(self.get_absolute_path(relative_directory_path))
 
             if not abs_dir_path.is_dir():
-                logger.error(
-                    f"Cannot compress non-existent or non-directory path: {relative_directory_path}"
-                )
+                logger.error(f"Cannot compress non-existent or non-directory path: {relative_directory_path}")
                 return None
 
             # Determine base name for archive (without format extension)
@@ -1974,68 +1661,44 @@ class JeevesFileHandler:
             if output_relative_path:
                 abs_output_path = Path(self.get_absolute_path(output_relative_path))
                 # Ensure output directory exists if provided
-                self.ensure_directory_exists(
-                    str(abs_output_path.parent.relative_to(self.sandbox))
-                )
-                archive_base_name = str(
-                    abs_output_path.with_suffix("")
-                )  # Remove any existing suffix
+                self.ensure_directory_exists(str(abs_output_path.parent.relative_to(self.sandbox)))
+                archive_base_name = str(abs_output_path.with_suffix(""))  # Remove any existing suffix
             else:
-                archive_base_name = str(
-                    self.sandbox / abs_dir_path.name
-                )  # Default to sandbox root / dir_name
+                archive_base_name = str(self.sandbox / abs_dir_path.name)  # Default to sandbox root / dir_name
 
             # shutil.make_archive returns the full path to the archive, including extension
             # It also creates the directory if needed.
             archive_full_path = shutil.make_archive(
                 base_name=archive_base_name,
                 format=archive_format,
-                root_dir=str(
-                    self.sandbox
-                ),  # This is the base directory to start the archive from
-                base_dir=str(
-                    abs_dir_path.relative_to(self.sandbox)
-                ),  # This is the directory relative to root_dir to archive
+                root_dir=str(self.sandbox),  # This is the base directory to start the archive from
+                base_dir=str(abs_dir_path.relative_to(self.sandbox)),  # This is the directory relative to root_dir to archive
             )
 
             # Ensure the created archive is within the sandbox
             if not self.is_within_sandbox(archive_full_path):
-                logger.error(
-                    f"Generated archive '{archive_full_path}' is outside sandbox. Deleting unsafe archive."
-                )
+                logger.error(f"Generated archive '{archive_full_path}' is outside sandbox. Deleting unsafe archive.")
                 os.remove(archive_full_path)  # Clean up unsafe file
-                raise SandboxViolationError(
-                    "Archive creation resulted in a file outside sandbox."
-                )
+                raise SandboxViolationError("Archive creation resulted in a file outside sandbox.")
 
             relative_archive_path = self.get_relative_path(archive_full_path)
-            logger.info(
-                f"Compressed directory {relative_directory_path} to {relative_archive_path} (format: {archive_format})"
-            )
+            logger.info(f"Compressed directory {relative_directory_path} to {relative_archive_path} (format: {archive_format})")
             return relative_archive_path
 
         except SandboxViolationError as e:
             logger.error(f"Compress directory failed due to sandbox violation: {e}")
             return None
         except FileNotFoundError:
-            logger.error(
-                f"Directory not found for compression: {relative_directory_path}"
-            )
+            logger.error(f"Directory not found for compression: {relative_directory_path}")
             return None
         except shutil.ReadError as e:
-            logger.error(
-                f"Error reading directory for compression {relative_directory_path}: {e}"
-            )
+            logger.error(f"Error reading directory for compression {relative_directory_path}: {e}")
             return None
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while compressing {relative_directory_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while compressing {relative_directory_path}: {e}")
             return None
 
-    def extract_archive(
-        self, archive_relative_path: str, extract_to_relative_path: Optional[str] = None
-    ) -> bool:
+    def extract_archive(self, archive_relative_path: str, extract_to_relative_path: Optional[str] = None) -> bool:
         """
         Extract compressed archive within the sandbox.
 
@@ -2051,23 +1714,17 @@ class JeevesFileHandler:
             abs_archive_path = Path(self.get_absolute_path(archive_relative_path))
 
             if not abs_archive_path.is_file():
-                logger.error(
-                    f"Archive file not found or is not a file: {archive_relative_path}"
-                )
+                logger.error(f"Archive file not found or is not a file: {archive_relative_path}")
                 return False
 
             abs_extract_to_path: Path
             if extract_to_relative_path:
-                abs_extract_to_path = Path(
-                    self.get_absolute_path(extract_to_relative_path)
-                )
+                abs_extract_to_path = Path(self.get_absolute_path(extract_to_relative_path))
             else:
                 abs_extract_to_path = self.sandbox
 
             # Ensure the destination directory exists
-            self.ensure_directory_exists(
-                str(abs_extract_to_path.relative_to(self.sandbox))
-            )
+            self.ensure_directory_exists(str(abs_extract_to_path.relative_to(self.sandbox)))
 
             # Prevent zip-slip or similar vulnerabilities by checking paths inside archive
             # This is a critical security measure.
@@ -2075,18 +1732,10 @@ class JeevesFileHandler:
                 full_member_path = Path(abs_extract_to_path) / member_path
                 # Resolve to canonical path. This handles `..` and symlinks within the archive paths.
                 resolved_member_path = full_member_path.resolve()
-                if not resolved_member_path.is_relative_to(
-                    abs_extract_to_path.resolve()
-                ):
-                    raise SandboxViolationError(
-                        f"Archive contains path attempting to escape extraction directory: {member_path}"
-                    )
-                if not resolved_member_path.is_relative_to(
-                    self.sandbox
-                ):  # Double check against sandbox itself
-                    raise SandboxViolationError(
-                        f"Archive contains path attempting to escape sandbox: {member_path}"
-                    )
+                if not resolved_member_path.is_relative_to(abs_extract_to_path.resolve()):
+                    raise SandboxViolationError(f"Archive contains path attempting to escape extraction directory: {member_path}")
+                if not resolved_member_path.is_relative_to(self.sandbox):  # Double check against sandbox itself
+                    raise SandboxViolationError(f"Archive contains path attempting to escape sandbox: {member_path}")
                 return full_member_path
 
             # Use zipfile or tarfile directly for fine-grained control
@@ -2113,14 +1762,10 @@ class JeevesFileHandler:
                         if extracted_path != safe_path:
                             extracted_path.rename(safe_path)
             else:
-                logger.error(
-                    f"Unsupported archive format for {archive_relative_path}. Must be zip or tar-based."
-                )
+                logger.error(f"Unsupported archive format for {archive_relative_path}. Must be zip or tar-based.")
                 return False
 
-            logger.info(
-                f"Extracted archive {archive_relative_path} to {self.get_relative_path(str(abs_extract_to_path))}"
-            )
+            logger.info(f"Extracted archive {archive_relative_path} to {self.get_relative_path(str(abs_extract_to_path))}")
             return True
 
         except SandboxViolationError as e:
@@ -2130,27 +1775,19 @@ class JeevesFileHandler:
             logger.error(f"Archive file not found: {archive_relative_path}")
             return False
         except (zipfile.BadZipFile, tarfile.ReadError, tarfile.FilterError) as e:
-            logger.error(
-                f"Error reading or extracting archive {archive_relative_path}: {e}"
-            )
+            logger.error(f"Error reading or extracting archive {archive_relative_path}: {e}")
             return False
         except OSError as e:
-            logger.error(
-                f"OS error during archive extraction {archive_relative_path}: {e}"
-            )
+            logger.error(f"OS error during archive extraction {archive_relative_path}: {e}")
             return False
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while extracting archive {archive_relative_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while extracting archive {archive_relative_path}: {e}")
             return False
 
     # Error Handling & Logging (Placeholders/basic implementations)
     # For a real system, these would interact with a more persistent logging/auditing system.
 
-    def _log_operation(
-        self, operation_type: str, status: str, path: str, details: Dict = None
-    ) -> None:
+    def _log_operation(self, operation_type: str, status: str, path: str, details: Dict = None) -> None:
         """Internal method to log operation history."""
         entry = {
             "timestamp": datetime.now().isoformat(),
@@ -2164,9 +1801,7 @@ class JeevesFileHandler:
             self._operation_history.pop(0)
 
         if status == "error":
-            self._last_error_message = entry["details"].get(
-                "message", "An unspecified error occurred."
-            )
+            self._last_error_message = entry["details"].get("message", "An unspecified error occurred.")
 
     def get_last_error(self) -> str:
         """
@@ -2211,9 +1846,7 @@ class JeevesFileHandler:
             self._default_encoding = encoding
             logger.info(f"Default encoding set to: {encoding}")
         except LookupError:
-            logger.error(
-                f"Invalid encoding name provided: {encoding}. Encoding not changed."
-            )
+            logger.error(f"Invalid encoding name provided: {encoding}. Encoding not changed.")
         except Exception as e:
             logger.error(f"An unexpected error occurred setting encoding: {e}")
 
@@ -2225,9 +1858,7 @@ class JeevesFileHandler:
             days: Number of days to retain backups. Set to 0 for infinite retention.
         """
         if days < 0:
-            logger.warning(
-                "Backup retention days cannot be negative. Setting to 0 (infinite)."
-            )
+            logger.warning("Backup retention days cannot be negative. Setting to 0 (infinite).")
             self._backup_retention_days = 0
         else:
             self._backup_retention_days = days
@@ -2245,9 +1876,7 @@ class JeevesFileHandler:
             self._max_file_size_bytes = 0
         else:
             self._max_file_size_bytes = size_mb * 1024 * 1024  # Convert MB to bytes
-            logger.info(
-                f"Max file size set to {size_mb} MB ({self._max_file_size_bytes} bytes)."
-            )
+            logger.info(f"Max file size set to {size_mb} MB ({self._max_file_size_bytes} bytes).")
 
     # Security Enhancements
     def _validate_file_type(self, file_path: str) -> bool:
@@ -2295,9 +1924,7 @@ class JeevesFileHandler:
         ]
         for pattern in suspicious_patterns:
             if re.search(pattern, content, re.IGNORECASE):
-                logger.warning(
-                    f"Potential malicious content detected: {pattern} in file content."
-                )
+                logger.warning(f"Potential malicious content detected: {pattern} in file content.")
                 return False
         return True
 
@@ -2316,9 +1943,7 @@ class JeevesFileHandler:
             logger.info("All file extensions are now allowed.")
         else:
             # Convert to lowercase and add leading dots for internal consistency
-            self._allowed_extensions = [
-                f".{ext.lower()}" if ext else "" for ext in extensions
-            ]
+            self._allowed_extensions = [f".{ext.lower()}" if ext else "" for ext in extensions]
             logger.info(f"Allowed file extensions set to: {self._allowed_extensions}")
 
     # Performance (Placeholders)
@@ -2343,14 +1968,10 @@ class JeevesFileHandler:
         try:
             abs_dir_path = Path(self.get_absolute_path(relative_directory_path))
             if not abs_dir_path.is_dir():
-                logger.warning(
-                    f"Cannot preload non-directory path: {relative_directory_path}"
-                )
+                logger.warning(f"Cannot preload non-directory path: {relative_directory_path}")
                 return
 
-            logger.info(
-                f"Preloading contents of directory: {relative_directory_path} (placeholder for caching)."
-            )
+            logger.info(f"Preloading contents of directory: {relative_directory_path} (placeholder for caching).")
             # In a real implementation, you would iterate files and read them into cache.
             # for file_path in abs_dir_path.rglob('*'):
             #     if file_path.is_file():
@@ -2363,9 +1984,7 @@ class JeevesFileHandler:
         except SandboxViolationError as e:
             logger.error(f"Preload directory failed due to sandbox violation: {e}")
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred while preloading directory {relative_directory_path}: {e}"
-            )
+            logger.error(f"An unexpected error occurred while preloading directory {relative_directory_path}: {e}")
 
     # Integration (Placeholders)
     def export_to_json(self, relative_file_path: str) -> Dict:
@@ -2377,9 +1996,7 @@ class JeevesFileHandler:
         try:
             abs_file_path = Path(self.get_absolute_path(relative_file_path))
             if not abs_file_path.is_file():
-                logger.error(
-                    f"Cannot export non-existent or non-file to JSON: {relative_file_path}"
-                )
+                logger.error(f"Cannot export non-existent or non-file to JSON: {relative_file_path}")
                 return {"error": "File not found or is not a file."}
 
             file_info = self.get_file_info(relative_file_path)
@@ -2392,14 +2009,10 @@ class JeevesFileHandler:
                     with open(abs_file_path, "rb") as f:
                         import base64
 
-                        content = base64.b64encode(f.read()).decode(
-                            self._default_encoding
-                        )
+                        content = base64.b64encode(f.read()).decode(self._default_encoding)
                         file_info["content_encoding"] = "base64"
                 except Exception as e:
-                    logger.warning(
-                        f"Could not read content for JSON export from {relative_file_path}: {e}"
-                    )
+                    logger.warning(f"Could not read content for JSON export from {relative_file_path}: {e}")
                     content = "[Content not readable or encoded]"
 
             json_data = {
@@ -2407,18 +2020,14 @@ class JeevesFileHandler:
                 "metadata": file_info,
                 "content": content,
             }
-            logger.info(
-                f"Exported {relative_file_path} metadata and content to JSON structure."
-            )
+            logger.info(f"Exported {relative_file_path} metadata and content to JSON structure.")
             return json_data
 
         except SandboxViolationError as e:
             logger.error(f"Export to JSON failed due to sandbox violation: {e}")
             return {"error": f"Sandbox violation: {e}"}
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred exporting {relative_file_path} to JSON: {e}"
-            )
+            logger.error(f"An unexpected error occurred exporting {relative_file_path} to JSON: {e}")
             return {"error": f"An unexpected error occurred: {e}"}
 
     def import_from_json(self, json_data: Dict) -> bool:
@@ -2438,17 +2047,13 @@ class JeevesFileHandler:
             content_encoding = json_data.get("metadata", {}).get("content_encoding")
 
             if not relative_file_path or content is None:
-                logger.error(
-                    "Invalid JSON data for import: missing 'file_path' or 'content'."
-                )
+                logger.error("Invalid JSON data for import: missing 'file_path' or 'content'.")
                 return False
 
             abs_file_path = Path(self.get_absolute_path(relative_file_path))
 
             # Ensure parent directory exists
-            self.ensure_directory_exists(
-                str(abs_file_path.parent.relative_to(self.sandbox))
-            )
+            self.ensure_directory_exists(str(abs_file_path.parent.relative_to(self.sandbox)))
 
             # Decode content if necessary
             write_content = content
@@ -2473,9 +2078,7 @@ class JeevesFileHandler:
                         (abs_file_path.stat().st_atime, mod_dt.timestamp()),
                     )
                 except Exception as e:
-                    logger.warning(
-                        f"Could not restore modified time for {relative_file_path}: {e}"
-                    )
+                    logger.warning(f"Could not restore modified time for {relative_file_path}: {e}")
 
             logger.info(f"Imported file from JSON: {relative_file_path}.")
             return True

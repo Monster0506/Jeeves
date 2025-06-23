@@ -4,7 +4,7 @@ Manages multiple AI providers and handles switching between them.
 """
 
 import logging
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Callable, Dict, List, Optional
 
 from .ai_providers import BaseAIProvider, GeminiProvider, PlaceholderProvider
 
@@ -94,13 +94,9 @@ class AIProviderManager:
                 provider.register_tool(name, func)
                 logger.info(f"Registered tool '{name}' with {provider.provider_name}")
             except Exception as e:
-                logger.error(
-                    f"Failed to register tool '{name}' with {provider.provider_name}: {e}"
-                )
+                logger.error(f"Failed to register tool '{name}' with {provider.provider_name}: {e}")
 
-    def register_tool(
-        self, name: str, function: Callable, description: str = None
-    ) -> bool:
+    def register_tool(self, name: str, function: Callable, description: str = None) -> bool:
         """
         Register a tool/function that can be used by all providers.
 
@@ -261,9 +257,7 @@ class AIProviderManager:
             return "Sorry, no AI provider is currently available."
 
         try:
-            return self.current_provider.generate_response(
-                user_message, context, attachments
-            )
+            return self.current_provider.generate_response(user_message, context, attachments)
         except Exception as e:
             logger.error(f"Error generating response: {e}")
             return f"Sorry, I encountered an error: {str(e)}"
@@ -322,9 +316,7 @@ class AIProviderManager:
             return {"provider": None, "status": "no_provider", "available": False}
 
         info = self.current_provider.get_provider_info()
-        info["status"] = (
-            "active" if self.current_provider.is_available() else "unavailable"
-        )
+        info["status"] = "active" if self.current_provider.is_available() else "unavailable"
         return info
 
     def add_provider(self, name: str, provider: BaseAIProvider) -> bool:
@@ -389,9 +381,7 @@ class AIProviderManager:
         logger.info("AI provider manager cleaned up")
 
     def __str__(self) -> str:
-        current = (
-            self.current_provider.provider_name if self.current_provider else "None"
-        )
+        current = self.current_provider.provider_name if self.current_provider else "None"
         tools_count = len(self.registered_tools)
         return f"AIProviderManager(current={current}, providers={list(self.providers.keys())}, tools={tools_count})"
 

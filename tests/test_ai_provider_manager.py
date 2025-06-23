@@ -3,12 +3,12 @@ Unit tests for AI Provider Manager.
 """
 
 from datetime import datetime
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
 from core.ai_provider_manager import AIProviderManager
-from core.ai_providers import GeminiProvider, PlaceholderProvider
+from core.ai_providers import PlaceholderProvider
 
 
 # Test tool functions for tool calling tests
@@ -559,9 +559,7 @@ class TestAIProviderManagerToolCalling:
         """Test tool registration with custom description."""
         manager = AIProviderManager()
 
-        result = manager.register_tool(
-            "custom_tool", get_current_time, "Custom description for the tool"
-        )
+        result = manager.register_tool("custom_tool", get_current_time, "Custom description for the tool")
 
         assert result is True
         assert "custom_tool" in manager.registered_tools
@@ -609,9 +607,7 @@ class TestAIProviderManagerToolCalling:
         manager.register_tool("calculate_sum", calculate_sum)
 
         # Should work fine - extra parameters are ignored
-        result = manager.execute_tool(
-            "calculate_sum", {"a": 5, "b": 3, "extra_param": "ignored"}
-        )
+        result = manager.execute_tool("calculate_sum", {"a": 5, "b": 3, "extra_param": "ignored"})
 
         assert result == 8
 

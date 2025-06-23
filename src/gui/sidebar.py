@@ -45,9 +45,7 @@ class Sidebar(ctk.CTkFrame):
         self.grid_rowconfigure(2, weight=1)  # Give weight to the threads_frame row
 
         # Sidebar header with enhanced styling and consistent spacing
-        self.header_frame = ctk.CTkFrame(
-            self, fg_color=theme["bg_sidebar"], border_width=0, corner_radius=0
-        )
+        self.header_frame = ctk.CTkFrame(self, fg_color=theme["bg_sidebar"], border_width=0, corner_radius=0)
         self.header_frame.grid(row=0, column=0, sticky="ew", padx=0, pady=0)
         self.header_frame.grid_columnconfigure(0, weight=1)
 
@@ -57,9 +55,7 @@ class Sidebar(ctk.CTkFrame):
             font=font_large,
             text_color=theme["accent_primary"],
         )
-        self.title_label.grid(
-            row=0, column=0, sticky="w", padx=24, pady=24
-        )  # Increased padding
+        self.title_label.grid(row=0, column=0, sticky="w", padx=24, pady=24)  # Increased padding
 
         self.new_thread_button = ctk.CTkButton(
             self.header_frame,
@@ -74,37 +70,25 @@ class Sidebar(ctk.CTkFrame):
             corner_radius=22,  # Increased for modern look
             border_width=0,  # Clean look without borders
         )
-        self.new_thread_button.grid(
-            row=0, column=1, padx=(0, 24), pady=16
-        )  # Consistent spacing
+        self.new_thread_button.grid(row=0, column=1, padx=(0, 24), pady=16)  # Consistent spacing
 
         # Add enhanced hover effects to new thread button
         def on_new_button_enter(event):
-            self.new_thread_button.configure(
-                corner_radius=24
-            )  # Slightly larger radius on hover
+            self.new_thread_button.configure(corner_radius=24)  # Slightly larger radius on hover
 
         def on_new_button_leave(event):
-            self.new_thread_button.configure(
-                corner_radius=22
-            )  # Return to normal radius
+            self.new_thread_button.configure(corner_radius=22)  # Return to normal radius
 
         self.new_thread_button.bind("<Enter>", on_new_button_enter)
         self.new_thread_button.bind("<Leave>", on_new_button_leave)
 
         # Add a subtle divider below the header
-        self.header_divider = ctk.CTkFrame(
-            self, fg_color=theme["border_divider"], height=1, corner_radius=0
-        )
+        self.header_divider = ctk.CTkFrame(self, fg_color=theme["border_divider"], height=1, corner_radius=0)
         self.header_divider.grid(row=1, column=0, sticky="ew", padx=16, pady=(0, 0))
 
         # Threads list with enhanced styling and consistent spacing
-        self.threads_frame = ctk.CTkScrollableFrame(
-            self, fg_color=theme["bg_sidebar"], corner_radius=0
-        )
-        self.threads_frame.grid(
-            row=2, column=0, sticky="nsew", padx=0, pady=0
-        )  # Updated row to 2
+        self.threads_frame = ctk.CTkScrollableFrame(self, fg_color=theme["bg_sidebar"], corner_radius=0)
+        self.threads_frame.grid(row=2, column=0, sticky="nsew", padx=0, pady=0)  # Updated row to 2
         self.threads_frame.grid_columnconfigure(0, weight=1)
         self.thread_buttons = []
 
@@ -135,16 +119,10 @@ class Sidebar(ctk.CTkFrame):
         except Exception as e:
             logger.error(f"Error updating thread buttons: {e}")
 
-    def _create_thread_button(
-        self, thread: Dict, index: int, theme, font_normal
-    ) -> ctk.CTkButton:
+    def _create_thread_button(self, thread: Dict, index: int, theme, font_normal) -> ctk.CTkButton:
         try:
-            button_frame = ctk.CTkFrame(
-                self.threads_frame, fg_color=theme["bg_sidebar"], corner_radius=0
-            )
-            button_frame.grid(
-                row=index, column=0, sticky="ew", pady=8, padx=16
-            )  # Consistent spacing
+            button_frame = ctk.CTkFrame(self.threads_frame, fg_color=theme["bg_sidebar"], corner_radius=0)
+            button_frame.grid(row=index, column=0, sticky="ew", pady=8, padx=16)  # Consistent spacing
             button_frame.grid_columnconfigure(0, weight=1)
 
             is_active = thread["id"] == self.current_thread_id
@@ -173,23 +151,13 @@ class Sidebar(ctk.CTkFrame):
                     "bold" if is_active else "normal",
                 ),  # Bold for active thread
                 fg_color=thread_color if is_active else theme["button_secondary"],
-                text_color=(
-                    theme["text_inverse"] if is_active else theme["text_primary"]
-                ),
-                hover_color=(
-                    theme["button_primary_hover"]
-                    if is_active
-                    else theme["button_secondary_hover"]
-                ),
+                text_color=(theme["text_inverse"] if is_active else theme["text_primary"]),
+                hover_color=(theme["button_primary_hover"] if is_active else theme["button_secondary_hover"]),
                 corner_radius=26,  # Increased for modern look
                 border_width=2 if is_active else 1,  # Thicker border for active state
-                border_color=(
-                    theme["border_focus"] if is_active else theme["border_secondary"]
-                ),
+                border_color=(theme["border_focus"] if is_active else theme["border_secondary"]),
             )
-            button.grid(
-                row=0, column=0, sticky="ew", padx=(0, 8), pady=0
-            )  # Consistent spacing
+            button.grid(row=0, column=0, sticky="ew", padx=(0, 8), pady=0)  # Consistent spacing
 
             menu_button = ctk.CTkButton(
                 button_frame,

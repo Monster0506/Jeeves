@@ -15,7 +15,8 @@ ctk.deactivate_automatic_dpi_awareness()
 def launch_app():
     """Launch the Jeeves AI Assistant application."""
     root = ctk.CTk()
-    app = JeevesApp(root)
+    app = JeevesApp(root)  # noqa: F841
+
     return root
 
 

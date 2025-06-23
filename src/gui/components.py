@@ -5,3 +5,5 @@ This file exists for backward compatibility. Use chat_display.py and sidebar.py 
 
 from .chat_display import ChatDisplay
 from .sidebar import Sidebar
+
+__all__ = ["ChatDisplay", "Sidebar"]
