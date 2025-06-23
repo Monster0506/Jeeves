@@ -93,22 +93,21 @@ class AIEngine:
         """
         logger.info(f"Generating response for message with {len(attachments) if attachments else 0} attachments")
         
-        # Format attachments for database storage
+        # Format new attachments for database storage
         db_attachments = None
         if attachments:
-            db_attachments = []
-            for attachment in attachments:
-                # Format for database storage (database expects file_path, not sandbox_absolute_path)
-                db_attachment = {
-                    'file_name': attachment.get('file_name'),
-                    'file_path': attachment.get('sandbox_path'),  # Use relative sandbox path for database
-                    'file_size': attachment.get('file_size'),
-                    'mime_type': attachment.get('mime_type'),
-                    'hash': attachment.get('hash')
+            db_attachments = [
+                {
+                    'file_name': att.get('file_name'),
+                    'file_path': att.get('sandbox_path'),  # Relative path for DB
+                    'file_size': att.get('file_size'),
+                    'mime_type': att.get('mime_type'),
+                    'hash': att.get('hash')
                 }
-                db_attachments.append(db_attachment)
+                for att in attachments
+            ]
         
-        # Add user message to database with attachments
+        # Add user message to database
         message_id = self.chat_manager.add_user_message(
             user_message, 
             content_type='text',
@@ -121,23 +120,38 @@ class AIEngine:
         # Get conversation context
         context = self.get_conversation_context()
         
-        # Prepare attachments for AI provider (use sandbox absolute paths)
-        ai_attachments = None
+        # Prepare all attachments for the AI provider (historical + new)
+        ai_attachments = []
+
+        # 1. Process historical attachments from context
+        from ..core.file_handler import JeevesFileHandler
+        file_handler = JeevesFileHandler()
+
+        for message in context:
+            if message.get("attachments"):
+                for att in message["attachments"]:
+                    # Convert stored relative path to absolute sandbox path
+                    sandbox_path = att.get('file_path')
+                    if sandbox_path:
+                        ai_attachments.append({
+                            'file_name': att.get('file_name'),
+                            'file_path': file_handler.get_absolute_path(sandbox_path),
+                            'mime_type': att.get('mime_type'),
+                            'file_size': att.get('file_size'),
+                        })
+
+        # 2. Process new attachments for this message
         if attachments:
-            ai_attachments = []
-            for attachment in attachments:
-                # Use sandbox absolute path for AI processing
-                ai_attachment = {
-                    'file_name': attachment.get('file_name'),
-                    'file_path': attachment.get('sandbox_absolute_path'),  # Use sandbox absolute path
-                    'mime_type': attachment.get('mime_type'),
-                    'file_size': attachment.get('file_size'),
-                    'type': attachment.get('type'),
-                    'extension': attachment.get('extension')
-                }
-                ai_attachments.append(ai_attachment)
+            for att in attachments:
+                # Use the absolute path already prepared
+                ai_attachments.append({
+                    'file_name': att.get('file_name'),
+                    'file_path': att.get('sandbox_absolute_path'),
+                    'mime_type': att.get('mime_type'),
+                    'file_size': att.get('file_size'),
+                })
         
-        # Pass attachments directly to the provider for native handling
+        # Pass full context and all attachments to the provider
         response = self.provider_manager.generate_response(user_message, context, ai_attachments)
 
         # log context
@@ -147,6 +161,10 @@ class AIEngine:
                 logger.debug(
                     f"[{msg.get('sender','unknown')}]: {msg.get('content', 'NONE')}"
                 )
+            if ai_attachments:
+                logger.debug(f"-- With {len(ai_attachments)} attachments --")
+                for att in ai_attachments:
+                    logger.debug(f"  - {att.get('file_name')}")
             logger.debug("-" * 35)
 
         ai_message_id = self.chat_manager.add_ai_message(response)

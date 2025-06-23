@@ -465,11 +465,11 @@ class DatabaseManager:
                     GROUP BY thread_id
                 """
                 )
-                
+
                 counts = {}
                 for row in cursor.fetchall():
                     counts[row["thread_id"]] = row["message_count"]
-                
+
                 return counts
 
         return self._execute_with_retry(_get_counts)
@@ -777,7 +777,7 @@ class DatabaseManager:
     def get_messages(
         self,
         thread_id: int,
-        limit: int = None,
+        limit: Optional[int] = None,
         offset: int = 0,
         include_attachments: bool = True,
     ) -> List[Dict]:
@@ -850,6 +850,9 @@ class DatabaseManager:
                         )
 
                         for att_row in cursor.fetchall():
+                            logger.debug(
+                                f"Adding attachment {att_row['id']} to message {row['id']}\n {att_row["file_name"]}"
+                            )
                             message["attachments"].append(
                                 {
                                     "id": att_row["id"],
@@ -861,6 +864,9 @@ class DatabaseManager:
                                 }
                             )
 
+                    logger.debug(
+                        f"Retrieved message: {message['id']} from thread {thread_id}"
+                    )
                     messages.append(message)
 
                 return messages
@@ -1360,4 +1366,3 @@ class DatabaseManager:
                     logger.warning(f"Failed to close a database connection: {e}")
             self._connection_pool.clear()
         logger.info("All database connections closed")
-
