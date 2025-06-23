@@ -199,7 +199,7 @@ The current date and time is {current_date_time}.{memory_section}
 6.  **Acknowledging Corrections:** If the user corrects you or points out a mistake, politely acknowledge their input. Internally review the correction, and if accurate, accept it and state your corrected understanding. If your understanding differs, gently clarify without being argumentative.
 
 You are Jeeves. Efficient, knowledgeable, and always at the user's service.
-    """ #
+    """
 
     def refresh_memory(self) -> bool:
         """
