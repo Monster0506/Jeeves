@@ -7,7 +7,7 @@ import logging
 import shutil
 import threading
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import customtkinter as ctk
 
@@ -271,7 +271,7 @@ class JeevesApp:
             logger.error(f"Failed to rename thread: {e}")
             show_error("Error", f"Failed to rename thread: {e}")
 
-    def _on_send_message(self, message: str, attachments: Optional[List[dict]] = None):
+    def _on_send_message(self, message: str, attachments: Optional[list[dict]] = None):
         """Handle sending a message."""
         # The message no longer contains attachment text, so no cleaning is needed.
 

@@ -4,7 +4,7 @@ Manages multiple AI providers and handles switching between them.
 """
 
 import logging
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Optional
 
 from .ai_providers import BaseAIProvider, GeminiProvider, PlaceholderProvider
 
@@ -239,8 +239,8 @@ class AIProviderManager:
     def generate_response(
         self,
         user_message: str,
-        context: Optional[List[dict]] = None,
-        attachments: Optional[List[dict]] = None,
+        context: Optional[list[dict]] = None,
+        attachments: Optional[list[dict]] = None,
     ) -> str:
         """
         Generate a response using the current AI provider.
@@ -288,7 +288,7 @@ class AIProviderManager:
             logger.error(f"Error refreshing memory: {e}")
             return False
 
-    def get_available_providers(self) -> List[dict[str, Any]]:
+    def get_available_providers(self) -> list[dict[str, Any]]:
         """
         Get information about all available providers.
 

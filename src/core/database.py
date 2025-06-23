@@ -13,7 +13,7 @@ import time
 from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -300,7 +300,7 @@ class DatabaseManager:
         name: str,
         icon: Optional[str] = None,
         description: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        tags: Optional[list[str]] = None,
         metadata: Optional[dict] = None,
         settings: Optional[dict] = None,
     ) -> int:
@@ -311,7 +311,7 @@ class DatabaseManager:
             name: Thread name
             icon: Thread icon (optional)
             description: Thread description (optional)
-            tags: List of tags (optional)
+            tags: list of tags (optional)
             metadata: Additional metadata (optional)
             settings: Thread-specific settings (optional)
 
@@ -351,7 +351,7 @@ class DatabaseManager:
         include_archived: bool = False,
         limit: Optional[int] = None,
         offset: int = 0,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """
         Get all threads with enhanced filtering.
 
@@ -495,7 +495,7 @@ class DatabaseManager:
 
         return self._execute_with_retry(_get)
 
-    def find_threads_by_name(self, name: str, active_only: bool = True) -> List[dict]:
+    def find_threads_by_name(self, name: str, active_only: bool = True) -> list[dict]:
         """
         Find threads by name (case-insensitive partial match).
 
@@ -645,7 +645,7 @@ class DatabaseManager:
         content: str,
         content_type: str = "text",
         metadata: Optional[dict] = None,
-        attachments: Optional[List[dict]] = None,
+        attachments: Optional[list[dict]] = None,
         parent_message_id: Optional[int] = None,
         reply_to_message_id: Optional[int] = None,
     ) -> int:
@@ -658,7 +658,7 @@ class DatabaseManager:
             content: Message content
             content_type: Type of content ('text', 'image', 'file', etc.)
             metadata: Additional metadata
-            attachments: List of attachment dictionaries
+            attachments: list of attachment dictionaries
             parent_message_id: Parent message ID for threading
             reply_to_message_id: Message being replied to
 
@@ -741,7 +741,7 @@ class DatabaseManager:
         limit: Optional[int] = None,
         offset: int = 0,
         include_attachments: bool = True,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """
         Get messages for a thread with enhanced options.
 
@@ -834,7 +834,7 @@ class DatabaseManager:
         thread_id: Optional[int] = None,
         limit: int = 50,
         include_attachments: bool = False,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """
         Search messages using full-text search.
 
@@ -1110,7 +1110,7 @@ class DatabaseManager:
         logger.info(f"Added analytics for thread {thread_id}: {analytics_type}")
         return analytics_id
 
-    def get_analytics(self, thread_id: int, analytics_type: Optional[str] = None) -> List[dict]:
+    def get_analytics(self, thread_id: int, analytics_type: Optional[str] = None) -> list[dict]:
         """
         Get conversation analytics.
 

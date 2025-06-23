@@ -3,7 +3,6 @@ Unit tests for AI providers.
 """
 
 from datetime import datetime
-from typing import List
 from unittest.mock import Mock, patch
 
 import pytest
@@ -48,7 +47,7 @@ class TestBaseAIProvider:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
+            def generate_response(self, user_message: str, context: list[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -69,7 +68,7 @@ class TestBaseAIProvider:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
+            def generate_response(self, user_message: str, context: list[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -90,7 +89,7 @@ class TestBaseAIProvider:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
+            def generate_response(self, user_message: str, context: list[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -115,7 +114,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
+            def generate_response(self, user_message: str, context: list[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -136,7 +135,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
+            def generate_response(self, user_message: str, context: list[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -160,7 +159,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
+            def generate_response(self, user_message: str, context: list[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -178,7 +177,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
+            def generate_response(self, user_message: str, context: list[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -205,7 +204,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
+            def generate_response(self, user_message: str, context: list[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -224,7 +223,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
+            def generate_response(self, user_message: str, context: list[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -242,7 +241,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
+            def generate_response(self, user_message: str, context: list[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -261,7 +260,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
+            def generate_response(self, user_message: str, context: list[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -282,7 +281,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
+            def generate_response(self, user_message: str, context: list[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -306,7 +305,7 @@ class TestBaseAIProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
+            def generate_response(self, user_message: str, context: list[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:

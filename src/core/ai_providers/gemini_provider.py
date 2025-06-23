@@ -8,7 +8,7 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from src.config.settings import APP_SETTINGS
 
@@ -268,7 +268,7 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
             logger.error(f"Failed to initialize Gemini provider: {e}")
             return False
 
-    def _build_tools_config(self) -> List[Any]:
+    def _build_tools_config(self) -> list[Any]:
         """
         Build the tools configuration for Gemini.
 
@@ -320,8 +320,8 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
     def generate_response(
         self,
         user_message: str,
-        context: Optional[List[dict]] = None,
-        attachments: Optional[List[dict]] = None,
+        context: Optional[list[dict]] = None,
+        attachments: Optional[list[dict]] = None,
     ) -> str:
         """
         Generate a response using Gemini AI with automatic tool calling and file support.

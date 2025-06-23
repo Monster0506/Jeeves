@@ -12,7 +12,7 @@ import tarfile
 import zipfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, List, Optional, TypedDict
+from typing import Any, Callable, Optional, TypedDict
 
 from src.config.settings import APP_SETTINGS
 
@@ -66,8 +66,8 @@ class JeevesFileHandler:
         self._default_encoding = "utf-8"
         self._backup_retention_days = 30
         self._max_file_size_bytes = 100 * 1024 * 1024  # Default to 100 MB
-        self._allowed_extensions: Optional[List[str]] = None  # None means all allowed
-        self._operation_history: List[dict] = []
+        self._allowed_extensions: Optional[list[str]] = None  # None means all allowed
+        self._operation_history: list[dict] = []
         self._last_error_message: Optional[str] = None
         self._caching_enabled = False  # Placeholder for a more complex feature
 
@@ -209,7 +209,7 @@ class JeevesFileHandler:
                 logger.error(f"Attempted to read non-existent or non-file path: {abs_file_path}")
                 raise FileNotFoundError(f"File not found or is not a file: {relative_file_path}")
 
-            content_lines: List[str] = []
+            content_lines: list[str] = []
             with open(abs_file_path, "r", encoding=self._default_encoding) as f:
                 if start_line is None and end_line is None:
                     content_lines = f.readlines()
@@ -298,7 +298,7 @@ class JeevesFileHandler:
                     logger.error("line_number must be 1 or greater for insertion.")
                     return False
 
-                current_lines: List[str] = []
+                current_lines: list[str] = []
                 if abs_file_path.exists() and abs_file_path.is_file():
                     try:
                         with open(abs_file_path, "r", encoding=self._default_encoding) as f:
@@ -538,7 +538,7 @@ class JeevesFileHandler:
         recursive: bool = False,
         include_files: bool = True,
         include_directories: bool = True,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """
         List directory contents with filtering options.
 
@@ -559,7 +559,7 @@ class JeevesFileHandler:
                 logger.warning(f"Cannot list contents of non-directory path: {relative_directory_path}")
                 return []
 
-            contents: List[dict] = []
+            contents: list[dict] = []
 
             # Use appropriate glob method based on recursion
             if recursive:
@@ -749,7 +749,7 @@ class JeevesFileHandler:
             return False
 
     # Search & Discovery
-    def find_files_by_pattern(self, root_relative_path: str, pattern: str, recursive: bool = True) -> List[str]:
+    def find_files_by_pattern(self, root_relative_path: str, pattern: str, recursive: bool = True) -> list[str]:
         """
         Find files matching pattern (glob-style) within the sandbox.
 
@@ -761,7 +761,7 @@ class JeevesFileHandler:
         Returns:
             A list of matching file paths, relative to the sandbox root.
         """
-        found_files: List[str] = []
+        found_files: list[str] = []
         try:
             abs_root_path = Path(self.get_absolute_path(root_relative_path))
 
@@ -789,7 +789,7 @@ class JeevesFileHandler:
             logger.error(f"An unexpected error occurred while finding files by pattern in {root_relative_path}: {e}")
             return []
 
-    def find_files_by_extension(self, root_relative_path: str, extension: str, recursive: bool = True) -> List[str]:
+    def find_files_by_extension(self, root_relative_path: str, extension: str, recursive: bool = True) -> list[str]:
         """
         Find files with specific extension within the sandbox.
 
@@ -812,8 +812,8 @@ class JeevesFileHandler:
         self,
         relative_root_path: str,  # Added a root path argument for consistency
         pattern: str,
-        file_paths: Optional[List[str]] = None,
-    ) -> List[dict]:
+        file_paths: Optional[list[str]] = None,
+    ) -> list[dict]:
         """
         Search file contents using regex pattern.
 
@@ -831,11 +831,11 @@ class JeevesFileHandler:
             - 'match_start': Start index of the match in the line.
             - 'match_end': End index of the match in the line.
         """
-        results: List[dict] = []
+        results: list[dict] = []
         try:
             re_pattern = re.compile(pattern)
 
-            files_to_search: List[str]
+            files_to_search: list[str]
             if file_paths is None:
                 # If no specific files, find all files in the root_relative_path recursively
                 files_to_search = self.find_files_by_pattern(relative_root_path, "*", recursive=True)
@@ -1090,7 +1090,7 @@ class JeevesFileHandler:
             logger.error(f"An unexpected error occurred while emptying trash: {e}")
             return -1
 
-    def list_trash_contents(self) -> List[str]:
+    def list_trash_contents(self) -> list[str]:
         """
         List all files and directories in trash directory (relative paths within trash).
 
@@ -1098,7 +1098,7 @@ class JeevesFileHandler:
             A list of strings, each representing a path relative to the .trash directory.
             Returns empty list if trash is empty or error.
         """
-        contents: List[str] = []
+        contents: list[str] = []
         try:
             if not self._trash_dir.is_dir():
                 return []
@@ -1274,7 +1274,7 @@ class JeevesFileHandler:
             logger.error(f"An unexpected error occurred while creating backup for {relative_file_path}: {e}")
             return None
 
-    def list_backups(self, relative_file_path: str) -> List[str]:
+    def list_backups(self, relative_file_path: str) -> list[str]:
         """
         List all backup files for a given original file within the sandbox.
 
@@ -1284,7 +1284,7 @@ class JeevesFileHandler:
         Returns:
             A list of relative paths (within sandbox) to the backup files.
         """
-        backups: List[str] = []
+        backups: list[str] = []
         try:
             abs_file_path = Path(self.get_absolute_path(relative_file_path))
 
@@ -1829,7 +1829,7 @@ class JeevesFileHandler:
         self._last_error_message = None
         logger.info("Internal last error message cleared.")
 
-    def get_operation_history(self, limit: int = 100) -> List[dict]:
+    def get_operation_history(self, limit: int = 100) -> list[dict]:
         """
         Get audit trail of file operations.
 
@@ -1937,7 +1937,7 @@ class JeevesFileHandler:
                 return False
         return True
 
-    def set_allowed_extensions(self, extensions: Optional[List[str]]) -> None:
+    def set_allowed_extensions(self, extensions: Optional[list[str]]) -> None:
         """
         Set whitelist of allowed file extensions.
         Extensions should be provided *without* leading dots (e.g., "txt", "pdf", "py").

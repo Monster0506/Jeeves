@@ -5,7 +5,7 @@ Defines the contract that all AI providers must implement.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +40,8 @@ class BaseAIProvider(ABC):
     def generate_response(
         self,
         user_message: str,
-        context: Optional[List[dict]] = None,
-        attachments: Optional[List[dict]] = None,
+        context: Optional[list[dict]] = None,
+        attachments: Optional[list[dict]] = None,
     ) -> str:
         """
         Generate an AI response to the user's message.

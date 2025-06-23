@@ -8,7 +8,7 @@ import webbrowser
 from datetime import datetime
 from pathlib import Path
 from tkinter import filedialog
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 
 import customtkinter as ctk
 from markdown_it import MarkdownIt
@@ -821,7 +821,7 @@ class ChatDisplay(ctk.CTkFrame):
             logging.getLogger(__name__).error(f"Error adding message: {e}")
             # Try to continue without the problematic message bubble
 
-    def load_messages(self, messages: List[dict]):
+    def load_messages(self, messages: list[dict]):
         """Load messages with proper widget cleanup to prevent Tkinter errors."""
         try:
             # Safely destroy existing widgets

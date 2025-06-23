@@ -5,7 +5,7 @@ Now uses a modular provider system for different AI backends.
 """
 
 import logging
-from typing import List, Optional
+from typing import Optional
 
 from .ai_provider_manager import AIProviderManager
 from .chat_manager import ChatManager
@@ -29,7 +29,7 @@ class AIEngine:
         self._initialize_providers()
 
     @property
-    def conversation_history(self) -> List[dict]:
+    def conversation_history(self) -> list[dict]:
         """
         Get the current conversation history for backward compatibility.
 
@@ -79,7 +79,7 @@ class AIEngine:
         # No longer needed: self.conversation_history = []
         pass
 
-    def generate_response(self, user_message: str, attachments: Optional[List[dict]] = None) -> str:
+    def generate_response(self, user_message: str, attachments: Optional[list[dict]] = None) -> str:
         """
         Generate an AI response to the user's message.
 
@@ -204,7 +204,7 @@ class AIEngine:
             logger.error(f"Error refreshing memory: {e}")
             return False
 
-    def get_conversation_context(self, thread_id: Optional[int] = None) -> List[dict]:
+    def get_conversation_context(self, thread_id: Optional[int] = None) -> list[dict]:
         """
         Get conversation context for AI processing.
 
@@ -245,7 +245,7 @@ class AIEngine:
         """
         return self.provider_manager.get_provider_status()
 
-    def get_available_providers(self) -> List[dict]:
+    def get_available_providers(self) -> list[dict]:
         """
         Get information about all available AI providers.
 
@@ -319,7 +319,7 @@ class AIEngine:
             "ai_provider": self.get_current_provider_info(),
         }
 
-    def _calculate_duration(self, messages: List[dict]) -> str:
+    def _calculate_duration(self, messages: list[dict]) -> str:
         """Calculate the duration of a conversation."""
         if len(messages) < 2:
             return "0 minutes"
@@ -343,7 +343,7 @@ class AIEngine:
             logger.warning(f"Could not calculate conversation duration: {e}")
             return "Unknown"
 
-    def _analyze_interaction_pattern(self, messages: List[dict]) -> str:
+    def _analyze_interaction_pattern(self, messages: list[dict]) -> str:
         """Analyze the interaction pattern between user and AI."""
         if not messages:
             return "No interaction"
@@ -376,7 +376,7 @@ class AIEngine:
 
         return "Normal interaction"
 
-    def suggest_responses(self, user_message: str, count: int = 3) -> List[str]:
+    def suggest_responses(self, user_message: str, count: int = 3) -> list[str]:
         """
         Suggest a few short, relevant responses.
 

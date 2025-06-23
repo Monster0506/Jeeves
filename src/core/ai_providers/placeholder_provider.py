@@ -6,7 +6,7 @@ Provides simple keyword-based responses as a fallback when no AI service is avai
 import logging
 import time
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from .base_provider import BaseAIProvider
 
@@ -46,8 +46,8 @@ class PlaceholderProvider(BaseAIProvider):
     def generate_response(
         self,
         user_message: str,
-        context: Optional[List[dict]] = None,
-        attachments: Optional[List[dict]] = None,
+        context: Optional[list[dict]] = None,
+        attachments: Optional[list[dict]] = None,
     ) -> str:
         """
         Generate a placeholder response based on keywords.
@@ -159,7 +159,7 @@ class PlaceholderProvider(BaseAIProvider):
         )
         return info
 
-    def suggest_responses(self, user_message: str, count: int = 3) -> List[str]:
+    def suggest_responses(self, user_message: str, count: int = 3) -> list[str]:
         """
         Suggest possible responses to a user message.
 

@@ -5,7 +5,7 @@ Integrates with the database for persistence.
 
 import logging
 from datetime import datetime
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Optional
 
 from .database import DatabaseError, DatabaseManager
 
@@ -18,8 +18,8 @@ class ChatManager:
     def __init__(self, db_manager: DatabaseManager):
         self.db = db_manager
         self.current_thread_id: Optional[int] = None
-        self.message_callbacks: List[Callable] = []
-        self.thread_callbacks: List[Callable] = []
+        self.message_callbacks: list[Callable] = []
+        self.thread_callbacks: list[Callable] = []
 
         # Initialize with default thread if none exists
         self._ensure_default_thread()
@@ -63,7 +63,7 @@ class ChatManager:
         name: str,
         icon: str = "💬",
         description: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        tags: Optional[list[str]] = None,
         metadata: Optional[dict] = None,
         settings: Optional[dict] = None,
     ) -> int:
@@ -74,7 +74,7 @@ class ChatManager:
             name: Thread name
             icon: Thread icon
             description: Thread description (optional)
-            tags: List of tags (optional)
+            tags: list of tags (optional)
             metadata: Additional metadata (optional)
             settings: Thread-specific settings (optional)
 
@@ -99,7 +99,7 @@ class ChatManager:
         include_archived: bool = False,
         limit: Optional[int] = None,
         offset: int = 0,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Get all active threads."""
         try:
             return self.db.get_threads(active_only, include_archived, limit, offset)
@@ -115,7 +115,7 @@ class ChatManager:
             logger.error(f"Failed to get thread {thread_id}: {e}")
             return None
 
-    def find_threads_by_name(self, name: str, active_only: bool = True) -> List[dict]:
+    def find_threads_by_name(self, name: str, active_only: bool = True) -> list[dict]:
         """
         Find threads by name (case-insensitive partial match).
 
@@ -181,7 +181,7 @@ class ChatManager:
         thread_id: Optional[int] = None,
         limit: Optional[int] = None,
         include_attachments: bool = True,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """
         Get messages for a thread.
 
@@ -210,7 +210,7 @@ class ChatManager:
         content: str,
         content_type: str = "text",
         metadata: Optional[dict] = None,
-        attachments: Optional[List[dict]] = None,
+        attachments: Optional[list[dict]] = None,
     ) -> int:
         """
         Add a user message to the current thread.
@@ -219,7 +219,7 @@ class ChatManager:
             content: Message content
             content_type: Type of content ('text', 'image', 'file', etc.)
             metadata: Additional metadata
-            attachments: List of attachment dictionaries
+            attachments: list of attachment dictionaries
 
         Returns:
             Message ID
@@ -254,7 +254,7 @@ class ChatManager:
         content: str,
         content_type: str = "text",
         metadata: Optional[dict] = None,
-        attachments: Optional[List[dict]] = None,
+        attachments: Optional[list[dict]] = None,
     ) -> int:
         """
         Add an AI message to the current thread.
@@ -263,7 +263,7 @@ class ChatManager:
             content: Message content
             content_type: Type of content ('text', 'image', 'file', etc.)
             metadata: Additional metadata
-            attachments: List of attachment dictionaries
+            attachments: list of attachment dictionaries
 
         Returns:
             Message ID
@@ -391,7 +391,7 @@ class ChatManager:
         thread_id: Optional[int] = None,
         limit: int = 50,
         include_attachments: bool = False,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """
         Search messages.
 
@@ -568,7 +568,7 @@ class ChatManager:
             logger.error(f"Failed to add analytics: {e}")
             raise
 
-    def get_analytics(self, thread_id: int, analytics_type: Optional[str] = None) -> List[dict]:
+    def get_analytics(self, thread_id: int, analytics_type: Optional[str] = None) -> list[dict]:
         """
         Get conversation analytics.
 

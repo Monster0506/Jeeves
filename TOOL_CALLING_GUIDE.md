@@ -778,7 +778,7 @@ See the comprehensive test suite for complete working examples:
 - `execute_tool(name: str, args: dict[str, Any]) -> Any`
 - `get_registered_tools() -> dict[str, Callable]`
 - `initialize() -> bool`
-- `generate_response(user_message: str, context: List[dict] = None) -> str`
+- `generate_response(user_message: str, context: list[dict] = None) -> str`
 
 ### GeminiProvider Configuration
 
