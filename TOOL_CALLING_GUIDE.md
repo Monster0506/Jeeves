@@ -182,17 +182,28 @@ response = manager.generate_response("Search for 'test' only in the current dire
 #### 10. `read_file`
 Read the content of a file within the `~/.jeeves/` sandbox directory. This tool provides safe, read-only access to files within the sandbox.
 
+**Special Behavior for Attachments:**
+When reading files from the `attachments/` directory, the tool automatically converts binary files (images, PDFs, documents) to inlineData attachments that can be viewed by the AI model. This enables multimodal analysis of uploaded files.
+
 **Parameters:**
 - `path` (str): The relative path to the file from the sandbox root.
 
 **Examples:**
 ```python
-# Read a note file
+# Read a text file (returns content as text)
 response = manager.generate_response("Read the content of notes/meeting_notes.md")
 
-# Read the todo list
-response = manager.generate_response("Show me what's in todo.md")
+# Read an image file (converts to inlineData attachment)
+response = manager.generate_response("Read the content of attachments/screenshot.png")
+
+# Read a PDF file (converts to inlineData attachment)
+response = manager.generate_response("Read the content of attachments/document.pdf")
 ```
+
+**Supported File Types for InlineData Conversion:**
+- Images: PNG, JPEG, GIF, BMP, WebP
+- Documents: PDF, Word, Excel, PowerPoint
+- The AI will receive these as visual attachments for analysis
 
 #### 11. `list_directory`
 List the contents of a directory within the `~/.jeeves/` sandbox. This tool provides a safe way to explore the sandbox's file structure with hierarchical output.

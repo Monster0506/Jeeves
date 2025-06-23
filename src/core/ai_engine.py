@@ -9,6 +9,7 @@ from typing import Dict, List
 from .chat_manager import ChatManager
 from .ai_provider_manager import AIProviderManager
 from .tools import JeevesTools
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +125,7 @@ class AIEngine:
         ai_attachments = []
 
         # 1. Process historical attachments from context
-        from ..core.file_handler import JeevesFileHandler
+        from src.core.file_handler import JeevesFileHandler
         file_handler = JeevesFileHandler()
 
         for message in context:
@@ -153,7 +154,7 @@ class AIEngine:
         
         # Pass full context and all attachments to the provider
         response = self.provider_manager.generate_response(user_message, context, ai_attachments)
-
+        
         # log context
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug("-- SENDING CONTEXT TO AI --")
@@ -167,6 +168,7 @@ class AIEngine:
                     logger.debug(f"  - {att.get('file_name')}")
             logger.debug("-" * 35)
 
+        # Add AI message
         ai_message_id = self.chat_manager.add_ai_message(response)
 
         logger.info(

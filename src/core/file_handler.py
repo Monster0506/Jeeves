@@ -1,8 +1,6 @@
 """
-Jeeves File Handler - Secure file management within sandboxed directory.
-
-Provides safe file operations within the ~/.jeeves/ sandbox directory
-with comprehensive path validation and security measures.
+Secure file handler for Jeeves AI Assistant.
+Provides safe file operations within the sandbox directory.
 """
 
 import os
@@ -15,6 +13,7 @@ import tarfile
 from pathlib import Path
 from typing import List, Dict, Optional, Callable
 from datetime import datetime
+from src.config.settings import APP_SETTINGS
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +27,18 @@ class SandboxViolationError(ValueError):
 class JeevesFileHandler:
     """Secure file handler for Jeeves AI Assistant operations."""
 
-    def __init__(self, sandbox_root_dir: str = "~/.jeeves"):
+    def __init__(self, sandbox_root_dir: str = None):
         """
         Initialize the file handler with sandbox directory.
 
         Args:
-            sandbox_root_dir: Root directory for all Jeeves file operations
+            sandbox_root_dir: Root directory for all Jeeves file operations.
+                             If None, uses the setting from config.
         """
+        # Get sandbox directory from settings if not provided
+        if sandbox_root_dir is None:
+            sandbox_root_dir = APP_SETTINGS['sandbox_directory']
+        
         # Resolve sandbox root path immediately to its absolute, canonical form.
         # This handles user expansion (~) and '..' components, and follows symlinks.
         # All subsequent path checks will be against this resolved path.

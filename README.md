@@ -495,10 +495,13 @@ response = manager.generate_response("Search for 'test' only in the current dire
 ```
 
 #### `read_file`
-Read the content of a file within the `~/.jeeves/` sandbox directory.
+Read the content of a file within the `~/.jeeves/` sandbox directory. Automatically converts attachment files to inlineData for multimodal analysis.
 ```python
-# Read a note file
+# Read a text file
 response = manager.generate_response("Read the content of notes/meeting_notes.md")
+
+# Read an image (converts to visual attachment)
+response = manager.generate_response("Read the content of attachments/screenshot.png")
 ```
 
 #### `list_directory`

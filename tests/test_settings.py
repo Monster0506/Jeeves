@@ -3,6 +3,8 @@ Tests for the settings module.
 """
 import pytest
 from src.config.settings import ICONS, COLORS, APP_SETTINGS, AI_PROVIDER_SETTINGS, DEFAULT_THREADS
+from src.core.file_handler import JeevesFileHandler
+import os
 
 
 class TestSettings:
@@ -214,4 +216,29 @@ class TestSettings:
         # Check that default provider exists
         default_provider = AI_PROVIDER_SETTINGS['default_provider']
         assert default_provider in providers
-        assert providers[default_provider]['enabled'] is True 
+        assert providers[default_provider]['enabled'] is True
+
+
+def test_sandbox_directory_setting():
+    """Test that sandbox directory is configured in settings."""
+    assert 'sandbox_directory' in APP_SETTINGS
+    assert APP_SETTINGS['sandbox_directory'] == '~/.jeeves'
+
+
+def test_file_handler_uses_setting():
+    """Test that JeevesFileHandler uses the setting from config."""
+    file_handler = JeevesFileHandler()
+    sandbox_root = file_handler.get_sandbox_root()
+    
+    # The sandbox root should be the expanded version of the setting
+    expected_path = os.path.expanduser(APP_SETTINGS['sandbox_directory'])
+    assert os.path.normpath(sandbox_root) == os.path.normpath(expected_path)
+
+
+def test_file_handler_custom_directory():
+    """Test that JeevesFileHandler can use a custom directory."""
+    custom_dir = "/tmp/test_sandbox"
+    file_handler = JeevesFileHandler(custom_dir)
+    sandbox_root = file_handler.get_sandbox_root()
+
+    assert os.path.abspath(os.path.normpath(sandbox_root)) == os.path.abspath(os.path.normpath(custom_dir)) 

@@ -1213,4 +1213,24 @@ class TestToolCallingEdgeCases:
             "extra_param": "ignored"
         })
         
-        assert result == 8 
+        assert result == 8
+
+    def test_read_file_returns_attachment_format_for_attachments(self):
+        """Test that read_file returns appropriate message for attachment files."""
+        # Create a test database manager
+        from src.core.database import DatabaseManager
+        db_manager = DatabaseManager(":memory:")
+        
+        # Create a test chat manager
+        chat_manager = ChatManager(db_manager)
+        
+        # Create tools instance
+        tools = JeevesTools(chat_manager)
+        
+        # Test with an attachment file path
+        result = tools.read_file("attachments/test_image.png")
+        
+        # Should return a message instructing to use attach button
+        assert "attachments directory" in result
+        assert "Attach File" in result
+        assert "button" in result 

@@ -978,6 +978,11 @@ class ChatDisplay(ctk.CTkFrame):
     def _open_file_picker(self):
         """Open file picker dialog for attachments."""
         try:
+            # Get the sandbox directory from JeevesFileHandler
+            from ..core.file_handler import JeevesFileHandler
+            file_handler = JeevesFileHandler()
+            sandbox_root = file_handler.get_sandbox_root()
+            
             # Open file dialog with common file types
             file_types = [
                 ("All Files", "*.*"),
@@ -994,7 +999,7 @@ class ChatDisplay(ctk.CTkFrame):
             file_path = filedialog.askopenfilename(
                 title="Select file to attach",
                 filetypes=file_types,
-                initialdir=os.path.expanduser("~"),  # Start in user's home directory
+                initialdir=sandbox_root,  # Use sandbox directory as default
             )
 
             if file_path:

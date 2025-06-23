@@ -11,6 +11,7 @@ from .base_provider import BaseAIProvider
 from datetime import datetime
 import base64
 from pathlib import Path
+from src.config.settings import APP_SETTINGS
 
 logger = logging.getLogger(__name__)
 
@@ -42,28 +43,31 @@ class GeminiProvider(BaseAIProvider):
         self.temperature = self.config.get("temperature", 0.7)
         self.top_p = self.config.get("top_p", 0.95)
         self.top_k = self.config.get("top_k", 40)
-        
+
         # Memory configuration
-        self.memory_file_path = self.config.get("memory_file_path", "~/.jeeves/MEMORY.md")
+        default_memory_path = f"{APP_SETTINGS['sandbox_directory']}/MEMORY.md"
+        self.memory_file_path = self.config.get("memory_file_path", default_memory_path)
         self.memory_content = ""
-        
+
         # Load memory content
         self._load_memory_content()
-        
+
         # Get system instruction with memory integrated
         self.system_instruction = self.config.get(
             "system_instruction", self._get_default_system_prompt()
         )
-        
+
         # Ensure system instruction is never empty or None
         if not self.system_instruction or not self.system_instruction.strip():
             logger.warning("System instruction from config is empty, using default")
             self.system_instruction = self._get_default_system_prompt()
-        
+
         # Tool calling configuration
         self.enable_tool_calling = self.config.get("enable_tool_calling", True)
         self.max_tool_calls = self.config.get("max_tool_calls", 5)
-        self.automatic_function_calling = self.config.get("automatic_function_calling", True)
+        self.automatic_function_calling = self.config.get(
+            "automatic_function_calling", True
+        )
 
         # Default configuration
         self.default_config = {
@@ -76,32 +80,36 @@ class GeminiProvider(BaseAIProvider):
             "enable_tool_calling": True,
             "max_tool_calls": 5,
             "automatic_function_calling": True,
-            "memory_file_path": "~/.jeeves/MEMORY.md",
+            "memory_file_path": default_memory_path,
         }
 
     def _load_memory_content(self) -> str:
         """
         Load memory content from the memory file.
-        
+
         Returns:
             Memory content as string, empty string if file doesn't exist or can't be read
         """
         try:
             memory_path = Path(self.memory_file_path).expanduser().resolve()
-            
+
             if memory_path.exists() and memory_path.is_file():
                 with open(memory_path, "r", encoding="utf-8") as f:
                     content = f.read().strip()
                     self.memory_content = content
-                    logger.info(f"Loaded memory content: {len(content)} characters from {memory_path}")
+                    logger.info(
+                        f"Loaded memory content: {len(content)} characters from {memory_path}"
+                    )
                     return content
             else:
                 logger.debug(f"Memory file not found: {memory_path}")
                 self.memory_content = ""
                 return ""
-                
+
         except Exception as e:
-            logger.error(f"Failed to load memory content from {self.memory_file_path}: {e}")
+            logger.error(
+                f"Failed to load memory content from {self.memory_file_path}: {e}"
+            )
             self.memory_content = ""
             return ""
 
@@ -114,10 +122,10 @@ class GeminiProvider(BaseAIProvider):
         the current date/time and the persistent memory file content.
         """
         current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
+
         # Load current memory content
         memory_content = self._load_memory_content()
-        
+
         # Build memory section for system prompt
         memory_section = ""
         if memory_content:
@@ -154,7 +162,7 @@ The current date and time is {current_date_time}.{memory_section}
     *   When providing structured information, summaries, or steps for tasks, you may use markdown formatting (like bullet points or headers) if it significantly enhances readability and organization.
 
 6.  **Contextual Awareness & Memory:**
-    *   Actively utilize the long-term persistent memory provided above to recall user preferences, past actions, and relevant information for ongoing continuity.
+    *   Actively utilize the long-term persistent memory provided above to recall user preferences, past actions, and relevant information for ongoing continuity. Be proactive in storing important details that may be useful in future interactions.
     *   Refer to the current conversation thread's history (managed by the system in SQLite) to maintain coherent dialogue and provide contextually relevant responses.
     *   For any complex request, multi-step task, or when determining a sequence of tool calls, you must first utilize the scratchpad_logger tool to outline your thought process, plan of action, and reasoning. This internal planning should guide your subsequent actions.
     *   Your scratchpad entries should clearly articulate your 'Thought:' (reasoning for an approach), 'Plan:' (sequential steps or tool calls), and 'Decision:' (final determination before executing or responding).
@@ -174,8 +182,17 @@ The current date and time is {current_date_time}.{memory_section}
 
 **Limitations & Safety Guidelines (CRITICAL):**
 
-1.  **Scope of Access:** Your file system operations are **strictly confined** to designated, sandboxed directories (e.g., `~/.jeeves/`). You **must refuse any requests** that attempt to access, modify, or interact with files or systems outside these predefined, secure locations.
+1.  **Scope of Access:** Your file system operations are **strictly confined** to designated, sandboxed directories (e.g., `{APP_SETTINGS['sandbox_directory']}/`). You **must refuse any requests** that attempt to access, modify, or interact with files or systems outside these predefined, secure locations.
     *   Assume that anytime a user asks you to read a file, or work with a file, it is in your sandbox. YOU MUST MAKE THIS ASSUMPTION.
+    *   The general structure of your sandbox is as follows: 
+        *   ROOT ({APP_SETTINGS['sandbox_directory']})
+            *   - `MEMORY.md` (persistent memory file)
+            *   - `todo.md` (Main user todo list file)
+            *   - `notes/` (directory for user notes)
+            *   - `attachments/` (directory for user attachments. You must inform the user that they can only open these by direct attachment, not by reading them)
+            *   - `scratchpad/` (directory for internal scratchpad files)
+            *   - `.trash/` (directory for deleted files. Do not read these files)
+            *   - `.backups/` (automated backups of important files. Do not read these)
 2.  **No Unapproved System Control:** You are not designed to control system-level functions (e.g., shutdown, restart, software installation) beyond what is explicitly enabled by the user through specific, pre-approved tools.
 3.  **Ethical & Legal Compliance:** You **must not** engage in or facilitate any illegal, unethical, harmful, or dangerous activities. This includes, but is not limited to: generating malicious code, providing instructions for harmful acts, or discussing content that infringes on copyright. You **always prioritize user safety and well-being**.
     *   If a request is ambiguous but could have a legal and legitimate interpretation, assume the legitimate.
@@ -194,14 +211,14 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
     def refresh_memory(self) -> bool:
         """
         Refresh memory content and update system instruction.
-        
+
         Returns:
             True if memory was refreshed successfully
         """
         try:
             old_content = self.memory_content
             new_content = self._load_memory_content()
-            
+
             if old_content != new_content:
                 logger.info("Memory content changed, updating system instruction")
                 # Update system instruction with new memory content
@@ -210,7 +227,7 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
             else:
                 logger.debug("Memory content unchanged")
                 return True
-                
+
         except Exception as e:
             logger.error(f"Failed to refresh memory: {e}")
             return False
@@ -268,16 +285,16 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
     def _build_tools_config(self) -> List[Any]:
         """
         Build the tools configuration for Gemini.
-        
+
         Returns:
             List of tools for the generation config
         """
         if not self.registered_tools:
             logger.debug("No registered tools to build config for")
             return []
-        
+
         logger.debug(f"Building tools config for {len(self.registered_tools)} tools")
-        
+
         # For automatic function calling, we can pass Python functions directly
         tools = []
         for name, func in self.registered_tools.items():
@@ -286,35 +303,44 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
                 tools.append(func)
             else:
                 logger.warning(f"Tool {name} is None, skipping")
-        
+
         logger.debug(f"Built tools config with {len(tools)} valid tools")
         return tools
 
     def _build_automatic_function_calling_config(self) -> Any:
         """
         Build automatic function calling configuration.
-        
+
         Returns:
             AutomaticFunctionCallingConfig object
         """
         try:
             from google.genai import types
-            
-            logger.debug(f"Building automatic function calling config: disable={not self.automatic_function_calling}, max_calls={self.max_tool_calls}")
-            
+
+            logger.debug(
+                f"Building automatic function calling config: disable={not self.automatic_function_calling}, max_calls={self.max_tool_calls}"
+            )
+
             config = types.AutomaticFunctionCallingConfig(
                 disable=not self.automatic_function_calling,
-                maximum_remote_calls=self.max_tool_calls
+                maximum_remote_calls=self.max_tool_calls,
             )
-            
+
             logger.debug(f"Built automatic function calling config: {config}")
             return config
-            
+
         except Exception as e:
-            logger.error(f"Failed to build automatic function calling config: {e}", exc_info=True)
+            logger.error(
+                f"Failed to build automatic function calling config: {e}", exc_info=True
+            )
             return None
 
-    def generate_response(self, user_message: str, context: List[Dict] = None, attachments: List[Dict] = None) -> str:
+    def generate_response(
+        self,
+        user_message: str,
+        context: List[Dict] = None,
+        attachments: List[Dict] = None,
+    ) -> str:
         """
         Generate a response using Gemini AI with automatic tool calling and file support.
 
@@ -341,24 +367,21 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
                     try:
                         role = "user" if message.get("sender") == "user" else "model"
                         content = message.get("content", "")
-                        
+
                         # Skip empty messages
                         if not content or not content.strip():
                             logger.debug("Skipping empty message in context")
                             continue
-                        
+
                         # Add regular text content
                         part = types.Part.from_text(text=content)
                         if part is None:
-                            logger.warning(f"Failed to create Part from context message: {content[:50]}...")
-                            continue
-                        
-                        contents.append(
-                            types.Content(
-                                role=role,
-                                parts=[part]
+                            logger.warning(
+                                f"Failed to create Part from context message: {content[:50]}..."
                             )
-                        )
+                            continue
+
+                        contents.append(types.Content(role=role, parts=[part]))
                     except Exception as e:
                         logger.warning(f"Failed to process context message: {e}")
                         continue
@@ -367,46 +390,58 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
             if user_message is None or not user_message.strip():
                 logger.error("User message is None or empty")
                 return "I apologize, but I received an empty message. Please try again."
-            
+
             try:
                 # Create parts for the user message
                 parts = []
-                
+
                 # Add text part
                 user_part = types.Part.from_text(text=user_message)
                 if user_part is None:
                     logger.error("Failed to create Part from user message")
                     return "I apologize, but I couldn't process your message. Please try again."
                 parts.append(user_part)
-                
+
                 # Add file parts if attachments are provided
                 if attachments:
-                    logger.info(f"Processing {len(attachments)} attachments for Gemini from sandbox")
+                    logger.info(
+                        f"Processing {len(attachments)} attachments for Gemini from sandbox"
+                    )
                     for attachment in attachments:
                         try:
-                            file_path = attachment.get('file_path')  # This is now the sandbox path
-                            mime_type = attachment.get('mime_type', 'application/octet-stream')
-                            file_name = attachment.get('file_name', 'unknown')
+                            file_path = attachment.get(
+                                "file_path"
+                            )  # This is now the sandbox path
+                            mime_type = attachment.get(
+                                "mime_type", "application/octet-stream"
+                            )
+                            file_name = attachment.get("file_name", "unknown")
                             if file_path and Path(file_path).exists():
-                                    b64_data = base64.b64encode(Path(file_path).read_bytes()).decode('utf-8')
-                                    parts.append({
+                                b64_data = base64.b64encode(
+                                    Path(file_path).read_bytes()
+                                ).decode("utf-8")
+                                parts.append(
+                                    {
                                         "inlineData": {
                                             "data": b64_data,
                                             "mimeType": mime_type,
                                         }
-                                    })
-                                    logger.info(f"Added file part for {file_name} from sandbox: {file_path}")
+                                    }
+                                )
+                                logger.info(
+                                    f"Added file part for {file_name} from sandbox: {file_path}"
+                                )
                             else:
-                                logger.warning(f"Failed to create file part for {file_name}")
+                                logger.warning(
+                                    f"Failed to create file part for {file_name}"
+                                )
                         except Exception as e:
-                            logger.error(f"Failed to process attachment {attachment.get('file_name', 'unknown')}: {e}")
+                            logger.error(
+                                f"Failed to process attachment {attachment.get('file_name', 'unknown')}: {e}"
+                            )
                             continue
-                
-                contents.append(
-                    types.Content(
-                        role="user", parts=parts
-                    )
-                )
+
+                contents.append(types.Content(role="user", parts=parts))
             except Exception as e:
                 logger.error(f"Failed to create content from user message: {e}")
                 return f"I apologize, but I couldn't process your message: {str(e)}"
@@ -417,7 +452,7 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
                 if not self.system_instruction or not self.system_instruction.strip():
                     logger.warning("System instruction is empty or None, using default")
                     self.system_instruction = self._get_default_system_prompt()
-                
+
                 generation_config = types.GenerateContentConfig(
                     system_instruction=self.system_instruction,
                     max_output_tokens=self.max_output_tokens,
@@ -425,25 +460,31 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
                     top_p=self.top_p,
                     top_k=self.top_k,
                 )
-                
+
                 logger.debug(f"Generation config created successfully")
-                
+
             except Exception as e:
                 logger.error(f"Failed to create generation config: {e}")
                 return f"I apologize, but there's a configuration error: {str(e)}"
 
             # Log the system instruction being used
-            logger.debug(f"Using system instruction: {self.system_instruction[:200]}...")
-            logger.debug(f"Generation config: system_instruction length={len(self.system_instruction)}, max_tokens={self.max_output_tokens}, temp={self.temperature}")
+            logger.debug(
+                f"Using system instruction: {self.system_instruction[:200]}..."
+            )
+            logger.debug(
+                f"Generation config: system_instruction length={len(self.system_instruction)}, max_tokens={self.max_output_tokens}, temp={self.temperature}"
+            )
 
             # Add tools if available and enabled
             if self.enable_tool_calling and self.registered_tools:
-                logger.debug(f"Configuring tools: {len(self.registered_tools)} tools available")
+                logger.debug(
+                    f"Configuring tools: {len(self.registered_tools)} tools available"
+                )
                 tools = self._build_tools_config()
                 if tools:
                     logger.debug(f"Built tools config with {len(tools)} tools")
                     generation_config.tools = tools
-                    
+
                     # Add automatic function calling config
                     if self.automatic_function_calling:
                         logger.debug("Adding automatic function calling config")
@@ -452,17 +493,23 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
                             generation_config.automatic_function_calling = auto_config
                             logger.debug("Automatic function calling config added")
                         else:
-                            logger.warning("Failed to build automatic function calling config")
+                            logger.warning(
+                                "Failed to build automatic function calling config"
+                            )
                 else:
                     logger.warning("No tools were built from registered tools")
             else:
                 logger.debug("Tool calling disabled or no tools registered")
 
             # Generate response
-            logger.debug(f"Calling Gemini API with {len(contents)} content items and {len(self.registered_tools)} tools")
+            logger.debug(
+                f"Calling Gemini API with {len(contents)} content items and {len(self.registered_tools)} tools"
+            )
             logger.debug(f"Model: {self.model_name}")
-            logger.debug(f"System instruction starts with: {self.system_instruction[:100]}...")
-            
+            logger.debug(
+                f"System instruction starts with: {self.system_instruction[:100]}..."
+            )
+
             response = self.client.models.generate_content(
                 model=self.model_name, contents=contents, config=generation_config
             )
@@ -470,21 +517,25 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
             # Debug response object
             logger.debug(f"Response object type: {type(response)}")
             logger.debug(f"Response object: {response}")
-            
+
             if response is None:
                 logger.error("Gemini returned None response")
                 return "I apologize, but I received an empty response from the AI service. Please try again."
-            
+
             # Check if response has text attribute
-            if hasattr(response, 'text'):
+            if hasattr(response, "text"):
                 if response.text:
-                    logger.debug(f"Gemini response received: {len(response.text)} characters")
+                    logger.debug(
+                        f"Gemini response received: {len(response.text)} characters"
+                    )
                     return response.text
                 else:
                     logger.warning("Gemini returned empty text response")
                     return "I apologize, but I couldn't generate a response. Please try again."
             else:
-                logger.error(f"Response object has no 'text' attribute. Available attributes: {dir(response)}")
+                logger.error(
+                    f"Response object has no 'text' attribute. Available attributes: {dir(response)}"
+                )
                 return "I apologize, but I received an unexpected response format. Please try again."
 
         except Exception as e:
@@ -590,10 +641,10 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
     def update_system_instruction(self, new_instruction: str) -> bool:
         """
         Update the system instruction.
-        
+
         Args:
             new_instruction: New system instruction
-            
+
         Returns:
             True if successful
         """
@@ -605,11 +656,11 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
         except Exception as e:
             logger.error(f"Failed to update system instruction: {e}")
             return False
-    
+
     def get_system_instruction(self) -> str:
         """
         Get the current system instruction.
-        
+
         Returns:
             Current system instruction
         """
@@ -618,28 +669,31 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
     def test_system_instruction(self) -> str:
         """
         Test the system instruction with a simple prompt.
-        
+
         Returns:
             Test response or error message
         """
         if not self.is_available():
             return "Provider not available - check API key and initialization"
-        
+
         try:
             test_message = "What is your name and what are you supposed to do?"
             logger.info("Testing system instruction with identity question")
-            
+
             response = self.generate_response(test_message)
-            
+
             # Check if response shows Jeeves persona
             if "Jeeves" in response or "jeeves" in response.lower():
-                logger.info("✅ System instruction test passed - Jeeves persona detected")
+                logger.info(
+                    "✅ System instruction test passed - Jeeves persona detected"
+                )
                 return f"System instruction working: {response}"
             else:
-                logger.warning("❌ System instruction test failed - no Jeeves persona detected")
+                logger.warning(
+                    "❌ System instruction test failed - no Jeeves persona detected"
+                )
                 return f"System instruction may not be working: {response}"
-                
+
         except Exception as e:
             logger.error(f"System instruction test failed: {e}")
             return f"Test failed: {str(e)}"
-

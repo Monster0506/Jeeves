@@ -227,7 +227,8 @@ APP_SETTINGS = {
         'medium': 16,
         'large': 18,
         'xlarge': 20
-    }
+    },
+    'sandbox_directory': '~/.jeeves'  # Centralized sandbox directory configuration
 }
 
 # AI Provider settings

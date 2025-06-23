@@ -13,9 +13,9 @@ Contains all available tools that can be called by the AI.
 6. **get_conversation_summary** - Get conversation statistics and summary
 
 ### 📝 File Management Tools (5)
-7. **note_manager** - Manage personal notes in ~/.jeeves/notes/
-8. **todo_list_manager** - Manage centralized todo list in ~/.jeeves/todo.md
-9. **content_searcher** - Search files and content within ~/.jeeves/ sandbox
+7. **note_manager** - Manage personal notes in sandbox/notes/
+8. **todo_list_manager** - Manage centralized todo list in sandbox/todo.md
+9. **content_searcher** - Search files and content within sandbox directory
 10. **read_file** - Read content from a file in the project directory
 11. **list_directory** - List contents of a directory in the project
 
@@ -45,7 +45,7 @@ Tools for persistent memory and session logging:
 - Context preservation across conversations
 
 ## Security Features
-- All tools operate within ~/.jeeves/ sandbox
+- All tools operate within sandbox directory
 - Input validation and parameter filtering
 - Error handling with graceful fallbacks
 - Soft deletes for file operations
@@ -114,7 +114,7 @@ class JeevesTools:
     - Persistent memory storage
     - Session-specific thought logging
     
-    Most tools operate within a secure sandbox (~/.jeeves/), while some
+    Most tools operate within a secure sandbox directory, while some
     provide safe, read-only access to the project directory. All tools include
     comprehensive error handling, input validation, and logging.
     """
@@ -497,13 +497,13 @@ class JeevesTools:
     def note_manager(self, action: str, filename: Optional[str] = None, content: Optional[str] = None, 
                     directory: str = "notes") -> str:
         """
-        Manage personal notes within the ~/.jeeves/notes/ directory.
+        Manage personal notes within the sandbox/notes/ directory.
         
         Args:
             action: 'create', 'append', 'read', 'list', or 'delete'
             filename: Name of the note file (without .md extension)
             content: Content to write or append
-            directory: Subdirectory within ~/.jeeves/ (default: 'notes')
+            directory: Subdirectory within sandbox/ (default: 'notes')
             
         Returns:
             Success message or file content
@@ -613,7 +613,7 @@ class JeevesTools:
     def todo_list_manager(self, action: str, task_content: Optional[str] = None, 
                          task_id: Optional[int] = None) -> str:
         """
-        Manage the central ~/.jeeves/todo.md file.
+        Manage the central sandbox/todo.md file.
         
         Args:
             action: 'add', 'list', 'complete', 'delete', or 'clear'
@@ -786,7 +786,7 @@ class JeevesTools:
     def content_searcher(self, query: str, search_type: str = "content", 
                         file_pattern: Optional[str] = None, recursive: bool = True) -> str:
         """
-        Search for files and content within the ~/.jeeves/ sandbox.
+        Search for files and content within the sandbox directory.
         
         Args:
             query: Search query (keywords or regex pattern)
@@ -843,7 +843,7 @@ class JeevesTools:
     def persistent_memory_manager(self, action: str, content: Optional[str] = None, 
                                  entry_id: Optional[int] = None) -> str:
         """
-        Manage Jeeves's long-term persistent memory in ~/.jeeves/MEMORY.md.
+        Manage Jeeves's long-term persistent memory in sandbox/MEMORY.md.
         
         Args:
             action: 'add', 'list', 'remove', or 'clear'
@@ -1036,17 +1036,47 @@ class JeevesTools:
 
     def read_file(self, path: str) -> str:
         """
-        Read the content of a file within the ~/.jeeves/ sandbox directory.
+        Read the content of a file within the sandbox directory.
 
         Args:
             path: The relative path to the file from the sandbox root.
 
         Returns:
             The content of the file or an error message.
+            For files in the attachments directory, informs the user to use the attach file button.
         """
         logger.info(f"Tool called: read_file(path='{path}')")
+        
         try:
+            logger.debug(f"Processing read_file request for path: '{path}'")
+            
+            # Check if this is an attachment file
+            is_attachment_path = path.startswith("attachments/") or path.startswith("/attachments/")
+            logger.debug(f"Path '{path}' is attachment path: {is_attachment_path}")
+            
+            if is_attachment_path:
+                logger.info(f"Detected attachment file: '{path}' - informing user to use attach button")
+                
+                # Get file info for better user feedback
+                file_info = self.file_handler.get_file_info(path)
+                if file_info:
+                    # Simple MIME type detection
+                    import mimetypes
+                    file_extension = os.path.splitext(path)[1].lower()
+                    mime_type = mimetypes.guess_type(path)[0] or 'application/octet-stream'
+                    file_size = file_info.get('size_bytes', 0)
+                    file_name = os.path.basename(path)
+                    
+                    logger.info(f"File '{path}' is {mime_type} ({file_size} bytes)")
+                    
+                    return f"The file '{file_name}' is in the attachments directory. To view this file, please use the 'Attach File' button in the chat interface instead of the read_file tool. This ensures the file is properly displayed as an attachment in our conversation."
+                else:
+                    return f"The file '{path}' is in the attachments directory. To view this file, please use the 'Attach File' button in the chat interface instead of the read_file tool."
+            
+            # For regular files, return content as before
+            logger.debug(f"Reading file content for '{path}' as regular text file")
             content = self.file_handler.read_file_content(path)
+            logger.info(f"Successfully read file '{path}' with {len(content)} characters")
             return f"Content of '{path}':\n\n{content}"
 
         except Exception as e:
@@ -1055,7 +1085,7 @@ class JeevesTools:
 
     def list_directory(self, path: str = ".", recursive: bool = True) -> str:
         """
-        List the contents of a directory within the ~/.jeeves/ sandbox.
+        List the contents of a directory within the sandbox directory.
 
         Args:
             path: The relative path to the directory from the sandbox root. Defaults to the sandbox root.

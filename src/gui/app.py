@@ -358,6 +358,41 @@ class JeevesApp:
             # Initialize file handler for sandbox operations
             file_handler = JeevesFileHandler()
             
+            # Check if the file is already in the attachments directory
+            sandbox_root = file_handler.get_sandbox_root()
+            file_absolute_path = file_path.resolve()
+            
+            # Check if the file is already within the attachments directory
+            if str(file_absolute_path).startswith(str(Path(sandbox_root) / "attachments")):
+                logger.info(f"File {attachment_info['name']} is already in attachments directory, using directly")
+                
+                # Get the relative path from sandbox root
+                sandbox_path = str(file_absolute_path.relative_to(sandbox_root))
+                
+                # Generate file hash for integrity checking
+                file_hash = self._calculate_file_hash(file_path)
+                
+                # Determine MIME type and normalize it
+                mime_type, _ = mimetypes.guess_type(str(file_path))
+                mime_type = normalize_mime_type(mime_type)
+                
+                # Create processed attachment info using existing file
+                processed_attachment = {
+                    'file_name': attachment_info['name'],
+                    'original_path': str(file_path),
+                    'sandbox_path': sandbox_path,
+                    'sandbox_absolute_path': str(file_absolute_path),
+                    'file_size': attachment_info['size'],
+                    'mime_type': mime_type,
+                    'hash': file_hash,
+                    'type': attachment_info['type'],
+                    'extension': attachment_info['extension']
+                }
+                
+                logger.info(f"Using existing file in attachments: {attachment_info['name']} -> {sandbox_path} ({mime_type}, {file_hash[:8]}...)")
+                return processed_attachment
+            
+            # File is not in attachments directory, proceed with normal copy process
             # Generate a unique filename to avoid conflicts
             import uuid
             unique_id = uuid.uuid4().hex[:8]
