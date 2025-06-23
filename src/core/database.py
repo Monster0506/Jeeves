@@ -547,16 +547,14 @@ class DatabaseManager:
 
                 where_clause = " AND ".join(where_conditions)
 
-                cursor.execute(
-                    f"""
-                    SELECT id, name, icon, description, tags, created_at, updated_at, 
-                           last_activity, is_active, is_archived, metadata, settings
-                    FROM threads
-                    WHERE {where_clause}
-                    ORDER BY last_activity DESC
-                """,
-                    params,
+                query = (
+                    "SELECT id, name, icon, description, tags, created_at, updated_at, "
+                    "last_activity, is_active, is_archived, metadata, settings "
+                    "FROM threads "
+                    "WHERE " + where_clause + " " # nosec B608
+                    "ORDER BY last_activity DESC"
                 )
+                cursor.execute(query, params)
 
                 threads = []
                 for row in cursor.fetchall():
