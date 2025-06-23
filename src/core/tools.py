@@ -86,7 +86,7 @@ import logging
 import os
 import re
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Optional
 
 from .chat_manager import ChatManager
 from .file_handler import JeevesFileHandler
@@ -423,7 +423,7 @@ class JeevesTools:
             logger.error(f"Error getting conversation summary: {e}", exc_info=True)
             return f"Error: {str(e)}"
 
-    def get_registered_tools(self) -> Dict[str, callable]:
+    def get_registered_tools(self) -> dict[str, callable]:
         """
         Get all registered tools with their descriptions.
 
@@ -447,7 +447,7 @@ class JeevesTools:
             "list_directory": self.list_directory,
         }
 
-    def get_tool_descriptions(self) -> Dict[str, str]:
+    def get_tool_descriptions(self) -> dict[str, str]:
         """
         Get descriptions for all registered tools.
 

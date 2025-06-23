@@ -4,7 +4,7 @@ Unit tests for tool calling functionality.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
+from typing import List
 from unittest.mock import Mock, patch
 
 import pytest
@@ -420,7 +420,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
+            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -441,7 +441,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
+            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -465,7 +465,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
+            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -483,7 +483,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
+            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -510,7 +510,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
+            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -529,7 +529,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
+            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -547,7 +547,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
+            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -566,7 +566,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
+            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -587,7 +587,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
+            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:
@@ -611,7 +611,7 @@ class TestBaseProviderToolCalling:
             def initialize(self) -> bool:
                 return True
 
-            def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
+            def generate_response(self, user_message: str, context: List[dict] = None) -> str:
                 return "Test response"
 
             def is_available(self) -> bool:

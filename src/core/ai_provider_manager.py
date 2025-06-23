@@ -4,7 +4,7 @@ Manages multiple AI providers and handles switching between them.
 """
 
 import logging
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, List, Optional
 
 from .ai_providers import BaseAIProvider, GeminiProvider, PlaceholderProvider
 
@@ -16,10 +16,10 @@ class AIProviderManager:
 
     def __init__(self):
         """Initialize the AI provider manager."""
-        self.providers: Dict[str, BaseAIProvider] = {}
+        self.providers: dict[str, BaseAIProvider] = {}
         self.current_provider: Optional[BaseAIProvider] = None
         self.provider_order = ["gemini", "placeholder"]  # Priority order
-        self.registered_tools: Dict[str, Callable] = {}
+        self.registered_tools: dict[str, Callable] = {}
 
         # Register available providers
         self._register_providers()
@@ -38,7 +38,7 @@ class AIProviderManager:
         self.providers["placeholder"] = PlaceholderProvider()
         logger.info("Registered Placeholder provider")
 
-    def _get_gemini_config(self) -> Dict[str, Any]:
+    def _get_gemini_config(self) -> dict[str, Any]:
         """Get Gemini provider configuration."""
         return {
             "model": "gemini-2.0-flash",
@@ -150,7 +150,7 @@ class AIProviderManager:
             logger.error(f"Failed to unregister tool '{name}': {e}")
             return False
 
-    def get_registered_tools(self) -> Dict[str, Callable]:
+    def get_registered_tools(self) -> dict[str, Callable]:
         """
         Get all registered tools.
 
@@ -159,7 +159,7 @@ class AIProviderManager:
         """
         return self.registered_tools.copy()
 
-    def execute_tool(self, name: str, args: Dict[str, Any]) -> Any:
+    def execute_tool(self, name: str, args: dict[str, Any]) -> Any:
         """
         Execute a registered tool with the given arguments.
 
@@ -239,8 +239,8 @@ class AIProviderManager:
     def generate_response(
         self,
         user_message: str,
-        context: Optional[List[Dict]] = None,
-        attachments: Optional[List[Dict]] = None,
+        context: Optional[List[dict]] = None,
+        attachments: Optional[List[dict]] = None,
     ) -> str:
         """
         Generate a response using the current AI provider.
@@ -288,7 +288,7 @@ class AIProviderManager:
             logger.error(f"Error refreshing memory: {e}")
             return False
 
-    def get_available_providers(self) -> List[Dict[str, Any]]:
+    def get_available_providers(self) -> List[dict[str, Any]]:
         """
         Get information about all available providers.
 
@@ -305,7 +305,7 @@ class AIProviderManager:
 
         return providers_info
 
-    def get_provider_status(self) -> Dict[str, Any]:
+    def get_provider_status(self) -> dict[str, Any]:
         """
         Get the status of the current provider.
 

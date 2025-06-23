@@ -7,7 +7,7 @@ import logging
 import shutil
 import threading
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import customtkinter as ctk
 
@@ -271,7 +271,7 @@ class JeevesApp:
             logger.error(f"Failed to rename thread: {e}")
             show_error("Error", f"Failed to rename thread: {e}")
 
-    def _on_send_message(self, message: str, attachments: Optional[List[Dict]] = None):
+    def _on_send_message(self, message: str, attachments: Optional[List[dict]] = None):
         """Handle sending a message."""
         # The message no longer contains attachment text, so no cleaning is needed.
 
@@ -313,7 +313,7 @@ class JeevesApp:
             logger.error(f"Failed to send message: {e}")
             show_error("Error", f"Failed to send message: {e}")
 
-    def _on_attachment(self, attachment_info: Dict):
+    def _on_attachment(self, attachment_info: dict):
         """Handle file attachment processing."""
         try:
             # For now, we'll just log the attachment info
@@ -333,7 +333,7 @@ class JeevesApp:
             logger.error(f"Failed to process attachment: {e}")
             show_error("Error", f"Failed to process attachment: {e}")
 
-    def _process_attachment(self, attachment_info: Dict) -> Dict:
+    def _process_attachment(self, attachment_info: dict) -> dict:
         """Process an attachment and prepare it for storage in the sandbox."""
         try:
             import mimetypes
@@ -444,13 +444,13 @@ class JeevesApp:
             logger.error(f"Failed to calculate file hash: {e}")
             return ""
 
-    def _on_message_added(self, message: Dict):
+    def _on_message_added(self, message: dict):
         """Handle new message added to conversation."""
         # This is called by the chat manager when a message is added to the database
         # We don't need to do anything here since we handle UI updates in _on_send_message
         pass
 
-    def _on_thread_changed(self, thread: Dict):
+    def _on_thread_changed(self, thread: dict):
         """Handle thread changes."""
         # Update sidebar if needed
         threads = self.chat_manager.get_threads()

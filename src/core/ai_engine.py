@@ -5,7 +5,7 @@ Now uses a modular provider system for different AI backends.
 """
 
 import logging
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from .ai_provider_manager import AIProviderManager
 from .chat_manager import ChatManager
@@ -29,7 +29,7 @@ class AIEngine:
         self._initialize_providers()
 
     @property
-    def conversation_history(self) -> List[Dict]:
+    def conversation_history(self) -> List[dict]:
         """
         Get the current conversation history for backward compatibility.
 
@@ -69,17 +69,17 @@ class AIEngine:
         except Exception as e:
             logger.error(f"Error registering tools: {e}")
 
-    def _on_message_added(self, message: Dict):
+    def _on_message_added(self, message: dict):
         """Callback when a new message is added to the conversation."""
         # No longer needed: self.conversation_history.append(message)
         pass
 
-    def _on_thread_changed(self, thread: Dict):
+    def _on_thread_changed(self, thread: dict):
         """Callback when thread changes."""
         # No longer needed: self.conversation_history = []
         pass
 
-    def generate_response(self, user_message: str, attachments: Optional[List[Dict]] = None) -> str:
+    def generate_response(self, user_message: str, attachments: Optional[List[dict]] = None) -> str:
         """
         Generate an AI response to the user's message.
 
@@ -204,7 +204,7 @@ class AIEngine:
             logger.error(f"Error refreshing memory: {e}")
             return False
 
-    def get_conversation_context(self, thread_id: Optional[int] = None) -> List[Dict]:
+    def get_conversation_context(self, thread_id: Optional[int] = None) -> List[dict]:
         """
         Get conversation context for AI processing.
 
@@ -236,7 +236,7 @@ class AIEngine:
         """
         return self.provider_manager.switch_provider(provider_name)
 
-    def get_current_provider_info(self) -> Dict:
+    def get_current_provider_info(self) -> dict:
         """
         Get information about the current AI provider.
 
@@ -245,7 +245,7 @@ class AIEngine:
         """
         return self.provider_manager.get_provider_status()
 
-    def get_available_providers(self) -> List[Dict]:
+    def get_available_providers(self) -> List[dict]:
         """
         Get information about all available AI providers.
 
@@ -254,7 +254,7 @@ class AIEngine:
         """
         return self.provider_manager.get_available_providers()
 
-    def analyze_conversation(self, thread_id: Optional[int] = None) -> Dict:
+    def analyze_conversation(self, thread_id: Optional[int] = None) -> dict:
         """
         Analyze the current conversation for insights.
 
@@ -319,7 +319,7 @@ class AIEngine:
             "ai_provider": self.get_current_provider_info(),
         }
 
-    def _calculate_duration(self, messages: List[Dict]) -> str:
+    def _calculate_duration(self, messages: List[dict]) -> str:
         """Calculate the duration of a conversation."""
         if len(messages) < 2:
             return "0 minutes"
@@ -343,7 +343,7 @@ class AIEngine:
             logger.warning(f"Could not calculate conversation duration: {e}")
             return "Unknown"
 
-    def _analyze_interaction_pattern(self, messages: List[Dict]) -> str:
+    def _analyze_interaction_pattern(self, messages: List[dict]) -> str:
         """Analyze the interaction pattern between user and AI."""
         if not messages:
             return "No interaction"
@@ -404,7 +404,7 @@ class AIEngine:
 
         return suggestions[:count]
 
-    def get_ai_stats(self) -> Dict:
+    def get_ai_stats(self) -> dict:
         """
         Get statistics about AI usage and performance.
 

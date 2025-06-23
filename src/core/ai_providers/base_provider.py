@@ -5,7 +5,7 @@ Defines the contract that all AI providers must implement.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class BaseAIProvider(ABC):
     """Abstract base class for AI providers."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: Optional[dict[str, Any]] = None):
         """
         Initialize the AI provider.
 
@@ -23,8 +23,8 @@ class BaseAIProvider(ABC):
         self.config = config or {}
         self.is_initialized = False
         self.provider_name = self.__class__.__name__
-        self.registered_tools: Dict[str, Callable] = {}
-        self.tool_config: Dict[str, Any] = {}
+        self.registered_tools: dict[str, Callable] = {}
+        self.tool_config: dict[str, Any] = {}
 
     @abstractmethod
     def initialize(self) -> bool:
@@ -40,8 +40,8 @@ class BaseAIProvider(ABC):
     def generate_response(
         self,
         user_message: str,
-        context: Optional[List[Dict]] = None,
-        attachments: Optional[List[Dict]] = None,
+        context: Optional[List[dict]] = None,
+        attachments: Optional[List[dict]] = None,
     ) -> str:
         """
         Generate an AI response to the user's message.
@@ -111,7 +111,7 @@ class BaseAIProvider(ABC):
             logger.error(f"Failed to unregister tool '{name}' from {self.provider_name}: {e}")
             return False
 
-    def get_registered_tools(self) -> Dict[str, Callable]:
+    def get_registered_tools(self) -> dict[str, Callable]:
         """
         Get all registered tools.
 
@@ -120,7 +120,7 @@ class BaseAIProvider(ABC):
         """
         return self.registered_tools.copy()
 
-    def execute_tool(self, name: str, args: Dict[str, Any]) -> Any:
+    def execute_tool(self, name: str, args: dict[str, Any]) -> Any:
         """
         Execute a registered tool with the given arguments.
 
@@ -146,7 +146,7 @@ class BaseAIProvider(ABC):
             logger.error(f"Failed to execute tool '{name}': {e}")
             raise
 
-    def set_tool_config(self, config: Dict[str, Any]) -> None:
+    def set_tool_config(self, config: dict[str, Any]) -> None:
         """
         Set tool configuration for the provider.
 
@@ -156,7 +156,7 @@ class BaseAIProvider(ABC):
         self.tool_config = config.copy()
         logger.info(f"Updated tool config for {self.provider_name}")
 
-    def get_tool_config(self) -> Dict[str, Any]:
+    def get_tool_config(self) -> dict[str, Any]:
         """
         Get current tool configuration.
 
@@ -165,7 +165,7 @@ class BaseAIProvider(ABC):
         """
         return self.tool_config.copy()
 
-    def get_provider_info(self) -> Dict[str, Any]:
+    def get_provider_info(self) -> dict[str, Any]:
         """
         Get detailed information about the provider.
 

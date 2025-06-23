@@ -12,7 +12,7 @@ import tarfile
 import zipfile
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, List, Optional, TypedDict
 
 from src.config.settings import APP_SETTINGS
 
@@ -67,7 +67,7 @@ class JeevesFileHandler:
         self._backup_retention_days = 30
         self._max_file_size_bytes = 100 * 1024 * 1024  # Default to 100 MB
         self._allowed_extensions: Optional[List[str]] = None  # None means all allowed
-        self._operation_history: List[Dict] = []
+        self._operation_history: List[dict] = []
         self._last_error_message: Optional[str] = None
         self._caching_enabled = False  # Placeholder for a more complex feature
 
@@ -538,7 +538,7 @@ class JeevesFileHandler:
         recursive: bool = False,
         include_files: bool = True,
         include_directories: bool = True,
-    ) -> List[Dict]:
+    ) -> List[dict]:
         """
         List directory contents with filtering options.
 
@@ -559,7 +559,7 @@ class JeevesFileHandler:
                 logger.warning(f"Cannot list contents of non-directory path: {relative_directory_path}")
                 return []
 
-            contents: List[Dict] = []
+            contents: List[dict] = []
 
             # Use appropriate glob method based on recursion
             if recursive:
@@ -813,7 +813,7 @@ class JeevesFileHandler:
         relative_root_path: str,  # Added a root path argument for consistency
         pattern: str,
         file_paths: Optional[List[str]] = None,
-    ) -> List[Dict]:
+    ) -> List[dict]:
         """
         Search file contents using regex pattern.
 
@@ -831,7 +831,7 @@ class JeevesFileHandler:
             - 'match_start': Start index of the match in the line.
             - 'match_end': End index of the match in the line.
         """
-        results: List[Dict] = []
+        results: List[dict] = []
         try:
             re_pattern = re.compile(pattern)
 
@@ -880,7 +880,7 @@ class JeevesFileHandler:
             logger.error(f"An unexpected error occurred during search file contents: {e}")
             return []
 
-    def get_file_info(self, relative_file_path: str) -> Dict:
+    def get_file_info(self, relative_file_path: str) -> dict:
         """
         Get file metadata (size, modified date, etc.).
 
@@ -1422,7 +1422,7 @@ class JeevesFileHandler:
             logger.error(f"An unexpected error occurred getting available space: {e}")
             return -1
 
-    def get_sandbox_stats(self) -> Dict:
+    def get_sandbox_stats(self) -> dict:
         """
         Get sandbox statistics (total files, directories, size, etc.).
 
@@ -1586,7 +1586,7 @@ class JeevesFileHandler:
             logger.error(f"An unexpected error occurred while creating symlink {link_relative_path}: {e}")
             return False
 
-    def get_file_hash(self, relative_file_path: str, algorithm: str = "sha256") -> Optional[str]:
+    def get_file_hash(self, relative_file_path: str, algorithm: str = "sha256") -> Any:
         """
         Calculate file hash for integrity checking.
 
@@ -1787,8 +1787,16 @@ class JeevesFileHandler:
     # Error Handling & Logging (Placeholders/basic implementations)
     # For a real system, these would interact with a more persistent logging/auditing system.
 
-    def _log_operation(self, operation_type: str, status: str, path: str, details: Optional[Dict] = None) -> None:
+    def _log_operation(self, operation_type: str, status: str, path: str, details: Optional[dict] = None) -> None:
         """Internal method to log operation history."""
+
+        class OperationHistoryEntry(TypedDict):
+            timestamp: str
+            operation: str
+            status: str
+            path: str
+            details: dict
+
         entry = {
             "timestamp": datetime.now().isoformat(),
             "operation": operation_type,
@@ -1801,6 +1809,7 @@ class JeevesFileHandler:
             self._operation_history.pop(0)
 
         if status == "error":
+            entry["details"] = entry["details"] if isinstance(entry["details"], dict) else {}
             self._last_error_message = entry["details"].get("message", "An unspecified error occurred.")
 
     def get_last_error(self) -> str:
@@ -1820,7 +1829,7 @@ class JeevesFileHandler:
         self._last_error_message = None
         logger.info("Internal last error message cleared.")
 
-    def get_operation_history(self, limit: int = 100) -> List[Dict]:
+    def get_operation_history(self, limit: int = 100) -> List[dict]:
         """
         Get audit trail of file operations.
 
@@ -1987,7 +1996,7 @@ class JeevesFileHandler:
             logger.error(f"An unexpected error occurred while preloading directory {relative_directory_path}: {e}")
 
     # Integration (Placeholders)
-    def export_to_json(self, relative_file_path: str) -> Dict:
+    def export_to_json(self, relative_file_path: str) -> dict:
         """
         Export file metadata as JSON. Reads file content and basic info.
         NOTE: This is a basic export; full JSON representation of arbitrary files
@@ -2030,7 +2039,7 @@ class JeevesFileHandler:
             logger.error(f"An unexpected error occurred exporting {relative_file_path} to JSON: {e}")
             return {"error": f"An unexpected error occurred: {e}"}
 
-    def import_from_json(self, json_data: Dict) -> bool:
+    def import_from_json(self, json_data: dict) -> bool:
         """
         Restore file from JSON metadata and content.
         This assumes the `json_data` structure matches the output of `export_to_json`.

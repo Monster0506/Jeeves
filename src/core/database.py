@@ -13,7 +13,7 @@ import time
 from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, List, Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -301,8 +301,8 @@ class DatabaseManager:
         icon: Optional[str] = None,
         description: Optional[str] = None,
         tags: Optional[List[str]] = None,
-        metadata: Optional[Dict] = None,
-        settings: Optional[Dict] = None,
+        metadata: Optional[dict] = None,
+        settings: Optional[dict] = None,
     ) -> int:
         """
         Create a new conversation thread.
@@ -351,7 +351,7 @@ class DatabaseManager:
         include_archived: bool = False,
         limit: Optional[int] = None,
         offset: int = 0,
-    ) -> List[Dict]:
+    ) -> List[dict]:
         """
         Get all threads with enhanced filtering.
 
@@ -424,7 +424,7 @@ class DatabaseManager:
 
         return self._execute_with_retry(_get)
 
-    def get_thread_message_counts(self) -> Dict[int, int]:
+    def get_thread_message_counts(self) -> dict[int, int]:
         """
         Get message counts for all threads.
 
@@ -451,7 +451,7 @@ class DatabaseManager:
 
         return self._execute_with_retry(_get_counts)
 
-    def get_thread(self, thread_id: int) -> Optional[Dict]:
+    def get_thread(self, thread_id: int) -> Optional[dict]:
         """
         Get a specific thread by ID.
 
@@ -495,7 +495,7 @@ class DatabaseManager:
 
         return self._execute_with_retry(_get)
 
-    def find_threads_by_name(self, name: str, active_only: bool = True) -> List[Dict]:
+    def find_threads_by_name(self, name: str, active_only: bool = True) -> List[dict]:
         """
         Find threads by name (case-insensitive partial match).
 
@@ -644,8 +644,8 @@ class DatabaseManager:
         sender: str,
         content: str,
         content_type: str = "text",
-        metadata: Optional[Dict] = None,
-        attachments: Optional[List[Dict]] = None,
+        metadata: Optional[dict] = None,
+        attachments: Optional[List[dict]] = None,
         parent_message_id: Optional[int] = None,
         reply_to_message_id: Optional[int] = None,
     ) -> int:
@@ -741,7 +741,7 @@ class DatabaseManager:
         limit: Optional[int] = None,
         offset: int = 0,
         include_attachments: bool = True,
-    ) -> List[Dict]:
+    ) -> List[dict]:
         """
         Get messages for a thread with enhanced options.
 
@@ -834,7 +834,7 @@ class DatabaseManager:
         thread_id: Optional[int] = None,
         limit: int = 50,
         include_attachments: bool = False,
-    ) -> List[Dict]:
+    ) -> List[dict]:
         """
         Search messages using full-text search.
 
@@ -930,7 +930,7 @@ class DatabaseManager:
 
         return self._execute_with_retry(_search)
 
-    def update_message(self, message_id: int, content: Optional[str] = None, metadata: Optional[Dict] = None) -> bool:
+    def update_message(self, message_id: int, content: Optional[str] = None, metadata: Optional[dict] = None) -> bool:
         """
         Update a message with new content or metadata.
 
@@ -972,7 +972,7 @@ class DatabaseManager:
 
         return self._execute_with_retry(_update)
 
-    def get_user_settings(self, key: Optional[str] = None) -> Union[Dict, Any]:
+    def get_user_settings(self, key: Optional[str] = None) -> Union[dict, Any]:
         """
         Get user settings.
 
@@ -1078,7 +1078,7 @@ class DatabaseManager:
             logger.info(f"Set user setting: {key}")
         return success
 
-    def add_analytics(self, thread_id: int, analytics_type: str, data: Dict) -> int:
+    def add_analytics(self, thread_id: int, analytics_type: str, data: dict) -> int:
         """
         Add conversation analytics data.
 
@@ -1110,7 +1110,7 @@ class DatabaseManager:
         logger.info(f"Added analytics for thread {thread_id}: {analytics_type}")
         return analytics_id
 
-    def get_analytics(self, thread_id: int, analytics_type: Optional[str] = None) -> List[Dict]:
+    def get_analytics(self, thread_id: int, analytics_type: Optional[str] = None) -> List[dict]:
         """
         Get conversation analytics.
 
@@ -1163,7 +1163,7 @@ class DatabaseManager:
 
         return self._execute_with_retry(_get)
 
-    def get_database_stats(self) -> Dict:
+    def get_database_stats(self) -> dict:
         """
         Get comprehensive database statistics.
 

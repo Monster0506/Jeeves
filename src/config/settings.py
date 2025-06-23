@@ -30,7 +30,82 @@ ICONS = {
     "wave": "👋",
 }
 
-COLORS = {
+
+class ColorsTheme(TypedDict):
+    accent_light: str
+    accent_primary: str
+    accent_secondary: str
+    accent_tertiary: str
+    active_dark: str
+    active_light: str
+    bg_card: str
+    bg_chat: str
+    bg_header: str
+    bg_input: str
+    bg_overlay: str
+    bg_primary: str
+    bg_secondary: str
+    bg_sidebar: str
+    bg_tertiary: str
+    border_divider: str
+    border_focus: str
+    border_primary: str
+    border_secondary: str
+    bubble_ai: str
+    bubble_ai_hover: str
+    bubble_system: str
+    bubble_user: str
+    bubble_user_hover: str
+    button_danger: str
+    button_danger_hover: str
+    button_primary: str
+    button_primary_active: str
+    button_primary_hover: str
+    button_secondary: str
+    button_secondary_active: str
+    button_secondary_hover: str
+    button_success: str
+    button_success_hover: str
+    button_warning: str
+    button_warning_hover: str
+    disabled: str
+    disabled_bg: str
+    error: str
+    error_hover: str
+    highlight: str
+    hover_dark: str
+    hover_light: str
+    info: str
+    info_hover: str
+    link: str
+    link_hover: str
+    selection: str
+    shadow_dark: str
+    shadow_light: str
+    shadow_medium: str
+    success: str
+    success_hover: str
+    text_inverse: str
+    text_muted: str
+    text_primary: str
+    text_secondary: str
+    text_tertiary: str
+    thread_code: str
+    thread_creative: str
+    thread_docs: str
+    thread_general: str
+    thread_planning: str
+    thread_support: str
+    warning: str
+    warning_hover: str
+
+
+class ColorsType(TypedDict):
+    dark: ColorsTheme
+    light: ColorsTheme
+
+
+COLORS: ColorsType = {
     "dark": {
         # Background Colors
         "bg_primary": "#0f172a",  # Main app background
@@ -191,6 +266,27 @@ COLORS = {
     },
 }
 
+
+class FontSizes(TypedDict):
+    small: int
+    large: int
+    normal: int
+    medium: int
+    xlarge: int
+
+
+class AppSettingsType(TypedDict):
+    font_family: str
+    font_sizes: FontSizes
+    title: str
+    default_width: int
+    default_height: int
+    min_width: int
+    min_height: int
+    sidebar_width: int
+    sandbox_directory: str
+
+
 # App settings
 APP_SETTINGS: AppSettingsType = {
     "title": "Jeeves - AI Assistant",
@@ -236,52 +332,3 @@ DEFAULT_THREADS = [
     ("target", "Goal Setting"),
     ("rocket", "Feature Planning"),
 ]
-
-
-class FontSizes(TypedDict):
-    small: int
-    large: int
-    normal: int
-    medium: int
-    xlarge: int
-
-
-class AppSettingsType(TypedDict):
-    font_family: str
-    font_sizes: FontSizes
-    title: str
-    default_width: int
-    default_height: int
-    min_width: int
-    min_height: int
-    sidebar_width: int
-    sandbox_directory: str
-
-
-class ColorsTheme(TypedDict):
-    bg_sidebar: str
-    accent_primary: str
-    button_primary: str
-    text_inverse: str
-    button_primary_hover: str
-    border_divider: str
-    thread_general: str
-    thread_code: str
-    thread_planning: str
-    thread_creative: str
-    thread_support: str
-    thread_docs: str
-    button_secondary: str
-    text_primary: str
-    button_secondary_hover: str
-    border_focus: str
-    border_secondary: str
-    text_secondary: str
-    error: str
-    warning: str
-    success: str
-    info: str
-
-
-class ColorsType(TypedDict):
-    dark: ColorsTheme

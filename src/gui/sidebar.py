@@ -7,13 +7,7 @@ from typing import (
 
 import customtkinter as ctk
 
-from ..config.settings import APP_SETTINGS as _APP_SETTINGS_RAW
-from ..config.settings import COLORS as _COLORS_RAW
-from ..config.settings import AppSettingsType, ColorsTheme, ColorsType
-
-APP_SETTINGS: AppSettingsType = _APP_SETTINGS_RAW  # type: ignore[assignment]
-COLORS: ColorsType = _COLORS_RAW  # type: ignore[assignment]
-
+from ..config.settings import APP_SETTINGS, COLORS, ColorsTheme
 
 logger = logging.getLogger(__name__)
 

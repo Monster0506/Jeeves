@@ -361,10 +361,10 @@ All built-in tools include comprehensive security measures:
 The `BaseAIProvider` class includes comprehensive tool calling capabilities:
 - `register_tool(name: str, function: Callable, description: str = None) -> bool` - Register a function as a callable tool
 - `unregister_tool(name: str) -> bool` - Remove a tool
-- `execute_tool(name: str, args: Dict[str, Any]) -> Any` - Execute a tool with arguments
-- `get_registered_tools() -> Dict[str, Callable]` - Get all registered tools
-- `set_tool_config(config: Dict[str, Any]) -> None` - Configure tool behavior
-- `get_tool_config() -> Dict[str, Any]` - Get current tool configuration
+- `execute_tool(name: str, args: dict[str, Any]) -> Any` - Execute a tool with arguments
+- `get_registered_tools() -> dict[str, Callable]` - Get all registered tools
+- `set_tool_config(config: dict[str, Any]) -> None` - Configure tool behavior
+- `get_tool_config() -> dict[str, Any]` - Get current tool configuration
 
 ### Gemini Provider Implementation
 The `GeminiProvider` extends the base interface with:
@@ -766,19 +766,19 @@ See the comprehensive test suite for complete working examples:
 
 - `register_tool(name: str, function: Callable, description: str = None) -> bool`
 - `unregister_tool(name: str) -> bool`
-- `execute_tool(name: str, args: Dict[str, Any]) -> Any`
-- `get_registered_tools() -> Dict[str, Callable]`
-- `set_tool_config(config: Dict[str, Any]) -> None`
-- `get_tool_config() -> Dict[str, Any]`
+- `execute_tool(name: str, args: dict[str, Any]) -> Any`
+- `get_registered_tools() -> dict[str, Callable]`
+- `set_tool_config(config: dict[str, Any]) -> None`
+- `get_tool_config() -> dict[str, Any]`
 
 ### AIProviderManager Methods
 
 - `register_tool(name: str, function: Callable, description: str = None) -> bool`
 - `unregister_tool(name: str) -> bool`
-- `execute_tool(name: str, args: Dict[str, Any]) -> Any`
-- `get_registered_tools() -> Dict[str, Callable]`
+- `execute_tool(name: str, args: dict[str, Any]) -> Any`
+- `get_registered_tools() -> dict[str, Callable]`
 - `initialize() -> bool`
-- `generate_response(user_message: str, context: List[Dict] = None) -> str`
+- `generate_response(user_message: str, context: List[dict] = None) -> str`
 
 ### GeminiProvider Configuration
 

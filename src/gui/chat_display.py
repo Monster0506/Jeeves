@@ -8,7 +8,7 @@ import webbrowser
 from datetime import datetime
 from pathlib import Path
 from tkinter import filedialog
-from typing import Callable, Dict, List, Optional
+from typing import Callable, List, Optional
 
 import customtkinter as ctk
 from markdown_it import MarkdownIt
@@ -489,7 +489,7 @@ class MessageBubble(ctk.CTkFrame):
 class AttachmentPill(ctk.CTkFrame):
     """A widget to display a single attachment in the input area."""
 
-    def __init__(self, parent, attachment_info: Dict, on_remove: Callable):
+    def __init__(self, parent, attachment_info: dict, on_remove: Callable):
         super().__init__(parent, fg_color=("#E0E0E0", "#4A4D50"), corner_radius=12)
         self.pack(side="left", padx=4, pady=4)
 
@@ -821,7 +821,7 @@ class ChatDisplay(ctk.CTkFrame):
             logging.getLogger(__name__).error(f"Error adding message: {e}")
             # Try to continue without the problematic message bubble
 
-    def load_messages(self, messages: List[Dict]):
+    def load_messages(self, messages: List[dict]):
         """Load messages with proper widget cleanup to prevent Tkinter errors."""
         try:
             # Safely destroy existing widgets
@@ -1036,7 +1036,7 @@ class ChatDisplay(ctk.CTkFrame):
         }
         return file_types.get(extension, "File")
 
-    def _add_attachment(self, attachment_info: Dict):
+    def _add_attachment(self, attachment_info: dict):
         """Add a new attachment pill to the UI."""
         # Show the tray if this is the first attachment
         if not self._current_attachments:

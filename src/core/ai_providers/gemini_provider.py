@@ -8,7 +8,7 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from src.config.settings import APP_SETTINGS
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class GeminiProvider(BaseAIProvider):
     """Gemini AI provider using Google's Generative AI API."""
 
-    def __init__(self, config: Dict[str, Any] | None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize the Gemini provider.
 
@@ -320,8 +320,8 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
     def generate_response(
         self,
         user_message: str,
-        context: Optional[List[Dict]] = None,
-        attachments: Optional[List[Dict]] = None,
+        context: Optional[List[dict]] = None,
+        attachments: Optional[List[dict]] = None,
     ) -> str:
         """
         Generate a response using Gemini AI with automatic tool calling and file support.
@@ -544,7 +544,7 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
 
         return True
 
-    def get_provider_info(self) -> Dict[str, Any]:
+    def get_provider_info(self) -> dict[str, Any]:
         """
         Get detailed information about the Gemini provider.
 
