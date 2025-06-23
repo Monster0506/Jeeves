@@ -1,6 +1,7 @@
 """
 Pytest configuration and shared fixtures for Jeeves test suite.
 """
+
 import os
 import sys
 import pytest
@@ -11,7 +12,7 @@ from unittest.mock import Mock, patch
 import uuid
 
 # Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from core.ai_providers import GeminiProvider, PlaceholderProvider
 from core.ai_provider_manager import AIProviderManager
@@ -54,12 +55,12 @@ def mock_gemini_client():
 def gemini_provider(mock_gemini_api_key):
     """Create a Gemini provider instance for testing."""
     config = {
-        'api_key': mock_gemini_api_key,
-        'model': 'gemini-2.0-flash',
-        'max_output_tokens': 1024,
-        'temperature': 0.7,
-        'top_p': 0.95,
-        'top_k': 40
+        "api_key": mock_gemini_api_key,
+        "model": "gemini-2.0-flash",
+        "max_output_tokens": 1024,
+        "temperature": 0.7,
+        "top_p": 0.95,
+        "top_k": 40,
     }
     return GeminiProvider(config)
 
@@ -100,10 +101,26 @@ def chat_manager(test_database):
 def sample_conversation():
     """Sample conversation data for testing."""
     return [
-        {'sender': 'user', 'content': 'Hello, how are you?', 'timestamp': '2024-01-01T10:00:00'},
-        {'sender': 'assistant', 'content': 'I\'m doing well, thank you! How can I help you?', 'timestamp': '2024-01-01T10:00:01'},
-        {'sender': 'user', 'content': 'Can you help me with Python?', 'timestamp': '2024-01-01T10:00:02'},
-        {'sender': 'assistant', 'content': 'Of course! Python is a great programming language. What specific help do you need?', 'timestamp': '2024-01-01T10:00:03'}
+        {
+            "sender": "user",
+            "content": "Hello, how are you?",
+            "timestamp": "2024-01-01T10:00:00",
+        },
+        {
+            "sender": "assistant",
+            "content": "I'm doing well, thank you! How can I help you?",
+            "timestamp": "2024-01-01T10:00:01",
+        },
+        {
+            "sender": "user",
+            "content": "Can you help me with Python?",
+            "timestamp": "2024-01-01T10:00:02",
+        },
+        {
+            "sender": "assistant",
+            "content": "Of course! Python is a great programming language. What specific help do you need?",
+            "timestamp": "2024-01-01T10:00:03",
+        },
     ]
 
 
@@ -111,9 +128,24 @@ def sample_conversation():
 def sample_threads():
     """Sample thread data for testing."""
     return [
-        {'id': 'test1', 'title': 'Test Thread 1', 'type': 'general', 'created_at': '2024-01-01T10:00:00'},
-        {'id': 'test2', 'title': 'Test Thread 2', 'type': 'code', 'created_at': '2024-01-01T11:00:00'},
-        {'id': 'test3', 'title': 'Test Thread 3', 'type': 'planning', 'created_at': '2024-01-01T12:00:00'}
+        {
+            "id": "test1",
+            "title": "Test Thread 1",
+            "type": "general",
+            "created_at": "2024-01-01T10:00:00",
+        },
+        {
+            "id": "test2",
+            "title": "Test Thread 2",
+            "type": "code",
+            "created_at": "2024-01-01T11:00:00",
+        },
+        {
+            "id": "test3",
+            "title": "Test Thread 3",
+            "type": "planning",
+            "created_at": "2024-01-01T12:00:00",
+        },
     ]
 
 
@@ -123,13 +155,13 @@ def setup_test_environment():
     """Setup test environment variables."""
     # Store original environment
     original_env = os.environ.copy()
-    
+
     # Set test environment variables
-    os.environ['GOOGLE_API_KEY'] = 'test_api_key_12345'
-    os.environ['JEEVES_TEST_MODE'] = 'true'
-    
+    os.environ["GOOGLE_API_KEY"] = "test_api_key_12345"
+    os.environ["JEEVES_TEST_MODE"] = "true"
+
     yield
-    
+
     # Restore original environment
     os.environ.clear()
     os.environ.update(original_env)
@@ -138,18 +170,8 @@ def setup_test_environment():
 # Test markers
 def pytest_configure(config):
     """Configure pytest with custom markers."""
-    config.addinivalue_line(
-        "markers", "unit: mark test as a unit test"
-    )
-    config.addinivalue_line(
-        "markers", "integration: mark test as an integration test"
-    )
-    config.addinivalue_line(
-        "markers", "api: mark test as an API test"
-    )
-    config.addinivalue_line(
-        "markers", "gui: mark test as a GUI test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow running"
-    ) 
+    config.addinivalue_line("markers", "unit: mark test as a unit test")
+    config.addinivalue_line("markers", "integration: mark test as an integration test")
+    config.addinivalue_line("markers", "api: mark test as an API test")
+    config.addinivalue_line("markers", "gui: mark test as a GUI test")
+    config.addinivalue_line("markers", "slow: mark test as slow running")

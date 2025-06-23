@@ -1,6 +1,7 @@
 """
 Tests for MIME type normalization functionality.
 """
+
 import pytest
 from src.utils import normalize_mime_type
 
@@ -17,10 +18,12 @@ class TestMimeTypeNormalization:
             ("audio/x-m4a", "audio/mp4"),
             ("audio/x-wav", "audio/wav"),
         ]
-        
+
         for input_mime, expected in test_cases:
             result = normalize_mime_type(input_mime)
-            assert result == expected, f"Expected '{input_mime}' -> '{expected}', got '{result}'"
+            assert (
+                result == expected
+            ), f"Expected '{input_mime}' -> '{expected}', got '{result}'"
 
     @pytest.mark.unit
     def test_video_format_normalizations(self):
@@ -30,10 +33,12 @@ class TestMimeTypeNormalization:
             ("video/x-ms-wmv", "video/wmv"),
             ("video/quicktime", "video/mp4"),
         ]
-        
+
         for input_mime, expected in test_cases:
             result = normalize_mime_type(input_mime)
-            assert result == expected, f"Expected '{input_mime}' -> '{expected}', got '{result}'"
+            assert (
+                result == expected
+            ), f"Expected '{input_mime}' -> '{expected}', got '{result}'"
 
     @pytest.mark.unit
     def test_image_format_normalizations(self):
@@ -45,26 +50,36 @@ class TestMimeTypeNormalization:
             ("image/x-bmp", "image/bmp"),
             ("image/x-tiff", "image/tiff"),
         ]
-        
+
         for input_mime, expected in test_cases:
             result = normalize_mime_type(input_mime)
-            assert result == expected, f"Expected '{input_mime}' -> '{expected}', got '{result}'"
+            assert (
+                result == expected
+            ), f"Expected '{input_mime}' -> '{expected}', got '{result}'"
 
     @pytest.mark.unit
     def test_document_format_normalizations(self):
         """Test document format MIME type normalizations (should remain unchanged)."""
         test_cases = [
-            ("application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
-            ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
-            ("application/vnd.openxmlformats-officedocument.presentationml.presentation",
-             "application/vnd.openxmlformats-officedocument.presentationml.presentation"),
+            (
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ),
+            (
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ),
+            (
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            ),
         ]
-        
+
         for input_mime, expected in test_cases:
             result = normalize_mime_type(input_mime)
-            assert result == expected, f"Expected '{input_mime}' -> '{expected}', got '{result}'"
+            assert (
+                result == expected
+            ), f"Expected '{input_mime}' -> '{expected}', got '{result}'"
 
     @pytest.mark.unit
     def test_edge_cases(self):
@@ -75,10 +90,12 @@ class TestMimeTypeNormalization:
             ("   ", "application/octet-stream"),
             ("\t\n\r", "application/octet-stream"),
         ]
-        
+
         for input_mime, expected in test_cases:
             result = normalize_mime_type(input_mime)
-            assert result == expected, f"Expected '{input_mime}' -> '{expected}', got '{result}'"
+            assert (
+                result == expected
+            ), f"Expected '{input_mime}' -> '{expected}', got '{result}'"
 
     @pytest.mark.unit
     def test_case_normalization(self):
@@ -90,10 +107,12 @@ class TestMimeTypeNormalization:
             ("Audio/MP3", "audio/mp3"),
             ("TEXT/PLAIN", "text/plain"),
         ]
-        
+
         for input_mime, expected in test_cases:
             result = normalize_mime_type(input_mime)
-            assert result == expected, f"Expected '{input_mime}' -> '{expected}', got '{result}'"
+            assert (
+                result == expected
+            ), f"Expected '{input_mime}' -> '{expected}', got '{result}'"
 
     @pytest.mark.unit
     def test_whitespace_handling(self):
@@ -104,10 +123,12 @@ class TestMimeTypeNormalization:
             ("  audio/mp3\r\n  ", "audio/mp3"),
             ("\n\nvideo/mp4\t\t", "video/mp4"),
         ]
-        
+
         for input_mime, expected in test_cases:
             result = normalize_mime_type(input_mime)
-            assert result == expected, f"Expected '{input_mime}' -> '{expected}', got '{result}'"
+            assert (
+                result == expected
+            ), f"Expected '{input_mime}' -> '{expected}', got '{result}'"
 
     @pytest.mark.unit
     def test_unchanged_mime_types(self):
@@ -130,10 +151,12 @@ class TestMimeTypeNormalization:
             "image/png",  # Already normalized
             "image/jpeg",  # Already normalized
         ]
-        
+
         for input_mime in test_cases:
             result = normalize_mime_type(input_mime)
-            assert result == input_mime, f"Expected '{input_mime}' to remain unchanged, got '{result}'"
+            assert (
+                result == input_mime
+            ), f"Expected '{input_mime}' to remain unchanged, got '{result}'"
 
     @pytest.mark.unit
     def test_complex_mime_types(self):
@@ -142,14 +165,25 @@ class TestMimeTypeNormalization:
             ("application/vnd.ms-excel", "application/vnd.ms-excel"),
             ("application/vnd.ms-powerpoint", "application/vnd.ms-powerpoint"),
             ("application/vnd.ms-word", "application/vnd.ms-word"),
-            ("application/vnd.oasis.opendocument.text", "application/vnd.oasis.opendocument.text"),
-            ("application/vnd.oasis.opendocument.spreadsheet", "application/vnd.oasis.opendocument.spreadsheet"),
-            ("application/vnd.oasis.opendocument.presentation", "application/vnd.oasis.opendocument.presentation"),
+            (
+                "application/vnd.oasis.opendocument.text",
+                "application/vnd.oasis.opendocument.text",
+            ),
+            (
+                "application/vnd.oasis.opendocument.spreadsheet",
+                "application/vnd.oasis.opendocument.spreadsheet",
+            ),
+            (
+                "application/vnd.oasis.opendocument.presentation",
+                "application/vnd.oasis.opendocument.presentation",
+            ),
         ]
-        
+
         for input_mime, expected in test_cases:
             result = normalize_mime_type(input_mime)
-            assert result == expected, f"Expected '{input_mime}' -> '{expected}', got '{result}'"
+            assert (
+                result == expected
+            ), f"Expected '{input_mime}' -> '{expected}', got '{result}'"
 
     @pytest.mark.unit
     def test_return_type(self):
@@ -164,10 +198,12 @@ class TestMimeTypeNormalization:
             "APPLICATION/PDF",
             "  image/png  ",
         ]
-        
+
         for input_mime in test_inputs:
             result = normalize_mime_type(input_mime)
-            assert isinstance(result, str), f"Expected string return type for input '{input_mime}', got {type(result)}"
+            assert isinstance(
+                result, str
+            ), f"Expected string return type for input '{input_mime}', got {type(result)}"
 
     @pytest.mark.unit
     def test_non_empty_result(self):
@@ -182,10 +218,12 @@ class TestMimeTypeNormalization:
             "APPLICATION/PDF",
             "  image/png  ",
         ]
-        
+
         for input_mime in test_inputs:
             result = normalize_mime_type(input_mime)
-            assert result != "", f"Expected non-empty result for input '{input_mime}', got empty string"
+            assert (
+                result != ""
+            ), f"Expected non-empty result for input '{input_mime}', got empty string"
 
     @pytest.mark.unit
     def test_consistency(self):
@@ -197,13 +235,15 @@ class TestMimeTypeNormalization:
             None,
             "",
         ]
-        
+
         for input_mime in test_inputs:
             result1 = normalize_mime_type(input_mime)
             result2 = normalize_mime_type(input_mime)
             result3 = normalize_mime_type(input_mime)
-            
-            assert result1 == result2 == result3, f"Inconsistent results for input '{input_mime}': {result1}, {result2}, {result3}"
+
+            assert (
+                result1 == result2 == result3
+            ), f"Inconsistent results for input '{input_mime}': {result1}, {result2}, {result3}"
 
     @pytest.mark.unit
     def test_idempotency(self):
@@ -215,13 +255,15 @@ class TestMimeTypeNormalization:
             "video/x-msvideo",
             "image/x-jpeg",
         ]
-        
+
         for input_mime in test_cases:
             result1 = normalize_mime_type(input_mime)
             result2 = normalize_mime_type(result1)
             result3 = normalize_mime_type(result2)
-            
-            assert result1 == result2 == result3, f"Function not idempotent for input '{input_mime}': {result1}, {result2}, {result3}"
+
+            assert (
+                result1 == result2 == result3
+            ), f"Function not idempotent for input '{input_mime}': {result1}, {result2}, {result3}"
 
     @pytest.mark.unit
     def test_all_normalization_rules(self):
@@ -233,12 +275,10 @@ class TestMimeTypeNormalization:
             "application/ogg": "audio/ogg",
             "audio/x-m4a": "audio/mp4",
             "audio/x-wav": "audio/wav",
-            
             # Video
             "video/x-msvideo": "video/avi",
             "video/x-ms-wmv": "video/wmv",
             "video/quicktime": "video/mp4",
-            
             # Image
             "image/x-png": "image/png",
             "image/x-jpeg": "image/jpeg",
@@ -246,10 +286,12 @@ class TestMimeTypeNormalization:
             "image/x-bmp": "image/bmp",
             "image/x-tiff": "image/tiff",
         }
-        
+
         for input_mime, expected in normalization_rules.items():
             result = normalize_mime_type(input_mime)
-            assert result == expected, f"Normalization rule failed: '{input_mime}' -> '{expected}', got '{result}'"
+            assert (
+                result == expected
+            ), f"Normalization rule failed: '{input_mime}' -> '{expected}', got '{result}'"
 
     @pytest.mark.unit
     def test_fallback_behavior(self):
@@ -263,7 +305,9 @@ class TestMimeTypeNormalization:
             "audio/unknown",
             "video/unknown",
         ]
-        
+
         for input_mime in test_cases:
             result = normalize_mime_type(input_mime)
-            assert result == input_mime, f"Expected unknown MIME type '{input_mime}' to remain unchanged, got '{result}'" 
+            assert (
+                result == input_mime
+            ), f"Expected unknown MIME type '{input_mime}' to remain unchanged, got '{result}'"
