@@ -14,3 +14,5 @@ conversation*.json
 .coverage
 .mypy_cache
 uv.lock
+*.db-wal
+*.db-shm
