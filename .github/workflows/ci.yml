@@ -161,7 +161,7 @@ jobs:
     - name: Run linting
       run: |
         # Run flake8 (will use pyproject.toml configuration)
-        uv run flake8 src/ tests/ --count --exit-zero --statistics
+        uv run flake8 src/ tests/ --count --statistics
         
         # Run mypy
         uv run mypy src/ --ignore-missing-imports
