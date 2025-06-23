@@ -16,10 +16,10 @@ from src.utils.dialogs import show_error
 # Configure logging
 # search for: loglevel, logginglevel, info, debug, warning, error, critical
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('jeeves.log'),
+        logging.FileHandler('jeeves.log', encoding='utf-8'),
         logging.StreamHandler(sys.stdout)
     ]
 )
