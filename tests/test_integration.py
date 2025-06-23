@@ -3,16 +3,18 @@ Integration tests for Jeeves AI Assistant.
 Tests the interaction between different components.
 """
 
-import pytest
 import os
-import tempfile
 import shutil
-from unittest.mock import patch, Mock
-from core.ai_provider_manager import AIProviderManager
-from core.database import DatabaseManager
-from core.chat_manager import ChatManager
-from core.ai_engine import AIEngine
+import tempfile
 import uuid
+from unittest.mock import Mock, patch
+
+import pytest
+
+from core.ai_engine import AIEngine
+from core.ai_provider_manager import AIProviderManager
+from core.chat_manager import ChatManager
+from core.database import DatabaseManager
 
 
 class TestAIEngineIntegration:

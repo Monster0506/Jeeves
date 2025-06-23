@@ -2,11 +2,13 @@
 Unit tests for AI Provider Manager.
 """
 
+from datetime import datetime
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+
 from core.ai_provider_manager import AIProviderManager
 from core.ai_providers import GeminiProvider, PlaceholderProvider
-from datetime import datetime
 
 
 # Test tool functions for tool calling tests

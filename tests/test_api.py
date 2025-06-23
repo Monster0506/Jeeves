@@ -3,12 +3,14 @@ API tests for Jeeves AI Assistant.
 Tests actual API calls and external service integration.
 """
 
-import pytest
 import os
 import time
-from unittest.mock import patch, Mock
-from core.ai_providers import GeminiProvider
+from unittest.mock import Mock, patch
+
+import pytest
+
 from core.ai_provider_manager import AIProviderManager
+from core.ai_providers import GeminiProvider
 
 
 class TestGeminiAPI:

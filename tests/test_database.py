@@ -1,10 +1,12 @@
-import pytest
 import os
-import tempfile
 import shutil
 import sqlite3
-from unittest.mock import patch, MagicMock
-from src.core.database import DatabaseManager, DatabaseError
+import tempfile
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from src.core.database import DatabaseError, DatabaseManager
 
 
 @pytest.fixture
@@ -250,7 +252,7 @@ def test_execute_with_retry_database_locked(db):
 
 def test_get_connection_database_locked(db_path):
     # Create DatabaseManager first (it will initialize successfully)
-    from src.core.database import DatabaseManager, DatabaseError
+    from src.core.database import DatabaseError, DatabaseManager
 
     db = DatabaseManager(db_path)
 
@@ -274,7 +276,7 @@ def test_get_connection_database_locked(db_path):
 
 def test_get_connection_other_error(db_path):
     # Create DatabaseManager first (it will initialize successfully)
-    from src.core.database import DatabaseManager, DatabaseError
+    from src.core.database import DatabaseError, DatabaseManager
 
     db = DatabaseManager(db_path)
 

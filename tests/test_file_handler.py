@@ -11,18 +11,19 @@ Tests all file handler functionality including:
 - Utility methods
 """
 
-import os
-import sys
-import pytest
-import tempfile
-import shutil
 import json
-import zipfile
+import os
+import shutil
+import sys
 import tarfile
-from pathlib import Path
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch, MagicMock
+import tempfile
 import uuid
+import zipfile
+from datetime import datetime, timedelta
+from pathlib import Path
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))

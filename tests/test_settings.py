@@ -2,16 +2,18 @@
 Tests for the settings module.
 """
 
+import os
+
 import pytest
+
 from src.config.settings import (
-    ICONS,
-    COLORS,
-    APP_SETTINGS,
     AI_PROVIDER_SETTINGS,
+    APP_SETTINGS,
+    COLORS,
     DEFAULT_THREADS,
+    ICONS,
 )
 from src.core.file_handler import JeevesFileHandler
-import os
 
 
 class TestSettings:

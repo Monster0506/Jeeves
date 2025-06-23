@@ -3,6 +3,7 @@ Tests for MIME type normalization functionality.
 """
 
 import pytest
+
 from src.utils import normalize_mime_type
 
 

@@ -2,18 +2,19 @@
 Unit tests for tool calling functionality.
 """
 
-import pytest
 import inspect
-from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime
-from typing import Dict, List, Any
 from pathlib import Path
+from typing import Any, Dict, List
+from unittest.mock import MagicMock, Mock, patch
 
-from core.ai_providers import GeminiProvider, PlaceholderProvider, BaseAIProvider
+import pytest
+
 from core.ai_provider_manager import AIProviderManager
-from core.tools import JeevesTools
+from core.ai_providers import BaseAIProvider, GeminiProvider, PlaceholderProvider
 from core.chat_manager import ChatManager
 from core.database import DatabaseManager
+from core.tools import JeevesTools
 
 
 # Test tool functions
@@ -67,7 +68,7 @@ class TestThreadIdentifierResolution:
         db_manager = DatabaseManager(str(db_path))
         chat_manager = ChatManager(db_manager)
         tools = JeevesTools(chat_manager)
-        
+
         # Track exported files for cleanup
         exported_files = []
 
@@ -78,7 +79,7 @@ class TestThreadIdentifierResolution:
             db_manager.close_connections()
         except:
             pass
-            
+
         # Clean up any exported files
         for file_path in exported_files:
             try:
@@ -329,12 +330,14 @@ class TestThreadIdentifierResolution:
         file_path = None
         try:
             # Extract file path from result string
-            exported_file_path = result.split("Successfully exported conversation to: ")[1]
+            exported_file_path = result.split(
+                "Successfully exported conversation to: "
+            )[1]
             file_path = Path(exported_file_path)
-            
+
             assert file_path.exists()
             assert file_path.is_file()
-            
+
             exported_files.append(str(file_path))
         finally:
             # Clean up the exported file
@@ -364,12 +367,14 @@ class TestThreadIdentifierResolution:
         file_path = None
         try:
             # Extract file path from result string
-            exported_file_path = result.split("Successfully exported conversation to: ")[1]
+            exported_file_path = result.split(
+                "Successfully exported conversation to: "
+            )[1]
             file_path = Path(exported_file_path)
-            
+
             assert file_path.exists()
             assert file_path.is_file()
-            
+
             exported_files.append(str(file_path))
         finally:
             # Clean up the exported file

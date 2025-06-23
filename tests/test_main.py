@@ -2,8 +2,10 @@
 Tests for the main module.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from src.main import launch_app
 
 
@@ -131,6 +133,7 @@ class TestMain:
         with patch("src.main.__name__", "src.main"):
             # Import the module
             import importlib
+
             import src.main
 
             # Verify launch_app was not called

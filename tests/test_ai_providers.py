@@ -2,11 +2,13 @@
 Unit tests for AI providers.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from core.ai_providers import GeminiProvider, PlaceholderProvider, BaseAIProvider
-from typing import List, Dict
 from datetime import datetime
+from typing import Dict, List
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
+
+from core.ai_providers import BaseAIProvider, GeminiProvider, PlaceholderProvider
 
 
 # Test tool functions for tool calling tests
