@@ -4,6 +4,7 @@ Main application for Jeeves AI Assistant using CustomTkinter.
 import customtkinter as ctk
 import threading
 import logging
+import hashlib
 from typing import Dict, List, Optional
 from ..core.database import DatabaseManager
 from ..core.chat_manager import ChatManager
@@ -11,6 +12,9 @@ from ..core.ai_engine import AIEngine
 from .components import ChatDisplay, Sidebar
 from ..utils.dialogs import show_error, show_info
 from ..config.settings import APP_SETTINGS, COLORS
+from pathlib import Path
+import shutil
+from ..utils import normalize_mime_type
 
 logger = logging.getLogger(__name__)
 ctk.deactivate_automatic_dpi_awareness()
@@ -137,7 +141,8 @@ class JeevesApp:
             self.main_frame,
             on_send_message=self._on_send_message,
             on_export_chat=self._on_export_chat,
-            on_search_messages=self._on_search_messages
+            on_search_messages=self._on_search_messages,
+            on_attachment=self._on_attachment
         )
         self.chat_display.grid(row=0, column=0, sticky="nsew", padx=8, pady=8)  # Consistent internal spacing
 
@@ -279,13 +284,35 @@ class JeevesApp:
             return
         
         try:
+            # Extract attachments from the message if present
+            attachments = []
+            clean_message = message
+            
+            # Check if there are attachments in the message
+            if hasattr(self.chat_display, '_current_attachments') and self.chat_display._current_attachments:
+                attachments = self.chat_display._current_attachments.copy()
+                # Remove attachment text from the message content
+                # The attachment text was added in the format: "\n\n**Attachments:**\n- ATTACHMENT: ..."
+                if "\n\n**Attachments:**\n" in clean_message:
+                    clean_message = clean_message.split("\n\n**Attachments:**\n")[0].strip()
+            
             # Add user message to chat display immediately
             self.chat_display.add_user_message(message)
+            
+            # Process attachments if present
+            processed_attachments = []
+            if attachments:
+                for attachment in attachments:
+                    processed_attachment = self._process_attachment(attachment)
+                    if processed_attachment:
+                        processed_attachments.append(processed_attachment)
             
             # Generate AI response in a separate thread
             def generate_response():
                 try:
-                    response = self.ai_engine.generate_response(message)
+                    # The AI engine will handle adding the user message to the database
+                    # and processing attachments
+                    response = self.ai_engine.generate_response(clean_message, attachments=processed_attachments if attachments else None)
                     # Update UI in main thread
                     self.root.after(0, lambda: self.chat_display.add_ai_message(response))
                 except Exception as e:
@@ -298,6 +325,102 @@ class JeevesApp:
         except Exception as e:
             logger.error(f"Failed to send message: {e}")
             show_error("Error", f"Failed to send message: {e}")
+
+    def _on_attachment(self, attachment_info: Dict):
+        """Handle file attachment processing."""
+        try:
+            # For now, we'll just log the attachment info
+            # In the future, this could involve:
+            # - Copying files to a secure location
+            # - Processing file content for AI analysis
+            # - Storing file metadata in the database
+            logger.info(f"Processing attachment: {attachment_info['name']} ({attachment_info['size']} bytes)")
+            
+            # You could add file processing logic here
+            # For example, copying to sandbox directory:
+            # from ..core.file_handler import JeevesFileHandler
+            # file_handler = JeevesFileHandler()
+            # file_handler.copy_file(attachment_info['path'], f"attachments/{attachment_info['name']}")
+            
+        except Exception as e:
+            logger.error(f"Failed to process attachment: {e}")
+            show_error("Error", f"Failed to process attachment: {e}")
+
+    def _process_attachment(self, attachment_info: Dict) -> Dict:
+        """Process an attachment and prepare it for storage in the sandbox."""
+        try:
+            from pathlib import Path
+            import hashlib
+            import mimetypes
+            from ..core.file_handler import JeevesFileHandler
+            
+            file_path = Path(attachment_info['path'])
+            
+            logger.info(f"Processing attachment: {attachment_info['name']} from {file_path}")
+            
+            # Initialize file handler for sandbox operations
+            file_handler = JeevesFileHandler()
+            
+            # Generate a unique filename to avoid conflicts
+            import uuid
+            unique_id = uuid.uuid4().hex[:8]
+            file_extension = file_path.suffix
+            sandbox_filename = f"{unique_id}_{attachment_info['name']}"
+            sandbox_path = f"attachments/{sandbox_filename}"
+            
+            # Get the absolute path in the sandbox
+            sandbox_absolute_path = file_handler.get_absolute_path(sandbox_path)
+            
+            # Ensure the attachments directory exists
+            file_handler.ensure_directory_exists("attachments")
+            
+            # Copy file directly to sandbox using shutil
+            logger.info(f"Copying file to sandbox: {sandbox_path}")
+            try:
+                shutil.copy2(file_path, sandbox_absolute_path)
+                logger.info(f"Successfully copied file to sandbox: {sandbox_absolute_path}")
+            except Exception as e:
+                logger.error(f"Failed to copy file to sandbox: {e}")
+                return None
+            
+            # Generate file hash for integrity checking
+            file_hash = self._calculate_file_hash(file_path)
+            
+            # Determine MIME type and normalize it
+            mime_type, _ = mimetypes.guess_type(str(file_path))
+            mime_type = normalize_mime_type(mime_type)
+            
+            # Create processed attachment info with sandbox path
+            processed_attachment = {
+                'file_name': attachment_info['name'],
+                'original_path': str(file_path),
+                'sandbox_path': sandbox_path,
+                'sandbox_absolute_path': sandbox_absolute_path,
+                'file_size': attachment_info['size'],
+                'mime_type': mime_type,
+                'hash': file_hash,
+                'type': attachment_info['type'],
+                'extension': attachment_info['extension']
+            }
+            
+            logger.info(f"Successfully processed attachment: {attachment_info['name']} -> {sandbox_path} ({mime_type}, {file_hash[:8]}...)")
+            return processed_attachment
+            
+        except Exception as e:
+            logger.error(f"Failed to process attachment {attachment_info['name']}: {e}")
+            return None
+
+    def _calculate_file_hash(self, file_path: Path) -> str:
+        """Calculate SHA-256 hash of a file."""
+        try:
+            hash_sha256 = hashlib.sha256()
+            with open(file_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_sha256.update(chunk)
+            return hash_sha256.hexdigest()
+        except Exception as e:
+            logger.error(f"Failed to calculate file hash: {e}")
+            return ""
     
     def _on_message_added(self, message: Dict):
         """Handle new message added to conversation."""

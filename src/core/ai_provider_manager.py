@@ -233,13 +233,14 @@ class AIProviderManager:
         logger.info(f"Switched to {provider_name} provider")
         return True
     
-    def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
+    def generate_response(self, user_message: str, context: List[Dict] = None, attachments: List[Dict] = None) -> str:
         """
         Generate a response using the current AI provider.
         
         Args:
             user_message: The user's input message
             context: Optional conversation context
+            attachments: Optional list of attachment dictionaries
             
         Returns:
             Generated AI response
@@ -248,7 +249,7 @@ class AIProviderManager:
             return "Sorry, no AI provider is currently available."
         
         try:
-            return self.current_provider.generate_response(user_message, context)
+            return self.current_provider.generate_response(user_message, context, attachments)
         except Exception as e:
             logger.error(f"Error generating response: {e}")
             return f"Sorry, I encountered an error: {str(e)}"

@@ -9,6 +9,7 @@ import inspect
 from typing import Dict, List, Any, Callable, Optional
 from .base_provider import BaseAIProvider
 from datetime import datetime
+import base64
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -312,13 +313,14 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
             logger.error(f"Failed to build automatic function calling config: {e}", exc_info=True)
             return None
 
-    def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
+    def generate_response(self, user_message: str, context: List[Dict] = None, attachments: List[Dict] = None) -> str:
         """
-        Generate a response using Gemini AI with automatic tool calling.
+        Generate a response using Gemini AI with automatic tool calling and file support.
 
         Args:
             user_message: The user's input message
             context: Optional conversation context (list of previous messages)
+            attachments: Optional list of attachment dictionaries with sandbox file information
 
         Returns:
             Generated AI response
@@ -360,20 +362,48 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
                         logger.warning(f"Failed to process context message: {e}")
                         continue
 
-            # Add the current user message
+            # Add the current user message with attachments
             if user_message is None or not user_message.strip():
                 logger.error("User message is None or empty")
                 return "I apologize, but I received an empty message. Please try again."
             
             try:
+                # Create parts for the user message
+                parts = []
+                
+                # Add text part
                 user_part = types.Part.from_text(text=user_message)
                 if user_part is None:
                     logger.error("Failed to create Part from user message")
                     return "I apologize, but I couldn't process your message. Please try again."
+                parts.append(user_part)
+                
+                # Add file parts if attachments are provided
+                if attachments:
+                    logger.info(f"Processing {len(attachments)} attachments for Gemini from sandbox")
+                    for attachment in attachments:
+                        try:
+                            file_path = attachment.get('file_path')  # This is now the sandbox path
+                            mime_type = attachment.get('mime_type', 'application/octet-stream')
+                            file_name = attachment.get('file_name', 'unknown')
+                            if file_path and Path(file_path).exists():
+                                    b64_data = base64.b64encode(Path(file_path).read_bytes()).decode('utf-8')
+                                    parts.append({
+                                        "inlineData": {
+                                            "data": b64_data,
+                                            "mimeType": mime_type,
+                                        }
+                                    })
+                                    logger.info(f"Added file part for {file_name} from sandbox: {file_path}")
+                            else:
+                                logger.warning(f"Failed to create file part for {file_name}")
+                        except Exception as e:
+                            logger.error(f"Failed to process attachment {attachment.get('file_name', 'unknown')}: {e}")
+                            continue
                 
                 contents.append(
                     types.Content(
-                        role="user", parts=[user_part]
+                        role="user", parts=parts
                     )
                 )
             except Exception as e:

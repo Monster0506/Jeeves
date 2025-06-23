@@ -80,23 +80,65 @@ class AIEngine:
         # No longer needed: self.conversation_history = []
         pass
 
-    def generate_response(self, user_message: str) -> str:
+    def generate_response(self, user_message: str, attachments: List[Dict] = None) -> str:
         """
         Generate an AI response to the user's message.
 
         Args:
             user_message: The user's input message
+            attachments: Optional list of attachment dictionaries
 
         Returns:
             Generated AI response
         """
-        message_id = self.chat_manager.add_user_message(user_message)
+        logger.info(f"Generating response for message with {len(attachments) if attachments else 0} attachments")
+        
+        # Format attachments for database storage
+        db_attachments = None
+        if attachments:
+            db_attachments = []
+            for attachment in attachments:
+                # Format for database storage (database expects file_path, not sandbox_absolute_path)
+                db_attachment = {
+                    'file_name': attachment.get('file_name'),
+                    'file_path': attachment.get('sandbox_path'),  # Use relative sandbox path for database
+                    'file_size': attachment.get('file_size'),
+                    'mime_type': attachment.get('mime_type'),
+                    'hash': attachment.get('hash')
+                }
+                db_attachments.append(db_attachment)
+        
+        # Add user message to database with attachments
+        message_id = self.chat_manager.add_user_message(
+            user_message, 
+            content_type='text',
+            attachments=db_attachments
+        )
 
         # Refresh memory at the beginning of each chat session
         self._refresh_memory_if_needed()
 
+        # Get conversation context
         context = self.get_conversation_context()
-        response = self.provider_manager.generate_response(user_message, context)
+        
+        # Prepare attachments for AI provider (use sandbox absolute paths)
+        ai_attachments = None
+        if attachments:
+            ai_attachments = []
+            for attachment in attachments:
+                # Use sandbox absolute path for AI processing
+                ai_attachment = {
+                    'file_name': attachment.get('file_name'),
+                    'file_path': attachment.get('sandbox_absolute_path'),  # Use sandbox absolute path
+                    'mime_type': attachment.get('mime_type'),
+                    'file_size': attachment.get('file_size'),
+                    'type': attachment.get('type'),
+                    'extension': attachment.get('extension')
+                }
+                ai_attachments.append(ai_attachment)
+        
+        # Pass attachments directly to the provider for native handling
+        response = self.provider_manager.generate_response(user_message, context, ai_attachments)
 
         # log context
         if logger.isEnabledFor(logging.DEBUG):

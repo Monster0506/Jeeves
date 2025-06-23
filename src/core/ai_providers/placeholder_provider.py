@@ -41,13 +41,14 @@ class PlaceholderProvider(BaseAIProvider):
         logger.info("Placeholder AI provider initialized")
         return True
     
-    def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
+    def generate_response(self, user_message: str, context: List[Dict] = None, attachments: List[Dict] = None) -> str:
         """
         Generate a placeholder response based on keywords.
         
         Args:
             user_message: The user's input message
             context: Optional conversation context (not used in placeholder)
+            attachments: Optional list of attachment dictionaries (not used in placeholder)
             
         Returns:
             Generated placeholder response
@@ -60,6 +61,11 @@ class PlaceholderProvider(BaseAIProvider):
         if (any(word in message_lower for word in ['tools', 'functions', 'what can you do']) and 
             self.registered_tools):
             return "PLACEHOLDER: I have several tools available! I can help you with calculations, weather information, and more. Just ask me to use them!"
+        
+        # Handle attachments if present
+        if attachments:
+            attachment_info = f" (with {len(attachments)} attachment(s) from sandbox)"
+            return f"PLACEHOLDER: I see you've attached {len(attachments)} file(s) that have been securely copied to the sandbox. In a real AI system, I would analyze these files from the sandbox location and provide insights based on their content. For now, this is a placeholder response.{attachment_info}"
         
         return "PLACEHOLDER: " + self._generate_placeholder_response(user_message)
     

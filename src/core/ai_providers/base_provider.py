@@ -36,13 +36,14 @@ class BaseAIProvider(ABC):
         pass
     
     @abstractmethod
-    def generate_response(self, user_message: str, context: List[Dict] = None) -> str:
+    def generate_response(self, user_message: str, context: List[Dict] = None, attachments: List[Dict] = None) -> str:
         """
         Generate an AI response to the user's message.
         
         Args:
             user_message: The user's input message
             context: Optional conversation context (list of previous messages)
+            attachments: Optional list of attachment dictionaries with file information
             
         Returns:
             Generated AI response

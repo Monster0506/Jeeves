@@ -170,7 +170,7 @@ class TestAIProviderManager:
         response = manager.generate_response("Hello")
         
         assert response == "Test response"
-        mock_provider.generate_response.assert_called_once_with("Hello", None)
+        mock_provider.generate_response.assert_called_once_with("Hello", None, None)
     
     def test_provider_manager_generate_response_with_context(self):
         """Test response generation with context."""
@@ -185,7 +185,7 @@ class TestAIProviderManager:
         response = manager.generate_response("Hello", context)
         
         assert response == "Context response"
-        mock_provider.generate_response.assert_called_once_with("Hello", context)
+        mock_provider.generate_response.assert_called_once_with("Hello", context, None)
     
     def test_provider_manager_generate_response_no_provider(self):
         """Test response generation when no provider is available."""

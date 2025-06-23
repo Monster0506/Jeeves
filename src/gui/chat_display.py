@@ -4,10 +4,14 @@ Chat display component for Jeeves GUI.
 
 import customtkinter as ctk
 import tkinter as tk
+from tkinter import filedialog
 from typing import Callable, List, Dict
 from datetime import datetime
 from markdown_it import MarkdownIt
 import webbrowser
+import os
+import shutil
+from pathlib import Path
 
 from mdit_py_plugins.footnote import footnote_plugin
 from mdit_py_plugins.deflist import deflist_plugin
@@ -448,14 +452,17 @@ class ChatDisplay(ctk.CTkFrame):
         on_send_message: Callable = None,
         on_export_chat: Callable = None,
         on_search_messages: Callable = None,
+        on_attachment: Callable = None,
     ):
         super().__init__(parent)
         self.on_send_message = on_send_message
         self.on_export_chat = on_export_chat
         self.on_search_messages = on_search_messages
+        self.on_attachment = on_attachment
         self.theme = COLORS["dark"]
         self.font_family = APP_SETTINGS["font_family"]
         self.bubbles = []
+        self._current_attachments = []  # Initialize attachments list
         self._setup_ui()
         self._setup_bindings()
 
@@ -501,7 +508,25 @@ class ChatDisplay(ctk.CTkFrame):
             border_color=self.theme["border_primary"]
         )
         self.input_frame.grid(row=1, column=0, sticky="ew", padx=16, pady=(16, 16))  # Consistent spacing
-        self.input_frame.grid_columnconfigure(0, weight=1)
+        self.input_frame.grid_columnconfigure(1, weight=1)  # Changed to column 1 for paperclip button
+        
+        # Paperclip button for file attachments
+        self.attachment_button = ctk.CTkButton(
+            self.input_frame,
+            text="📎",
+            command=self._open_file_picker,
+            width=48,  # Square button for icon
+            height=48,  # Square button for icon
+            font=(self.font_family, 16, "bold"),  # Larger font for icon
+            fg_color=self.theme["button_secondary"],
+            hover_color=self.theme["button_secondary_hover"],
+            text_color=self.theme["text_primary"],
+            corner_radius=12,  # Increased for modern look
+            border_width=1,  # Subtle border for definition
+            border_color=self.theme["border_secondary"]
+        )
+        self.attachment_button.grid(row=0, column=0, padx=(16, 8), pady=16)  # Left side of input field
+        
         self.input_field = ctk.CTkEntry(
             self.input_frame,
             placeholder_text="Type your message here...",
@@ -514,7 +539,7 @@ class ChatDisplay(ctk.CTkFrame):
             border_width=1,
             corner_radius=12,  # Increased to match button styling
         )
-        self.input_field.grid(row=0, column=0, sticky="ew", padx=(16, 16), pady=16)  # Consistent internal spacing
+        self.input_field.grid(row=0, column=1, sticky="ew", padx=(8, 8), pady=16)  # Between paperclip and send button
         self.send_button = ctk.CTkButton(
             self.input_frame,
             text="➤ Send",  # Added arrow icon for better visual appeal
@@ -529,7 +554,7 @@ class ChatDisplay(ctk.CTkFrame):
             border_width=0,  # Clean look without borders
             # Add subtle shadow effect through color
         )
-        self.send_button.grid(row=0, column=1, padx=(0, 16), pady=16)  # Consistent spacing
+        self.send_button.grid(row=0, column=2, padx=(8, 16), pady=16)  # Right side of input field
         
         # Toolbar with enhanced styling and consistent spacing
         self.toolbar_frame = ctk.CTkFrame(
@@ -627,12 +652,40 @@ class ChatDisplay(ctk.CTkFrame):
             
             button.bind("<Enter>", on_toolbar_enter)
             button.bind("<Leave>", on_toolbar_leave)
+        
+        # Attachment button hover effect
+        def on_attachment_enter(event):
+            self.attachment_button.configure(corner_radius=14)  # Slightly larger radius on hover
+        
+        def on_attachment_leave(event):
+            self.attachment_button.configure(corner_radius=12)  # Return to normal radius
+        
+        self.attachment_button.bind("<Enter>", on_attachment_enter)
+        self.attachment_button.bind("<Leave>", on_attachment_leave)
 
     def _send_message(self):
         message = self.input_field.get().strip()
         if message and self.on_send_message:
+            # Handle attachments if present
+            attachments = getattr(self, '_current_attachments', [])
+            if attachments:
+                # Add attachment information to the message
+                attachment_text = "\n\n**Attachments:**\n"
+                for attachment in attachments:
+                    file_size_mb = attachment['size'] / 1024 / 1024
+                    attachment_text += f"- ATTACHMENT: {attachment['name']} ({file_size_mb:.1f}MB, {attachment['type']})\n"
+                message += attachment_text
+                
+                # Call attachment callback if provided
+                if self.on_attachment:
+                    for attachment in attachments:
+                        self.on_attachment(attachment)
+            
             self.on_send_message(message)
             self.input_field.delete(0, "end")
+            
+            # Clear attachments after sending
+            self._clear_attachments()
 
     def _insert_newline(self):
         current_text = self.input_field.get()
@@ -789,3 +842,134 @@ class ChatDisplay(ctk.CTkFrame):
             self.canvas.yview_scroll(1, "units")
         else:  # Windows/Mac
             self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _open_file_picker(self):
+        """Open file picker dialog for attachments."""
+        try:
+            # Open file dialog with common file types
+            file_types = [
+                ("All Files", "*.*"),
+                ("Text Files", "*.txt"),
+                ("Python Files", "*.py"),
+                ("Markdown Files", "*.md"),
+                ("JSON Files", "*.json"),
+                ("CSV Files", "*.csv"),
+                ("Image Files", "*.png *.jpg *.jpeg *.gif *.bmp"),
+                ("Document Files", "*.pdf *.doc *.docx"),
+                ("Code Files", "*.py *.js *.html *.css *.java *.cpp *.c *.h")
+            ]
+            
+            file_path = filedialog.askopenfilename(
+                title="Select file to attach",
+                filetypes=file_types,
+                initialdir=os.path.expanduser("~")  # Start in user's home directory
+            )
+            
+            if file_path:
+                self._handle_file_attachment(file_path)
+                
+        except Exception as e:
+            logger.error(f"Error opening file picker: {e}")
+            # Show error message to user
+            self._show_error_message("Failed to open file picker")
+
+    def _handle_file_attachment(self, file_path: str):
+        """Handle file attachment processing."""
+        try:
+            file_path = Path(file_path)
+            
+            # Check if file exists
+            if not file_path.exists():
+                self._show_error_message(f"File not found: {file_path.name}")
+                return
+            
+            # Check file size (limit to 10MB for now)
+            file_size = file_path.stat().st_size
+            max_size = 10 * 1024 * 1024  # 10MB
+            
+            if file_size > max_size:
+                self._show_error_message(f"File too large: {file_path.name} ({file_size / 1024 / 1024:.1f}MB). Maximum size is 10MB.")
+                return
+            
+            # Get file info
+            file_name = file_path.name
+            file_extension = file_path.suffix.lower()
+            
+            # Create attachment message
+            attachment_info = {
+                'name': file_name,
+                'path': str(file_path),
+                'size': file_size,
+                'extension': file_extension,
+                'type': self._get_file_type(file_extension)
+            }
+            
+            # Add attachment to input field
+            self._add_attachment_to_input(attachment_info)
+            
+        except Exception as e:
+            logger.error(f"Error handling file attachment: {e}")
+            self._show_error_message(f"Failed to process file: {file_path.name}")
+
+    def _get_file_type(self, extension: str) -> str:
+        """Get human-readable file type from extension."""
+        file_types = {
+            '.txt': 'Text File',
+            '.py': 'Python File',
+            '.md': 'Markdown File',
+            '.json': 'JSON File',
+            '.csv': 'CSV File',
+            '.png': 'Image File',
+            '.jpg': 'Image File',
+            '.jpeg': 'Image File',
+            '.gif': 'Image File',
+            '.bmp': 'Image File',
+            '.pdf': 'PDF Document',
+            '.doc': 'Word Document',
+            '.docx': 'Word Document',
+            '.js': 'JavaScript File',
+            '.html': 'HTML File',
+            '.css': 'CSS File',
+            '.java': 'Java File',
+            '.cpp': 'C++ File',
+            '.c': 'C File',
+            '.h': 'Header File'
+        }
+        return file_types.get(extension, 'File')
+
+    def _add_attachment_to_input(self, attachment_info: Dict):
+        """Add attachment information to the input field."""
+        try:
+            current_text = self.input_field.get()
+            
+            # Create attachment text with a simpler indicator to avoid Unicode issues
+            file_size_mb = attachment_info['size'] / 1024 / 1024
+            attachment_text = f"\n[ATTACHMENT: {attachment_info['name']} ({file_size_mb:.1f}MB)]"
+            
+            # Add to current text
+            new_text = current_text + attachment_text
+            self.input_field.delete(0, "end")
+            self.input_field.insert(0, new_text)
+            
+            # Store attachment info for later processing
+            if not hasattr(self, '_current_attachments'):
+                self._current_attachments = []
+            self._current_attachments.append(attachment_info)
+            
+            # Update placeholder text to show attachment
+            self.input_field.configure(placeholder_text=f"Message with attachment: {attachment_info['name']}")
+            
+        except Exception as e:
+            logger.error(f"Error adding attachment to input: {e}")
+
+    def _show_error_message(self, message: str):
+        """Show error message to user."""
+        # For now, we'll use a simple approach - in the future this could be a toast notification
+        logger.error(f"User error: {message}")
+        # You could implement a toast notification system here
+
+    def _clear_attachments(self):
+        """Clear current attachments."""
+        if hasattr(self, '_current_attachments'):
+            self._current_attachments.clear()
+        self.input_field.configure(placeholder_text="Type your message here...")
