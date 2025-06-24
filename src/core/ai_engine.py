@@ -38,12 +38,15 @@ class AIEngine:
         """
         return self.get_conversation_context()
 
-    def _initialize_providers(self):
+    def _initialize_providers(self) -> None:
         """Initialize AI providers."""
         try:
             if self.provider_manager.initialize():
                 current_provider = self.provider_manager.get_current_provider()
-                logger.info(f"AI Engine initialized with provider: {current_provider.provider_name}")
+                if current_provider:  # Check if provider is not None
+                    logger.info(f"AI Engine initialized with provider: {current_provider.provider_name}")
+                else:
+                    logger.warning("AI Engine initialized, but no current provider found.")
 
                 # Register tools
                 self._register_tools()
@@ -52,7 +55,7 @@ class AIEngine:
         except Exception as e:
             logger.error(f"Error initializing AI providers: {e}")
 
-    def _register_tools(self):
+    def _register_tools(self) -> None:
         """Register all available tools with the provider manager."""
         try:
             # Get all tools and their descriptions
@@ -69,12 +72,12 @@ class AIEngine:
         except Exception as e:
             logger.error(f"Error registering tools: {e}")
 
-    def _on_message_added(self, message: dict):
+    def _on_message_added(self, message: dict) -> None:
         """Callback when a new message is added to the conversation."""
         # No longer needed: self.conversation_history.append(message)
         pass
 
-    def _on_thread_changed(self, thread: dict):
+    def _on_thread_changed(self, thread: dict) -> None:
         """Callback when thread changes."""
         # No longer needed: self.conversation_history = []
         pass
@@ -168,10 +171,15 @@ class AIEngine:
         # Add AI message
         self.chat_manager.add_ai_message(response)
 
-        logger.info(f"Generated response for message {message_id} using " f"{self.provider_manager.get_current_provider().provider_name}")
+        current_provider_name = "Unknown Provider"
+        current_provider = self.provider_manager.get_current_provider()
+        if current_provider:
+            current_provider_name = current_provider.provider_name
+
+        logger.info(f"Generated response for message {message_id} using {current_provider_name}")
         return response
 
-    def _refresh_memory_if_needed(self):
+    def _refresh_memory_if_needed(self) -> None:
         """
         Refresh memory content if the current provider supports it.
         This ensures the AI has the latest memory content for each conversation.
@@ -301,7 +309,7 @@ class AIEngine:
         words = [w for w in all_text.split() if w not in common_words and len(w) > 3]
 
         # Get most common words (simple approach)
-        word_counts = {}
+        word_counts: dict[str, int] = {}
         for word in words:
             word_counts[word] = word_counts.get(word, 0) + 1
 
@@ -420,7 +428,7 @@ class AIEngine:
             "average_response_time": 0,  # Placeholder
         }
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Cleanup AI Engine resources."""
         if self.provider_manager:
             self.provider_manager.cleanup()
