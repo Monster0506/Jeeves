@@ -6,8 +6,9 @@ import hashlib
 import logging
 import shutil
 import threading
+import tkinter as tk  # Import tkinter for event typing
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import customtkinter as ctk
 
@@ -26,7 +27,7 @@ ctk.deactivate_automatic_dpi_awareness()
 class JeevesApp:
     """Main application class for Jeeves AI Assistant."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Initialize database and managers
         self.db_manager = DatabaseManager()
         self.chat_manager = ChatManager(self.db_manager)
@@ -59,7 +60,7 @@ class JeevesApp:
 
         logger.info("Jeeves application initialized")
 
-    def _setup_ui(self):
+    def _setup_ui(self) -> None:
         """Setup the user interface components."""
         theme = COLORS["dark"]
         font_family = APP_SETTINGS["font_family"]
@@ -114,10 +115,10 @@ class JeevesApp:
         self.settings_button.grid(row=0, column=1, sticky="e", padx=(0, 24), pady=8)  # Consistent padding
 
         # Add enhanced hover effects to settings button
-        def on_settings_enter(event):
+        def on_settings_enter(event: tk.Event) -> None:
             self.settings_button.configure(corner_radius=30)  # Slightly larger radius on hover
 
-        def on_settings_leave(event):
+        def on_settings_leave(event: tk.Event) -> None:
             self.settings_button.configure(corner_radius=28)  # Return to normal radius
 
         self.settings_button.bind("<Enter>", on_settings_enter)
@@ -167,10 +168,10 @@ class JeevesApp:
         self.sidebar_toggle.grid(row=1, column=1, sticky="ne", padx=(0, 24), pady=(24, 0))  # Better positioning
 
         # Add enhanced hover effects to sidebar toggle button
-        def on_toggle_enter(event):
+        def on_toggle_enter(event: tk.Event) -> None:
             self.sidebar_toggle.configure(corner_radius=30)  # Slightly larger radius on hover
 
-        def on_toggle_leave(event):
+        def on_toggle_leave(event: tk.Event) -> None:
             self.sidebar_toggle.configure(corner_radius=28)  # Return to normal radius
 
         self.sidebar_toggle.bind("<Enter>", on_toggle_enter)
@@ -179,7 +180,7 @@ class JeevesApp:
         self.sidebar.grid_remove()
         self.sidebar_visible = False
 
-    def _setup_bindings(self):
+    def _setup_bindings(self) -> None:
         """Setup keyboard and window bindings."""
         # Bind window close event
         self.root.protocol("WM_DELETE_WINDOW", self._on_closing)
@@ -190,7 +191,7 @@ class JeevesApp:
         self.root.bind("<Control-e>", lambda e: self._on_export_chat())
         self.root.bind("<Control-q>", lambda e: self._on_closing())
 
-    def _load_initial_data(self):
+    def _load_initial_data(self) -> None:
         """Load initial data from database."""
         try:
             # Load threads
@@ -214,7 +215,7 @@ class JeevesApp:
             logger.error(f"Failed to load initial data: {e}")
             show_error("Error", f"Failed to load data: {e}")
 
-    def _on_thread_select(self, thread_id: int):
+    def _on_thread_select(self, thread_id: int) -> None:
         """Handle thread selection."""
         try:
             if self.chat_manager.switch_thread(thread_id):
@@ -226,7 +227,7 @@ class JeevesApp:
             logger.error(f"Failed to switch thread: {e}")
             show_error("Error", f"Failed to switch thread: {e}")
 
-    def _on_new_thread(self):
+    def _on_new_thread(self) -> None:
         """Handle new thread creation."""
         try:
             thread_id = self.chat_manager.create_thread("New Chat", "💬")
@@ -240,7 +241,7 @@ class JeevesApp:
             logger.error(f"Failed to create new thread: {e}")
             show_error("Error", f"Failed to create new thread: {e}")
 
-    def _on_delete_thread(self, thread_id: int):
+    def _on_delete_thread(self, thread_id: int) -> None:
         """Handle thread deletion."""
         try:
             if self.chat_manager.delete_thread(thread_id):
@@ -260,7 +261,7 @@ class JeevesApp:
             logger.error(f"Failed to delete thread: {e}")
             show_error("Error", f"Failed to delete thread: {e}")
 
-    def _on_rename_thread(self, thread_id: int, new_name: str):
+    def _on_rename_thread(self, thread_id: int, new_name: str) -> None:
         """Handle thread renaming."""
         try:
             if self.chat_manager.update_thread_name(thread_id, new_name):
@@ -271,7 +272,7 @@ class JeevesApp:
             logger.error(f"Failed to rename thread: {e}")
             show_error("Error", f"Failed to rename thread: {e}")
 
-    def _on_send_message(self, message: str, attachments: Optional[list[dict]] = None):
+    def _on_send_message(self, message: str, attachments: Optional[list[dict]] = None) -> None:
         """Handle sending a message."""
         # The message no longer contains attachment text, so no cleaning is needed.
 
@@ -297,7 +298,7 @@ class JeevesApp:
                         processed_attachments.append(processed)
 
             # Generate AI response in a separate thread
-            def generate_response():
+            def generate_response() -> None:
                 try:
                     response = self.ai_engine.generate_response(message, attachments=processed_attachments)
                     # Update UI in main thread
@@ -313,7 +314,7 @@ class JeevesApp:
             logger.error(f"Failed to send message: {e}")
             show_error("Error", f"Failed to send message: {e}")
 
-    def _on_attachment(self, attachment_info: dict):
+    def _on_attachment(self, attachment_info: dict[str, Any]) -> None:
         """Handle file attachment processing."""
         try:
             # For now, we'll just log the attachment info
@@ -333,7 +334,7 @@ class JeevesApp:
             logger.error(f"Failed to process attachment: {e}")
             show_error("Error", f"Failed to process attachment: {e}")
 
-    def _process_attachment(self, attachment_info: dict) -> dict:
+    def _process_attachment(self, attachment_info: dict[str, Any]) -> Optional[dict[str, Any]]:
         """Process an attachment and prepare it for storage in the sandbox."""
         try:
             import mimetypes
@@ -363,11 +364,11 @@ class JeevesApp:
                 file_hash = self._calculate_file_hash(file_path)
 
                 # Determine MIME type and normalize it
-                mime_type, _ = mimetypes.guess_type(str(file_path))
-                mime_type = normalize_mime_type(mime_type)
+                mime_type_guess, _ = mimetypes.guess_type(str(file_path))
+                mime_type = normalize_mime_type(mime_type_guess or "application/octet-stream")  # Provide default if None
 
                 # Create processed attachment info using existing file
-                processed_attachment = {
+                processed_attachment: dict[str, Any] = {
                     "file_name": attachment_info["name"],
                     "original_path": str(file_path),
                     "sandbox_path": sandbox_path,
@@ -409,8 +410,8 @@ class JeevesApp:
             file_hash = self._calculate_file_hash(file_path)
 
             # Determine MIME type and normalize it
-            mime_type, _ = mimetypes.guess_type(str(file_path))
-            mime_type = normalize_mime_type(mime_type)
+            mime_type_guess, _ = mimetypes.guess_type(str(file_path))
+            mime_type = normalize_mime_type(mime_type_guess or "application/octet-stream")  # Provide default if None
 
             # Create processed attachment info with sandbox path
             processed_attachment = {
@@ -444,20 +445,20 @@ class JeevesApp:
             logger.error(f"Failed to calculate file hash: {e}")
             return ""
 
-    def _on_message_added(self, message: dict):
+    def _on_message_added(self, message: dict[str, Any]) -> None:
         """Handle new message added to conversation."""
         # This is called by the chat manager when a message is added to the database
         # We don't need to do anything here since we handle UI updates in _on_send_message
         pass
 
-    def _on_thread_changed(self, thread: dict):
+    def _on_thread_changed(self, thread: dict[str, Any]) -> None:
         """Handle thread changes."""
         # Update sidebar if needed
         threads = self.chat_manager.get_threads()
         self.sidebar.load_threads(threads)
         self.chat_display.clear_messages()  # Also clear chat on programmatic thread change
 
-    def _load_thread_messages(self, thread_id: int):
+    def _load_thread_messages(self, thread_id: int) -> None:
         """Load messages for a specific thread."""
         try:
             messages = self.chat_manager.get_messages(thread_id)
@@ -465,7 +466,7 @@ class JeevesApp:
         except Exception as e:
             logger.error(f"Failed to load messages for thread {thread_id}: {e}")
 
-    def _on_export_chat(self):
+    def _on_export_chat(self) -> None:
         """Handle chat export."""
         try:
             current_thread = self.chat_manager.get_current_thread()
@@ -480,7 +481,7 @@ class JeevesApp:
             logger.error(f"Failed to export chat: {e}")
             show_error("Error", f"Failed to export chat: {e}")
 
-    def _on_search_messages(self):
+    def _on_search_messages(self) -> None:
         """Handle message search."""
         try:
             # For now, just show a placeholder
@@ -489,7 +490,7 @@ class JeevesApp:
             logger.error(f"Failed to search messages: {e}")
             show_error("Error", f"Failed to search messages: {e}")
 
-    def _toggle_sidebar(self):
+    def _toggle_sidebar(self) -> None:
         """Toggle sidebar visibility."""
         if self.sidebar_visible:
             self.sidebar.grid_remove()
@@ -498,7 +499,7 @@ class JeevesApp:
             self.sidebar.grid()
             self.sidebar_visible = True
 
-    def _on_closing(self):
+    def _on_closing(self) -> None:
         """Handle application closing."""
         try:
             logger.info("Window closing - hiding instead of quitting")
@@ -509,7 +510,7 @@ class JeevesApp:
             # Only quit if there's an error
             self.root.quit()
 
-    def run(self):
+    def run(self) -> None:
         """Run the application."""
         try:
             self.root.mainloop()
@@ -519,21 +520,22 @@ class JeevesApp:
         finally:
             self._on_closing()
 
-    def show_window(self):
+    def show_window(self) -> None:
         """Show the application window."""
         self.root.deiconify()
         self.root.lift()
         self.root.focus_force()
 
-    def hide_window(self):
+    def hide_window(self) -> None:
         """Hide the application window."""
         self.root.withdraw()
 
     def is_visible(self) -> bool:
         """Check if the window is visible."""
-        return self.root.winfo_viewable()
+        # winfo_viewable returns 1 if visible, 0 if hidden. Convert to bool.
+        return bool(self.root.winfo_viewable())
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Properly shutdown the application and close database connections."""
         try:
             # Close database connections
