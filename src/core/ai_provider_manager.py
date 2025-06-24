@@ -3,6 +3,7 @@ AI Provider Manager for Jeeves AI Assistant.
 Manages multiple AI providers and handles switching between them.
 """
 
+import inspect
 import logging
 from typing import Any, Callable, Optional
 
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 class AIProviderManager:
     """Manages multiple AI providers and handles provider switching."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the AI provider manager."""
         self.providers: dict[str, BaseAIProvider] = {}
         self.current_provider: Optional[BaseAIProvider] = None
@@ -24,7 +25,7 @@ class AIProviderManager:
         # Register available providers
         self._register_providers()
 
-    def _register_providers(self):
+    def _register_providers(self) -> None:
         """Register all available AI providers."""
         try:
             # Register Gemini provider
@@ -87,7 +88,7 @@ class AIProviderManager:
         logger.error("No AI providers could be initialized")
         return False
 
-    def _register_tools_with_provider(self, provider: BaseAIProvider):
+    def _register_tools_with_provider(self, provider: BaseAIProvider) -> None:
         """Register all tools with the given provider."""
         for name, func in self.registered_tools.items():
             try:
@@ -179,7 +180,6 @@ class AIProviderManager:
 
         try:
             # Filter args to only include parameters that the function accepts
-            import inspect
 
             func = self.registered_tools[name]
             sig = inspect.signature(func)
@@ -367,7 +367,7 @@ class AIProviderManager:
         logger.info(f"Removed provider: {name}")
         return True
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up all providers."""
         for name, provider in self.providers.items():
             try:
