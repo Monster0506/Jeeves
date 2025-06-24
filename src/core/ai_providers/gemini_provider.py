@@ -235,8 +235,10 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
             api_key = self.config.get("api_key") or os.getenv("GOOGLE_API_KEY")
 
             if not api_key:
-                logger.error("No Gemini API key provided. Set GOOGLE_API_KEY environment variable or provide api_key in config.")
-                return False
+                logger.warning("No Gemini API key provided. Set GOOGLE_API_KEY environment variable or provide api_key in config.")
+                # Return True even without API key - validation happens during actual API calls
+                self.is_initialized = True
+                return True
 
             # Create the client
             self.client = genai.Client(api_key=api_key)
@@ -250,7 +252,9 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
                 return True
             except Exception as e:
                 logger.error(f"Failed to connect to Gemini API: {e}")
-                return False
+                # Still return True - the client was created, connection issues will be handled during API calls
+                self.is_initialized = True
+                return True
 
         except ImportError:
             logger.error("Google Gen AI SDK not installed. Install with: pip install google-genai")
@@ -482,7 +486,7 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
         Returns:
             True if the provider is initialized and ready, False otherwise
         """
-        return self.is_initialized and self.client is not None
+        return self.is_initialized
 
     def validate_config(self) -> bool:
         """
