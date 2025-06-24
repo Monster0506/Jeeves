@@ -18,13 +18,13 @@ class ChatManager:
     def __init__(self, db_manager: DatabaseManager):
         self.db = db_manager
         self.current_thread_id: Optional[int] = None
-        self.message_callbacks: list[Callable] = []
-        self.thread_callbacks: list[Callable] = []
+        self.message_callbacks: list[Callable[[dict], None]] = []
+        self.thread_callbacks: list[Callable[[dict], None]] = []
 
         # Initialize with default thread if none exists
         self._ensure_default_thread()
 
-    def _ensure_default_thread(self):
+    def _ensure_default_thread(self) -> None:
         """Ensure there's at least one default thread."""
         try:
             threads = self.db.get_threads()
@@ -34,15 +34,15 @@ class ChatManager:
         except DatabaseError as e:
             logger.error(f"Failed to ensure default thread: {e}")
 
-    def register_message_callback(self, callback: Callable):
+    def register_message_callback(self, callback: Callable[[dict], None]) -> None:
         """Register a callback to be called when messages are added."""
         self.message_callbacks.append(callback)
 
-    def register_thread_callback(self, callback: Callable):
+    def register_thread_callback(self, callback: Callable[[dict], None]) -> None:
         """Register a callback to be called when threads are modified."""
         self.thread_callbacks.append(callback)
 
-    def _notify_message_callbacks(self, message: dict):
+    def _notify_message_callbacks(self, message: dict) -> None:
         """Notify all registered message callbacks."""
         for callback in self.message_callbacks:
             try:
@@ -50,7 +50,7 @@ class ChatManager:
             except Exception as e:
                 logger.error(f"Error in message callback: {e}")
 
-    def _notify_thread_callbacks(self, thread: dict):
+    def _notify_thread_callbacks(self, thread: dict) -> None:
         """Notify all registered thread callbacks."""
         for callback in self.thread_callbacks:
             try:
@@ -64,8 +64,8 @@ class ChatManager:
         icon: str = "💬",
         description: Optional[str] = None,
         tags: Optional[list[str]] = None,
-        metadata: Optional[dict] = None,
-        settings: Optional[dict] = None,
+        metadata: Optional[dict[str, Any]] = None,
+        settings: Optional[dict[str, Any]] = None,
     ) -> int:
         """
         Create a new conversation thread.
@@ -99,7 +99,7 @@ class ChatManager:
         include_archived: bool = False,
         limit: Optional[int] = None,
         offset: int = 0,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """Get all active threads."""
         try:
             return self.db.get_threads(active_only, include_archived, limit, offset)
@@ -107,7 +107,7 @@ class ChatManager:
             logger.error(f"Failed to get threads: {e}")
             return []
 
-    def get_thread(self, thread_id: int) -> Optional[dict]:
+    def get_thread(self, thread_id: int) -> Optional[dict[str, Any]]:
         """Get a specific thread."""
         try:
             return self.db.get_thread(thread_id)
@@ -115,7 +115,7 @@ class ChatManager:
             logger.error(f"Failed to get thread {thread_id}: {e}")
             return None
 
-    def find_threads_by_name(self, name: str, active_only: bool = True) -> list[dict]:
+    def find_threads_by_name(self, name: str, active_only: bool = True) -> list[dict[str, Any]]:
         """
         Find threads by name (case-insensitive partial match).
 
@@ -153,7 +153,7 @@ class ChatManager:
             logger.error(f"Failed to switch to thread {thread_id}: {e}")
             return False
 
-    def get_current_thread(self) -> Optional[dict]:
+    def get_current_thread(self) -> Optional[dict[str, Any]]:
         """Get the current active thread."""
         if self.current_thread_id:
             return self.get_thread(self.current_thread_id)
@@ -181,7 +181,7 @@ class ChatManager:
         thread_id: Optional[int] = None,
         limit: Optional[int] = None,
         include_attachments: bool = True,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """
         Get messages for a thread.
 
@@ -209,8 +209,8 @@ class ChatManager:
         self,
         content: str,
         content_type: str = "text",
-        metadata: Optional[dict] = None,
-        attachments: Optional[list[dict]] = None,
+        metadata: Optional[dict[str, Any]] = None,
+        attachments: Optional[list[dict[str, Any]]] = None,
     ) -> int:
         """
         Add a user message to the current thread.
@@ -253,8 +253,8 @@ class ChatManager:
         self,
         content: str,
         content_type: str = "text",
-        metadata: Optional[dict] = None,
-        attachments: Optional[list[dict]] = None,
+        metadata: Optional[dict[str, Any]] = None,
+        attachments: Optional[list[dict[str, Any]]] = None,
     ) -> int:
         """
         Add an AI message to the current thread.
@@ -293,7 +293,7 @@ class ChatManager:
             logger.error(f"Failed to add AI message: {e}")
             raise
 
-    def add_system_message(self, content: str, content_type: str = "text", metadata: Optional[dict] = None) -> int:
+    def add_system_message(self, content: str, content_type: str = "text", metadata: Optional[dict[str, Any]] = None) -> int:
         """
         Add a system message to the current thread.
 
@@ -323,7 +323,7 @@ class ChatManager:
             logger.error(f"Failed to add system message: {e}")
             raise
 
-    def update_thread(self, thread_id: int, **kwargs) -> bool:
+    def update_thread(self, thread_id: int, **kwargs: Any) -> bool:
         """
         Update a thread with flexible field updates.
 
@@ -391,7 +391,7 @@ class ChatManager:
         thread_id: Optional[int] = None,
         limit: int = 50,
         include_attachments: bool = False,
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """
         Search messages.
 
@@ -413,7 +413,7 @@ class ChatManager:
             logger.error(f"Failed to search messages: {e}")
             return []
 
-    def get_conversation_summary(self, thread_id: Optional[int] = None) -> dict:
+    def get_conversation_summary(self, thread_id: Optional[int] = None) -> dict[str, Any]:
         """
         Get a summary of the current conversation.
 
@@ -444,7 +444,7 @@ class ChatManager:
                 }
 
             # Count messages by sender
-            sender_counts = {}
+            sender_counts: dict[str, int] = {}
             for message in messages:
                 sender = message["sender"]
                 sender_counts[sender] = sender_counts.get(sender, 0) + 1
@@ -484,7 +484,9 @@ class ChatManager:
             messages = self.db.get_messages(thread_id)
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"conversation_{thread['name'].replace(' ', '_')}_{timestamp}.{format}"
+            # Ensure thread is not None before accessing 'name'
+            thread_name = thread["name"] if thread else "unknown_thread"
+            filename = f"conversation_{thread_name.replace(' ', '_')}_{timestamp}.{format}"
 
             if format == "json":
                 import json
@@ -499,7 +501,8 @@ class ChatManager:
 
             elif format == "txt":
                 with open(filename, "w", encoding="utf-8") as f:
-                    f.write(f"Conversation: {thread['name']}\n")
+                    # Ensure thread is not None before accessing 'name'
+                    f.write(f"Conversation: {thread['name'] if thread else 'Unknown'}\n")
                     f.write(f"Exported: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
                     f.write("=" * 50 + "\n\n")
 
@@ -550,7 +553,7 @@ class ChatManager:
             logger.error(f"Failed to set user setting {key}: {e}")
             return False
 
-    def add_analytics(self, thread_id: int, analytics_type: str, data: dict) -> int:
+    def add_analytics(self, thread_id: int, analytics_type: str, data: dict[str, Any]) -> int:
         """
         Add conversation analytics data.
 
@@ -568,7 +571,7 @@ class ChatManager:
             logger.error(f"Failed to add analytics: {e}")
             raise
 
-    def get_analytics(self, thread_id: int, analytics_type: Optional[str] = None) -> list[dict]:
+    def get_analytics(self, thread_id: int, analytics_type: Optional[str] = None) -> list[dict[str, Any]]:
         """
         Get conversation analytics.
 
@@ -585,7 +588,7 @@ class ChatManager:
             logger.error(f"Failed to get analytics: {e}")
             return []
 
-    def get_stats(self) -> dict:
+    def get_stats(self) -> dict[str, Any]:
         """Get chat statistics."""
         try:
             return self.db.get_database_stats()
@@ -638,7 +641,7 @@ class ChatManager:
             logger.error(f"Failed to vacuum database: {e}")
             return False
 
-    def close(self):
+    def close(self) -> None:
         """Close the chat manager and database connections."""
         try:
             self.db.close_connections()
