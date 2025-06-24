@@ -158,7 +158,7 @@ class TestGeminiAPI:
             pytest.skip("GOOGLE_API_KEY not set")
 
         # Test with different models if available
-        models_to_test = ["gemini-2.5-flash-lite-preview-06-17","gemini-2.0-flash"]
+        models_to_test = ["gemini-2.5-flash-lite-preview-06-17", "gemini-2.0-flash"]
 
         for model in models_to_test:
             try:
