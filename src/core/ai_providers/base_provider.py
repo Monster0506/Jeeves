@@ -228,7 +228,7 @@ class BaseAIProvider(ABC):
         logger.debug(f"{self.provider_name} does not support system instruction updates")
         return True
 
-    def get_system_instruction(self) -> str:
+    def get_system_instruction(self) -> Optional[str]:
         """
         Get the current system instruction.
         Base implementation - can be overridden by subclasses.

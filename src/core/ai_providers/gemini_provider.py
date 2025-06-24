@@ -1,14 +1,9 @@
-"""
-Gemini AI Provider for Jeeves AI Assistant.
-Uses Google's Gemini API via the google-genai SDK.
-"""
-
 import base64
 import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 from src.config.settings import APP_SETTINGS
 
@@ -38,7 +33,7 @@ class GeminiProvider(BaseAIProvider):
                 - memory_file_path: Path to memory file (default: '~/.jeeves/MEMORY.md')
         """
         super().__init__(config if config else {})
-        self.client = None
+        self.client: Optional[Any] = None
         self.model_name = self.config.get("model", "gemini-2.0-flash")
         self.max_output_tokens = self.config.get("max_output_tokens", 2048)
         self.temperature = self.config.get("temperature", 0.7)
@@ -54,7 +49,7 @@ class GeminiProvider(BaseAIProvider):
         self._load_memory_content()
 
         # Get system instruction with memory integrated
-        self.system_instruction = self.config.get("system_instruction", self._get_default_system_prompt())
+        self.system_instruction: str = self.config.get("system_instruction", self._get_default_system_prompt())
 
         # Ensure system instruction is never empty or None
         if not self.system_instruction or not self.system_instruction.strip():
@@ -245,6 +240,7 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
 
             # Create the client
             self.client = genai.Client(api_key=api_key)
+            assert self.client is not None, "Client should not be None after assignment"
 
             # Test the connection by listing models
             try:
@@ -254,11 +250,6 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
                 return True
             except Exception as e:
                 logger.error(f"Failed to connect to Gemini API: {e}")
-                # Try a simpler test - just check if client was created
-                if self.client:
-                    logger.info("Gemini client created successfully")
-                    self.is_initialized = True
-                    return True
                 return False
 
         except ImportError:
@@ -287,8 +278,6 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
             logger.debug(f"Adding tool: {name} (type: {type(func)})")
             if func is not None:
                 tools.append(func)
-            else:
-                logger.warning(f"Tool {name} is None, skipping")
 
         logger.debug(f"Built tools config with {len(tools)} valid tools")
         return tools
@@ -337,6 +326,8 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
         if not self.is_available():
             return "Sorry, I'm not available right now. Please check your API key and internet connection."
 
+        assert self.client is not None, "Client should be available if is_available() is True"
+
         try:
             from google.genai import types
 
@@ -357,9 +348,6 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
 
                         # Add regular text content
                         part = types.Part.from_text(text=content)
-                        if part is None:
-                            logger.warning(f"Failed to create Part from context message: {content[:50]}...")
-                            continue
 
                         contents.append(types.Content(role=role, parts=[part]))
                     except Exception as e:
@@ -373,13 +361,10 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
 
             try:
                 # Create parts for the user message
-                parts = []
+                parts: list[Any] = []
 
                 # Add text part
                 user_part = types.Part.from_text(text=user_message)
-                if user_part is None:
-                    logger.error("Failed to create Part from user message")
-                    return "I apologize, but I couldn't process your message. Please try again."
                 parts.append(user_part)
 
                 # Add file parts if attachments are provided
@@ -478,7 +463,7 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
             if hasattr(response, "text"):
                 if response.text:
                     logger.debug(f"Gemini response received: {len(response.text)} characters")
-                    return response.text
+                    return cast(str, response.text)
                 else:
                     logger.warning("Gemini returned empty text response")
                     return "I apologize, but I couldn't generate a response. Please try again."
@@ -577,7 +562,7 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
         except ImportError:
             return "not installed"
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up Gemini provider resources."""
         super().cleanup()
         self.client = None
@@ -601,7 +586,7 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
             logger.error(f"Failed to update system instruction: {e}")
             return False
 
-    def get_system_instruction(self) -> str:
+    def get_system_instruction(self) -> Optional[str]:
         """
         Get the current system instruction.
 
@@ -619,6 +604,8 @@ You are Jeeves. Efficient, knowledgeable, and always at the user's service.
         """
         if not self.is_available():
             return "Provider not available - check API key and initialization"
+
+        assert self.client is not None, "Client should be available if is_available() is True"
 
         try:
             test_message = "What is your name and what are you supposed to do?"
