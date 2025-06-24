@@ -8,32 +8,36 @@ import webbrowser
 from datetime import datetime
 from pathlib import Path
 from tkinter import filedialog
-from typing import Callable, Optional
+from typing import Any, Callable, Optional, Union
 
 import customtkinter as ctk
 from markdown_it import MarkdownIt
+from markdown_it.token import Token  # Import Token
 from mdit_py_plugins.deflist import deflist_plugin
 from mdit_py_plugins.dollarmath import dollarmath_plugin
 from mdit_py_plugins.footnote import footnote_plugin
 
-from ..config.settings import APP_SETTINGS, COLORS
+from ..config.settings import APP_SETTINGS, COLORS, ColorsTheme
 
 logger = logging.getLogger(__name__)
 logging.getLogger("markdown_it").setLevel(logging.WARNING)
 
 
 class MessageBubble(ctk.CTkFrame):
+    _bubble: Optional[ctk.CTkFrame]
+    _msg_frame: Optional[ctk.CTkFrame]
+
     def __init__(
         self,
-        parent,
-        sender,
-        message,
-        timestamp,
-        is_user,
-        theme,
-        font_family,
-        max_width=600,
-        **kwargs,
+        parent: ctk.CTkFrame,
+        sender: str,
+        message: str,
+        timestamp: str,
+        is_user: bool,
+        theme: ColorsTheme,
+        font_family: str,
+        max_width: int = 600,
+        **kwargs: Any,
     ):
         super().__init__(parent, fg_color=theme["bg_chat"], corner_radius=20, **kwargs)
         self.theme = theme
@@ -46,10 +50,10 @@ class MessageBubble(ctk.CTkFrame):
         self._bubble = None
         self._msg_frame = None
         self._link_counter = 0
-        self._footnote_anchors = {}
+        self._footnote_anchors: dict[str, str] = {}
         self._build_bubble(sender, message, timestamp)
 
-    def _build_bubble(self, sender, message, timestamp):
+    def _build_bubble(self, sender: str, message: str, timestamp: str) -> None:
         if self._bubble:
             self._bubble.destroy()
         # Bubble color and alignment
@@ -70,11 +74,13 @@ class MessageBubble(ctk.CTkFrame):
         self._bubble.grid_columnconfigure(0, weight=1)
 
         # Add hover effect
-        def on_enter(event):
-            self._bubble.configure(fg_color=bubble_hover_color)
+        def on_enter(event: tk.Event) -> None:
+            if self._bubble:  # Ensure _bubble is not None
+                self._bubble.configure(fg_color=bubble_hover_color)
 
-        def on_leave(event):
-            self._bubble.configure(fg_color=bubble_color)
+        def on_leave(event: tk.Event) -> None:
+            if self._bubble:  # Ensure _bubble is not None
+                self._bubble.configure(fg_color=bubble_color)
 
         self._bubble.bind("<Enter>", on_enter)
         self._bubble.bind("<Leave>", on_leave)
@@ -108,13 +114,15 @@ class MessageBubble(ctk.CTkFrame):
         width = min(max(self._msg_frame.winfo_reqwidth(), 320), self.max_width)
         self._bubble.configure(width=width)
 
-    def update_max_width(self, max_width):
+    def update_max_width(self, max_width: int) -> None:
         self.max_width = max_width
-        self._msg_frame.configure(width=max_width - 24)  # Update wraplength container
-        # No need to rebuild the whole bubble, just update wraplength if possible
-        # For now, let's see if we can avoid rebuilding. With CTkTextbox, wrap is handled.
+        if self._msg_frame:
+            # Update wraplength if CTkTextbox supports it directly, otherwise
+            # this might require re-rendering or a more complex solution.
+            # For now, it's configured in _render_markdown.
+            pass
 
-    def destroy(self):
+    def destroy(self) -> None:
         """Properly destroy the message bubble and its internal widgets."""
         try:
             # Clean up internal widgets
@@ -143,7 +151,7 @@ class MessageBubble(ctk.CTkFrame):
         except Exception as e:
             logger.warning(f"Error during widget destruction: {e}")
 
-    def _render_markdown(self, parent, text, text_color):
+    def _render_markdown(self, parent: ctk.CTkFrame, text: str, text_color: str) -> None:
         # Use a Textbox for better markdown rendering with styles
         md_text = ctk.CTkTextbox(
             parent,
@@ -253,30 +261,30 @@ class MessageBubble(ctk.CTkFrame):
         md = MarkdownIt("gfm-like").enable("table").use(footnote_plugin).use(deflist_plugin).use(dollarmath_plugin)
         tokens = md.parse(text)
 
-        def open_link(url):
+        def open_link(url: str) -> None:
             try:
                 webbrowser.open(url, new=2)
             except Exception as e:
                 logger.error(f"Failed to open link {url}: {e}")
 
-        def scroll_to_footnote(footnote_id):
+        def scroll_to_footnote(footnote_id: str) -> None:
             anchor_tag = f"fn-anchor-{footnote_id}"
             if anchor_tag in md_text.tag_names():
                 md_text._textbox.see(f"{anchor_tag}.first")
 
-        tag_stack = []
+        tag_stack: list[str] = []
 
-        def apply_tags(content, token_tags):
+        def apply_tags(content: str, token_tags: list[str]) -> None:
             all_tags = tag_stack + token_tags
             md_text.insert("end", content, tuple(all_tags))
 
-        def _render_table_to_text(table_tokens):
-            header = []
-            rows = []
-            current_row = []
+        def _render_table_to_text(table_tokens: list[Token]) -> str:
+            header: list[str] = []
+            rows: list[list[str]] = []
+            current_row: list[str] = []
             in_header = False
 
-            for i, token in enumerate(table_tokens):
+            for token in table_tokens:  # Iterate directly over Token objects
                 if token.type == "thead_open":
                     in_header = True
                 elif token.type == "thead_close":
@@ -309,12 +317,12 @@ class MessageBubble(ctk.CTkFrame):
                 for i in range(num_cols):
                     col_widths[i] = max(col_widths[i], len(row[i]))
 
-            def format_row(row_data, widths, is_header=False):
+            def format_row(row_data: list[str], widths: list[int]) -> str:
                 return " | ".join(f"{cell:<{widths[i]}}" for i, cell in enumerate(row_data))
 
             output = []
             if header:
-                output.append(format_row(header, col_widths, is_header=True))
+                output.append(format_row(header, col_widths))
                 output.append("-|-".join("-" * w for w in col_widths))
             for row in rows:
                 output.append(format_row(row, col_widths))
@@ -337,7 +345,7 @@ class MessageBubble(ctk.CTkFrame):
                         break
 
                 if table_end_index != -1:
-                    table_tokens = tokens[i + 1 : table_end_index]
+                    table_tokens: list[Token] = tokens[i + 1 : table_end_index]
                     table_text = _render_table_to_text(table_tokens)
                     if table_text:
                         apply_tags(table_text + "\n", ["code_block"])
@@ -384,7 +392,7 @@ class MessageBubble(ctk.CTkFrame):
             elif token.type == "inline" and token.children:
                 for child in token.children:
                     if child.type == "link_open":
-                        href = child.attrs.get("href", "")
+                        href = child.attrs.get("href", "") if child.attrs else ""
                         link_id = f"link-{self._link_counter}"
                         self._link_counter += 1
 
@@ -402,7 +410,10 @@ class MessageBubble(ctk.CTkFrame):
                     elif child.type == "link_close":
                         if "link" in tag_stack:
                             tag_stack.pop(tag_stack.index("link"))
-                        link_id_to_pop = next((t for t in tag_stack if t.startswith("link-")), None)
+                        link_id_to_pop = next(
+                            (t for t in tag_stack if t.startswith("link-")),
+                            None,
+                        )
                         if link_id_to_pop:
                             tag_stack.pop(tag_stack.index(link_id_to_pop))
 
@@ -473,7 +484,9 @@ class MessageBubble(ctk.CTkFrame):
             lines = md_text._textbox.count("1.0", "end", "displaylines")[0]
 
             # Font is a tuple, e.g., ("Fira Code", 12), get size from index 1
-            font_tuple = md_text.cget("font")
+            font_tuple: Union[tuple[str, int], tuple[str, int, str]] = md_text.cget(
+                "font",
+            )
             font_size = font_tuple[1]
 
             # Add some padding
@@ -489,7 +502,7 @@ class MessageBubble(ctk.CTkFrame):
 class AttachmentPill(ctk.CTkFrame):
     """A widget to display a single attachment in the input area."""
 
-    def __init__(self, parent, attachment_info: dict, on_remove: Callable):
+    def __init__(self, parent: ctk.CTkFrame, attachment_info: dict, on_remove: Callable):
         super().__init__(parent, fg_color=("#E0E0E0", "#4A4D50"), corner_radius=12)
         self.pack(side="left", padx=4, pady=4)
 
@@ -519,13 +532,16 @@ class AttachmentPill(ctk.CTkFrame):
 class ChatDisplay(ctk.CTkFrame):
     """Modern chat display with bubble design and markdown support."""
 
+    bubbles: list[MessageBubble]
+    _current_attachments: list[tuple[str, dict, AttachmentPill]]
+
     def __init__(
         self,
-        parent,
-        on_send_message: Optional[Callable] = None,
-        on_export_chat: Optional[Callable] = None,
-        on_search_messages: Optional[Callable] = None,
-        on_attachment: Optional[Callable] = None,
+        parent: ctk.CTkFrame,
+        on_send_message: Optional[Callable[[str, list[dict]], None]] = None,
+        on_export_chat: Optional[Callable[[], None]] = None,
+        on_search_messages: Optional[Callable[[], None]] = None,
+        on_attachment: Optional[Callable[[dict], None]] = None,
     ):
         super().__init__(parent)
         self.on_send_message = on_send_message
@@ -539,7 +555,7 @@ class ChatDisplay(ctk.CTkFrame):
         self._setup_ui()
         self._setup_bindings()
 
-    def _setup_ui(self):
+    def _setup_ui(self) -> None:
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=0)
@@ -687,7 +703,7 @@ class ChatDisplay(ctk.CTkFrame):
         )
         self.clear_button.pack(side="left", padx=(0, 16), pady=12)  # Increased padding
 
-    def _create_input_field(self):
+    def _create_input_field(self) -> None:
         """Create the input field with proper configuration."""
         self.input_field = ctk.CTkEntry(
             self.input_frame,
@@ -703,15 +719,15 @@ class ChatDisplay(ctk.CTkFrame):
         )
         self.input_field.grid(row=0, column=1, sticky="ew", padx=(8, 8), pady=16)  # Between paperclip and send button
 
-    def _setup_bindings(self):
+    def _setup_bindings(self) -> None:
         self.input_field.bind("<Return>", lambda e: self._send_message())
         self.input_field.bind("<Shift-Return>", lambda e: self._insert_newline())
 
         # Add enhanced focus effects to input field
-        def on_input_focus_in(event):
+        def on_input_focus_in(event: tk.Event) -> None:
             self.input_field.configure(border_color=self.theme["border_focus"])
 
-        def on_input_focus_out(event):
+        def on_input_focus_out(event: tk.Event) -> None:
             self.input_field.configure(border_color=self.theme["border_secondary"])
 
         self.input_field.bind("<FocusIn>", on_input_focus_in)
@@ -720,14 +736,14 @@ class ChatDisplay(ctk.CTkFrame):
         # Add enhanced hover effects to buttons
         self._setup_button_hover_effects()
 
-    def _setup_button_hover_effects(self):
+    def _setup_button_hover_effects(self) -> None:
         """Setup enhanced hover effects for buttons."""
 
         # Send button hover effect
-        def on_send_enter(event):
+        def on_send_enter(event: tk.Event) -> None:
             self.send_button.configure(corner_radius=14)  # Slightly larger radius on hover
 
-        def on_send_leave(event):
+        def on_send_leave(event: tk.Event) -> None:
             self.send_button.configure(corner_radius=12)  # Return to normal radius
 
         self.send_button.bind("<Enter>", on_send_enter)
@@ -736,26 +752,26 @@ class ChatDisplay(ctk.CTkFrame):
         # Toolbar buttons hover effects
         for button in [self.search_button, self.export_button, self.clear_button]:
 
-            def on_toolbar_enter(event, btn=button):
+            def on_toolbar_enter(event: tk.Event, btn: ctk.CTkButton = button) -> None:
                 btn.configure(corner_radius=12)  # Slightly larger radius on hover
 
-            def on_toolbar_leave(event, btn=button):
+            def on_toolbar_leave(event: tk.Event, btn: ctk.CTkButton = button) -> None:
                 btn.configure(corner_radius=10)  # Return to normal radius
 
             button.bind("<Enter>", on_toolbar_enter)
             button.bind("<Leave>", on_toolbar_leave)
 
         # Attachment button hover effect
-        def on_attachment_enter(event):
+        def on_attachment_enter(event: tk.Event) -> None:
             self.attachment_button.configure(corner_radius=14)  # Slightly larger radius on hover
 
-        def on_attachment_leave(event):
+        def on_attachment_leave(event: tk.Event) -> None:
             self.attachment_button.configure(corner_radius=12)  # Return to normal radius
 
         self.attachment_button.bind("<Enter>", on_attachment_enter)
         self.attachment_button.bind("<Leave>", on_attachment_leave)
 
-    def _send_message(self):
+    def _send_message(self) -> None:
         message = self.input_field.get().strip()
 
         # Prevent sending empty messages unless there are attachments
@@ -774,7 +790,7 @@ class ChatDisplay(ctk.CTkFrame):
         self.input_field.delete(0, "end")
         self._clear_attachments()
 
-    def _insert_newline(self):
+    def _insert_newline(self) -> None:
         current_text = self.input_field.get()
         cursor_pos = self.input_field.index("insert")
         new_text = current_text[:cursor_pos] + "\n" + current_text[cursor_pos:]
@@ -782,16 +798,16 @@ class ChatDisplay(ctk.CTkFrame):
         self.input_field.insert(0, new_text)
         self.input_field.icursor(cursor_pos + 1)
 
-    def add_user_message(self, message: str):
+    def add_user_message(self, message: str) -> None:
         self._add_message(message, "You", is_user=True)
 
-    def add_ai_message(self, message: str):
+    def add_ai_message(self, message: str) -> None:
         self._add_message(message, "Jeeves", is_user=False)
 
-    def add_system_message(self, message: str):
+    def add_system_message(self, message: str) -> None:
         self._add_message(message, "System", is_user=False)
 
-    def _add_message(self, message: str, sender: str, is_user: bool):
+    def _add_message(self, message: str, sender: str, is_user: bool) -> None:
         """Add a message with proper error handling to prevent Tkinter errors."""
         try:
             timestamp = datetime.now().strftime("%H:%M")
@@ -821,7 +837,7 @@ class ChatDisplay(ctk.CTkFrame):
             logging.getLogger(__name__).error(f"Error adding message: {e}")
             # Try to continue without the problematic message bubble
 
-    def load_messages(self, messages: list[dict]):
+    def load_messages(self, messages: list[dict]) -> None:
         """Load messages with proper widget cleanup to prevent Tkinter errors."""
         try:
             # Safely destroy existing widgets
@@ -877,7 +893,7 @@ class ChatDisplay(ctk.CTkFrame):
         except Exception as e:
             logger.error(f"Error loading messages: {e}")
 
-    def clear_messages(self):
+    def clear_messages(self) -> None:
         """Clear messages with proper widget cleanup to prevent Tkinter errors."""
         try:
             # Safely destroy existing widgets
@@ -894,17 +910,17 @@ class ChatDisplay(ctk.CTkFrame):
         except Exception as e:
             logger.error(f"Error clearing messages: {e}")
 
-    def _search_messages(self):
+    def _search_messages(self) -> None:
         """Trigger message search."""
         if self.on_search_messages:
             self.on_search_messages()
 
-    def _export_chat(self):
+    def _export_chat(self) -> None:
         """Trigger chat export."""
         if self.on_export_chat:
             self.on_export_chat()
 
-    def _on_canvas_resize(self, event):
+    def _on_canvas_resize(self, event: tk.Event) -> None:
         """Handle canvas resize with proper error handling."""
         try:
             # Make scrollable_frame always match canvas width
@@ -924,10 +940,10 @@ class ChatDisplay(ctk.CTkFrame):
         except Exception as e:
             logger.warning(f"Error in canvas resize: {e}")
 
-    def _on_frame_configure(self):
+    def _on_frame_configure(self) -> None:
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
-    def _on_mousewheel(self, event):
+    def _on_mousewheel(self, event: tk.Event) -> None:
         """Handle mouse wheel scrolling."""
         if event.num == 4:  # Linux scroll up
             self.canvas.yview_scroll(-1, "units")
@@ -936,7 +952,7 @@ class ChatDisplay(ctk.CTkFrame):
         else:  # Windows/Mac
             self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
-    def _open_file_picker(self):
+    def _open_file_picker(self) -> None:
         """Open file picker dialog for attachments."""
         try:
             # Get the sandbox directory from JeevesFileHandler
@@ -972,10 +988,10 @@ class ChatDisplay(ctk.CTkFrame):
             # Show error message to user
             self._show_error_message("Failed to open file picker")
 
-    def _handle_file_attachment(self, file_path: str):
+    def _handle_file_attachment(self, filepath: str) -> None:
         """Handle file attachment processing."""
         try:
-            file_path = Path(file_path)
+            file_path = Path(filepath)
 
             # Check if file exists
             if not file_path.exists():
@@ -987,7 +1003,9 @@ class ChatDisplay(ctk.CTkFrame):
             max_size = 10 * 1024 * 1024  # 10MB
 
             if file_size > max_size:
-                self._show_error_message(f"File too large: {file_path.name} ({file_size / 1024 / 1024:.1f}MB). Maximum size is 10MB.")
+                self._show_error_message(
+                    f"File too large: {file_path.name} ({file_size / 1024 / 1024:.1f}MB). Maximum size is 10MB.",
+                )
                 return
 
             # Get file info
@@ -1036,7 +1054,7 @@ class ChatDisplay(ctk.CTkFrame):
         }
         return file_types.get(extension, "File")
 
-    def _add_attachment(self, attachment_info: dict):
+    def _add_attachment(self, attachment_info: dict) -> None:
         """Add a new attachment pill to the UI."""
         # Show the tray if this is the first attachment
         if not self._current_attachments:
@@ -1060,9 +1078,9 @@ class ChatDisplay(ctk.CTkFrame):
         # Store attachment info along with its widget
         self._current_attachments.append((attachment_key, attachment_info, pill))
 
-    def _remove_attachment(self, attachment_key: str):
+    def _remove_attachment(self, attachment_key: str) -> None:
         """Remove an attachment pill from the UI."""
-        attachment_to_remove = None
+        attachment_to_remove: Optional[tuple[str, dict, AttachmentPill]] = None
         for attachment in self._current_attachments:
             if attachment[0] == attachment_key:
                 attachment_to_remove = attachment
@@ -1078,12 +1096,12 @@ class ChatDisplay(ctk.CTkFrame):
         if not self._current_attachments:
             self.attachment_tray.grid_forget()
 
-    def _show_error_message(self, message: str):
+    def _show_error_message(self, message: str) -> None:
         """Show error message to user."""
         logger.error(f"User error: {message}")
         # You could implement a toast notification system here
 
-    def _clear_attachments(self):
+    def _clear_attachments(self) -> None:
         """Clear all attachment pills."""
         for key, info, pill_widget in self._current_attachments:
             pill_widget.destroy()
