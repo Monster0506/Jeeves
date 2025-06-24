@@ -25,6 +25,14 @@ class SandboxViolationError(ValueError):
     pass
 
 
+class OperationHistoryEntry(TypedDict):
+    timestamp: str
+    operation: str
+    status: str
+    path: str
+    details: dict
+
+
 class JeevesFileHandler:
     """Secure file handler for Jeeves AI Assistant operations."""
 
@@ -67,7 +75,7 @@ class JeevesFileHandler:
         self._backup_retention_days = 30
         self._max_file_size_bytes = 100 * 1024 * 1024  # Default to 100 MB
         self._allowed_extensions: Optional[list[str]] = None  # None means all allowed
-        self._operation_history: list[dict] = []
+        self._operation_history: list[OperationHistoryEntry] = []
         self._last_error_message: Optional[str] = None
         self._caching_enabled = False  # Placeholder for a more complex feature
 
@@ -1790,14 +1798,7 @@ class JeevesFileHandler:
     def _log_operation(self, operation_type: str, status: str, path: str, details: Optional[dict] = None) -> None:
         """Internal method to log operation history."""
 
-        class OperationHistoryEntry(TypedDict):
-            timestamp: str
-            operation: str
-            status: str
-            path: str
-            details: dict
-
-        entry = {
+        entry: OperationHistoryEntry = {
             "timestamp": datetime.now().isoformat(),
             "operation": operation_type,
             "status": status,
@@ -1809,7 +1810,7 @@ class JeevesFileHandler:
             self._operation_history.pop(0)
 
         if status == "error":
-            entry["details"] = entry["details"] if isinstance(entry["details"], dict) else {}
+            # entry["details"] = entry["details"] if isinstance(entry["details"], dict) else {}
             self._last_error_message = entry["details"].get("message", "An unspecified error occurred.")
 
     def get_last_error(self) -> str:
@@ -1829,7 +1830,7 @@ class JeevesFileHandler:
         self._last_error_message = None
         logger.info("Internal last error message cleared.")
 
-    def get_operation_history(self, limit: int = 100) -> list[dict]:
+    def get_operation_history(self, limit: int = 100) -> list[OperationHistoryEntry]:
         """
         Get audit trail of file operations.
 
