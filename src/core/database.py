@@ -40,9 +40,7 @@ class MessageType(Enum):
 class DatabaseManager:
     """Manages SQLite database operations for the Jeeves AI Assistant."""
 
-    def __init__(
-        self, db_path: str = "jeeves.db", max_retries: int = 3, timeout: float = 30.0
-    ):
+    def __init__(self, db_path: str = "jeeves.db", max_retries: int = 3, timeout: float = 30.0):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.max_retries = max_retries
@@ -250,9 +248,7 @@ class DatabaseManager:
         # Create new connection with retry logic
         for attempt in range(self.max_retries):
             try:
-                conn = sqlite3.connect(
-                    self.db_path, timeout=self.timeout, check_same_thread=False
-                )
+                conn = sqlite3.connect(self.db_path, timeout=self.timeout, check_same_thread=False)
                 conn.row_factory = sqlite3.Row
 
                 # Configure connection for better performance and durability
@@ -272,14 +268,9 @@ class DatabaseManager:
                 return
 
             except sqlite3.OperationalError as e:
-                if (
-                    "database is locked" in str(e).lower()
-                    and attempt < self.max_retries - 1
-                ):
+                if "database is locked" in str(e).lower() and attempt < self.max_retries - 1:
                     wait_time = (2**attempt) * 0.1  # Exponential backoff
-                    logger.warning(
-                        f"Database locked, retrying in {wait_time}s (attempt {attempt + 1})"
-                    )
+                    logger.warning(f"Database locked, retrying in {wait_time}s (attempt {attempt + 1})")
                     time.sleep(wait_time)
                     continue
                 else:
@@ -289,23 +280,16 @@ class DatabaseManager:
 
         raise DatabaseError("Failed to connect to database after maximum retries")
 
-    def _execute_with_retry(
-        self, operation: Callable[..., _RetType], *args: Any, **kwargs: Any
-    ) -> _RetType:
+    def _execute_with_retry(self, operation: Callable[..., _RetType], *args: Any, **kwargs: Any) -> _RetType:
         """Execute database operation with retry logic."""
         for attempt in range(self.max_retries):
             try:
                 with self._lock:
                     return operation(*args, **kwargs)
             except sqlite3.OperationalError as e:
-                if (
-                    "database is locked" in str(e).lower()
-                    and attempt < self.max_retries - 1
-                ):
+                if "database is locked" in str(e).lower() and attempt < self.max_retries - 1:
                     wait_time = (2**attempt) * 0.1
-                    logger.warning(
-                        f"Database locked, retrying in {wait_time}s (attempt {attempt + 1})"
-                    )
+                    logger.warning(f"Database locked, retrying in {wait_time}s (attempt {attempt + 1})")
                     time.sleep(wait_time)
                     continue
                 else:
@@ -404,9 +388,7 @@ class DatabaseManager:
                     where_conditions.append("is_archived = ?")
                     params.append(0)
 
-                where_clause = (
-                    " AND ".join(where_conditions) if where_conditions else "1=1"
-                )
+                where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
 
                 query = f"""
                     SELECT id, name, icon, description, tags, created_at, updated_at,
@@ -440,12 +422,8 @@ class DatabaseManager:
                             "last_activity": row["last_activity"],
                             "is_active": bool(row["is_active"]),
                             "is_archived": bool(row["is_archived"]),
-                            "metadata": (
-                                json.loads(row["metadata"]) if row["metadata"] else {}
-                            ),
-                            "settings": (
-                                json.loads(row["settings"]) if row["settings"] else {}
-                            ),
+                            "metadata": (json.loads(row["metadata"]) if row["metadata"] else {}),
+                            "settings": (json.loads(row["settings"]) if row["settings"] else {}),
                         }
                     )
 
@@ -517,12 +495,8 @@ class DatabaseManager:
                         "last_activity": row["last_activity"],
                         "is_active": bool(row["is_active"]),
                         "is_archived": bool(row["is_archived"]),
-                        "metadata": (
-                            json.loads(row["metadata"]) if row["metadata"] else {}
-                        ),
-                        "settings": (
-                            json.loads(row["settings"]) if row["settings"] else {}
-                        ),
+                        "metadata": (json.loads(row["metadata"]) if row["metadata"] else {}),
+                        "settings": (json.loads(row["settings"]) if row["settings"] else {}),
                     }
                 return None
 
@@ -576,12 +550,8 @@ class DatabaseManager:
                             "last_activity": row["last_activity"],
                             "is_active": bool(row["is_active"]),
                             "is_archived": bool(row["is_archived"]),
-                            "metadata": (
-                                json.loads(row["metadata"]) if row["metadata"] else {}
-                            ),
-                            "settings": (
-                                json.loads(row["settings"]) if row["settings"] else {}
-                            ),
+                            "metadata": (json.loads(row["metadata"]) if row["metadata"] else {}),
+                            "settings": (json.loads(row["settings"]) if row["settings"] else {}),
                         }
                     )
 
@@ -623,9 +593,7 @@ class DatabaseManager:
                 for key, value in kwargs.items():
                     if key in allowed_columns:
                         updates.append(f"{key} = ?")
-                        params.append(
-                            json.dumps(value) if isinstance(value, (dict, list)) else value
-                        )
+                        params.append(json.dumps(value) if isinstance(value, (dict, list)) else value)
 
                 if not updates:
                     return False
@@ -633,9 +601,7 @@ class DatabaseManager:
                 params.append(thread_id)
 
                 # Construct the query safely
-                query = (
-                    f"UPDATE threads SET {', '.join(updates)} WHERE id = ?"  # nosec B608
-                )
+                query = f"UPDATE threads SET {', '.join(updates)} WHERE id = ?"  # nosec B608
                 cursor.execute(query, params)
 
                 conn.commit()
@@ -835,9 +801,7 @@ class DatabaseManager:
                         "timestamp": row["timestamp"],
                         "edited_at": row["edited_at"],
                         "is_edited": bool(row["is_edited"]),
-                        "metadata": (
-                            json.loads(row["metadata"]) if row["metadata"] else None
-                        ),
+                        "metadata": (json.loads(row["metadata"]) if row["metadata"] else None),
                         "parent_message_id": row["parent_message_id"],
                         "reply_to_message_id": row["reply_to_message_id"],
                         "attachments": [],
@@ -855,9 +819,7 @@ class DatabaseManager:
                         )
 
                         for att_row in cursor.fetchall():
-                            logger.debug(
-                                f"Adding attachment {att_row['id']} to message {row['id']}\n {att_row['file_name']}"
-                            )
+                            logger.debug(f"Adding attachment {att_row['id']} to message {row['id']}\n {att_row['file_name']}")
                             message["attachments"].append(
                                 {
                                     "id": att_row["id"],
@@ -944,9 +906,7 @@ class DatabaseManager:
                         "timestamp": row["timestamp"],
                         "edited_at": row["edited_at"],
                         "is_edited": bool(row["is_edited"]),
-                        "metadata": (
-                            json.loads(row["metadata"]) if row["metadata"] else None
-                        ),
+                        "metadata": (json.loads(row["metadata"]) if row["metadata"] else None),
                         "thread_name": row["thread_name"],
                         "rank": row["rank"],
                         "attachments": [],
@@ -980,9 +940,7 @@ class DatabaseManager:
 
         return self._execute_with_retry(_search)
 
-    def update_message(
-        self, message_id: int, content: Optional[str] = None, metadata: Optional[dict] = None
-    ) -> bool:
+    def update_message(self, message_id: int, content: Optional[str] = None, metadata: Optional[dict] = None) -> bool:
         """
         Update a message with new content or metadata.
 
@@ -1016,9 +974,7 @@ class DatabaseManager:
                 params.append(message_id)
 
                 # Construct the query safely
-                query = (
-                    f"UPDATE messages SET {', '.join(updates)} WHERE id = ?"  # nosec B608
-                )
+                query = f"UPDATE messages SET {', '.join(updates)} WHERE id = ?"  # nosec B608
                 cursor.execute(query, params)
 
                 conn.commit()
@@ -1084,9 +1040,7 @@ class DatabaseManager:
                         elif row["value_type"] == "float":
                             settings[row["key"]] = float(value) if value else 0.0
                         elif row["value_type"] == "bool":
-                            settings[row["key"]] = (
-                                value.lower() == "true" if value else False
-                            )
+                            settings[row["key"]] = value.lower() == "true" if value else False
                         else:
                             settings[row["key"]] = value
 
@@ -1094,9 +1048,7 @@ class DatabaseManager:
 
         return self._execute_with_retry(_get)
 
-    def set_user_setting(
-        self, key: str, value: Any, value_type: str = "string", description: Optional[str] = None
-    ) -> bool:
+    def set_user_setting(self, key: str, value: Any, value_type: str = "string", description: Optional[str] = None) -> bool:
         """
         Set a user setting.
 
@@ -1262,9 +1214,7 @@ class DatabaseManager:
                 total_analytics: int = cursor.fetchone()[0]
 
                 # Get database size
-                db_size: int = (
-                    self.db_path.stat().st_size if self.db_path.exists() else 0
-                )
+                db_size: int = self.db_path.stat().st_size if self.db_path.exists() else 0
 
                 # Get WAL file size
                 wal_size: int = 0
