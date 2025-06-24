@@ -13,9 +13,11 @@ import time
 from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Callable, Generator, Optional, TypeVar, Union
 
 logger = logging.getLogger(__name__)
+
+_RetType = TypeVar("_RetType")
 
 
 class DatabaseError(Exception):
@@ -38,25 +40,28 @@ class MessageType(Enum):
 class DatabaseManager:
     """Manages SQLite database operations for the Jeeves AI Assistant."""
 
-    def __init__(self, db_path: str = "jeeves.db", max_retries: int = 3, timeout: float = 30.0):
+    def __init__(
+        self, db_path: str = "jeeves.db", max_retries: int = 3, timeout: float = 30.0
+    ):
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.max_retries = max_retries
         self.timeout = timeout
         self._lock = threading.RLock()
-        self._connection_pool = {}
+        self._connection_pool: dict[int, sqlite3.Connection] = {}
         self._migrations_applied = False
 
         # Initialize database with migrations
         self._init_database()
         self._apply_migrations()
 
-    def _init_database(self):
+    def _init_database(self) -> None:
         """Initialize the database with required tables."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
 
-            # Enable foreign keys and WAL mode for better performance and durability
+            # Enable foreign keys and WAL mode for better performance and
+            # durability
             cursor.execute("PRAGMA foreign_keys = ON")
             cursor.execute("PRAGMA journal_mode = WAL")
             cursor.execute("PRAGMA synchronous = NORMAL")
@@ -84,7 +89,8 @@ class DatabaseManager:
             """
             )
 
-            # Create messages table with flexible sender field and enhanced structure
+            # Create messages table with flexible sender field and enhanced
+            # structure
             cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS messages (
@@ -172,7 +178,7 @@ class DatabaseManager:
             conn.commit()
             logger.info("Database initialized successfully")
 
-    def _create_indexes(self, cursor):
+    def _create_indexes(self, cursor: sqlite3.Cursor) -> None:
         """Create database indexes for performance."""
         indexes = [
             "CREATE INDEX IF NOT EXISTS idx_messages_thread_id ON messages (thread_id)",
@@ -190,7 +196,7 @@ class DatabaseManager:
         for index_sql in indexes:
             cursor.execute(index_sql)
 
-    def _apply_migrations(self):
+    def _apply_migrations(self) -> None:
         """Apply database migrations."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -225,7 +231,7 @@ class DatabaseManager:
                         conn.commit()
 
     @contextmanager
-    def _get_connection(self):
+    def _get_connection(self) -> Generator[sqlite3.Connection, None, None]:
         """Context manager for database connections with retry logic."""
         thread_id = threading.get_ident()
 
@@ -244,7 +250,9 @@ class DatabaseManager:
         # Create new connection with retry logic
         for attempt in range(self.max_retries):
             try:
-                conn = sqlite3.connect(self.db_path, timeout=self.timeout, check_same_thread=False)
+                conn = sqlite3.connect(
+                    self.db_path, timeout=self.timeout, check_same_thread=False
+                )
                 conn.row_factory = sqlite3.Row
 
                 # Configure connection for better performance and durability
@@ -264,9 +272,14 @@ class DatabaseManager:
                 return
 
             except sqlite3.OperationalError as e:
-                if "database is locked" in str(e).lower() and attempt < self.max_retries - 1:
+                if (
+                    "database is locked" in str(e).lower()
+                    and attempt < self.max_retries - 1
+                ):
                     wait_time = (2**attempt) * 0.1  # Exponential backoff
-                    logger.warning(f"Database locked, retrying in {wait_time}s (attempt {attempt + 1})")
+                    logger.warning(
+                        f"Database locked, retrying in {wait_time}s (attempt {attempt + 1})"
+                    )
                     time.sleep(wait_time)
                     continue
                 else:
@@ -276,16 +289,23 @@ class DatabaseManager:
 
         raise DatabaseError("Failed to connect to database after maximum retries")
 
-    def _execute_with_retry(self, operation, *args, **kwargs):
+    def _execute_with_retry(
+        self, operation: Callable[..., _RetType], *args: Any, **kwargs: Any
+    ) -> _RetType:
         """Execute database operation with retry logic."""
         for attempt in range(self.max_retries):
             try:
                 with self._lock:
                     return operation(*args, **kwargs)
             except sqlite3.OperationalError as e:
-                if "database is locked" in str(e).lower() and attempt < self.max_retries - 1:
+                if (
+                    "database is locked" in str(e).lower()
+                    and attempt < self.max_retries - 1
+                ):
                     wait_time = (2**attempt) * 0.1
-                    logger.warning(f"Database locked, retrying in {wait_time}s (attempt {attempt + 1})")
+                    logger.warning(
+                        f"Database locked, retrying in {wait_time}s (attempt {attempt + 1})"
+                    )
                     time.sleep(wait_time)
                     continue
                 else:
@@ -319,7 +339,7 @@ class DatabaseManager:
             Thread ID
         """
 
-        def _create():
+        def _create() -> int:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(
@@ -337,7 +357,10 @@ class DatabaseManager:
                         json.dumps(settings) if settings else None,
                     ),
                 )
-                thread_id = cursor.lastrowid
+                thread_id_raw = cursor.lastrowid
+                if thread_id_raw is None:
+                    raise DatabaseError("Failed to retrieve thread ID after insertion.")
+                thread_id: int = thread_id_raw
                 conn.commit()
                 return thread_id
 
@@ -365,13 +388,13 @@ class DatabaseManager:
             List of thread dictionaries
         """
 
-        def _get():
+        def _get() -> list[dict]:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
                 # Use parameterized queries to prevent SQL injection
-                where_conditions = []
-                params = []
+                where_conditions: list[str] = []
+                params: list[Union[str, int]] = []
 
                 if active_only:
                     where_conditions.append("is_active = ?")
@@ -381,7 +404,9 @@ class DatabaseManager:
                     where_conditions.append("is_archived = ?")
                     params.append(0)
 
-                where_clause = " AND ".join(where_conditions) if where_conditions else "1=1"
+                where_clause = (
+                    " AND ".join(where_conditions) if where_conditions else "1=1"
+                )
 
                 query = f"""
                     SELECT id, name, icon, description, tags, created_at, updated_at,
@@ -401,7 +426,7 @@ class DatabaseManager:
 
                 cursor.execute(query, params)
 
-                threads = []
+                threads: list[dict] = []
                 for row in cursor.fetchall():
                     threads.append(
                         {
@@ -415,8 +440,12 @@ class DatabaseManager:
                             "last_activity": row["last_activity"],
                             "is_active": bool(row["is_active"]),
                             "is_archived": bool(row["is_archived"]),
-                            "metadata": (json.loads(row["metadata"]) if row["metadata"] else {}),
-                            "settings": (json.loads(row["settings"]) if row["settings"] else {}),
+                            "metadata": (
+                                json.loads(row["metadata"]) if row["metadata"] else {}
+                            ),
+                            "settings": (
+                                json.loads(row["settings"]) if row["settings"] else {}
+                            ),
                         }
                     )
 
@@ -432,7 +461,7 @@ class DatabaseManager:
             Dictionary mapping thread_id to message count
         """
 
-        def _get_counts():
+        def _get_counts() -> dict[int, int]:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(
@@ -443,7 +472,7 @@ class DatabaseManager:
                 """
                 )
 
-                counts = {}
+                counts: dict[int, int] = {}
                 for row in cursor.fetchall():
                     counts[row["thread_id"]] = row["message_count"]
 
@@ -462,7 +491,7 @@ class DatabaseManager:
             Thread dictionary or None if not found
         """
 
-        def _get():
+        def _get() -> Optional[dict]:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(
@@ -488,8 +517,12 @@ class DatabaseManager:
                         "last_activity": row["last_activity"],
                         "is_active": bool(row["is_active"]),
                         "is_archived": bool(row["is_archived"]),
-                        "metadata": (json.loads(row["metadata"]) if row["metadata"] else {}),
-                        "settings": (json.loads(row["settings"]) if row["settings"] else {}),
+                        "metadata": (
+                            json.loads(row["metadata"]) if row["metadata"] else {}
+                        ),
+                        "settings": (
+                            json.loads(row["settings"]) if row["settings"] else {}
+                        ),
                     }
                 return None
 
@@ -507,12 +540,12 @@ class DatabaseManager:
             List of matching thread dictionaries
         """
 
-        def _find():
+        def _find() -> list[dict]:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
-                where_conditions = ["LOWER(name) LIKE LOWER(?)"]
-                params = [f"%{name}%"]
+                where_conditions: list[str] = ["LOWER(name) LIKE LOWER(?)"]
+                params: list[Union[str, int]] = [f"%{name}%"]
 
                 if active_only:
                     where_conditions.append("is_active = ?")
@@ -529,7 +562,7 @@ class DatabaseManager:
                 )
                 cursor.execute(query, params)
 
-                threads = []
+                threads: list[dict] = []
                 for row in cursor.fetchall():
                     threads.append(
                         {
@@ -543,8 +576,12 @@ class DatabaseManager:
                             "last_activity": row["last_activity"],
                             "is_active": bool(row["is_active"]),
                             "is_archived": bool(row["is_archived"]),
-                            "metadata": (json.loads(row["metadata"]) if row["metadata"] else {}),
-                            "settings": (json.loads(row["settings"]) if row["settings"] else {}),
+                            "metadata": (
+                                json.loads(row["metadata"]) if row["metadata"] else {}
+                            ),
+                            "settings": (
+                                json.loads(row["settings"]) if row["settings"] else {}
+                            ),
                         }
                     )
 
@@ -552,7 +589,7 @@ class DatabaseManager:
 
         return self._execute_with_retry(_find)
 
-    def update_thread(self, thread_id: int, **kwargs) -> bool:
+    def update_thread(self, thread_id: int, **kwargs: Any) -> bool:
         """
         Update a thread with the given key-value arguments.
 
@@ -564,7 +601,7 @@ class DatabaseManager:
             True if successful
         """
 
-        def _update():
+        def _update() -> bool:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
@@ -580,13 +617,15 @@ class DatabaseManager:
                     "settings",
                 ]
 
-                updates = []
-                params = []
+                updates: list[str] = []
+                params: list[Any] = []
 
                 for key, value in kwargs.items():
                     if key in allowed_columns:
                         updates.append(f"{key} = ?")
-                        params.append(json.dumps(value) if isinstance(value, (dict, list)) else value)
+                        params.append(
+                            json.dumps(value) if isinstance(value, (dict, list)) else value
+                        )
 
                 if not updates:
                     return False
@@ -594,7 +633,9 @@ class DatabaseManager:
                 params.append(thread_id)
 
                 # Construct the query safely
-                query = f"UPDATE threads SET {', '.join(updates)} WHERE id = ?"  # nosec B608
+                query = (
+                    f"UPDATE threads SET {', '.join(updates)} WHERE id = ?"  # nosec B608
+                )
                 cursor.execute(query, params)
 
                 conn.commit()
@@ -614,7 +655,7 @@ class DatabaseManager:
             True if deleted successfully
         """
 
-        def _delete():
+        def _delete() -> bool:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
@@ -666,7 +707,7 @@ class DatabaseManager:
             Message ID
         """
 
-        def _add():
+        def _add() -> int:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
@@ -688,7 +729,10 @@ class DatabaseManager:
                     ),
                 )
 
-                message_id = cursor.lastrowid
+                message_id_raw = cursor.lastrowid
+                if message_id_raw is None:
+                    raise DatabaseError("Failed to retrieve message ID after insertion.")
+                message_id: int = message_id_raw
 
                 # Add attachments if provided
                 if attachments:
@@ -755,7 +799,7 @@ class DatabaseManager:
             List of message dictionaries
         """
 
-        def _get():
+        def _get() -> list[dict]:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
@@ -768,7 +812,7 @@ class DatabaseManager:
                     ORDER BY m.timestamp ASC
                 """
 
-                params = [thread_id]
+                params: list[int] = [thread_id]
 
                 if limit:
                     query += " LIMIT ?"
@@ -780,9 +824,9 @@ class DatabaseManager:
 
                 cursor.execute(query, params)
 
-                messages = []
+                messages: list[dict] = []
                 for row in cursor.fetchall():
-                    message = {
+                    message: dict = {
                         "id": row["id"],
                         "thread_id": row["thread_id"],
                         "sender": row["sender"],
@@ -791,7 +835,9 @@ class DatabaseManager:
                         "timestamp": row["timestamp"],
                         "edited_at": row["edited_at"],
                         "is_edited": bool(row["is_edited"]),
-                        "metadata": (json.loads(row["metadata"]) if row["metadata"] else None),
+                        "metadata": (
+                            json.loads(row["metadata"]) if row["metadata"] else None
+                        ),
                         "parent_message_id": row["parent_message_id"],
                         "reply_to_message_id": row["reply_to_message_id"],
                         "attachments": [],
@@ -809,7 +855,9 @@ class DatabaseManager:
                         )
 
                         for att_row in cursor.fetchall():
-                            logger.debug(f"Adding attachment {att_row['id']} to message {row['id']}\n {att_row["file_name"]}")
+                            logger.debug(
+                                f"Adding attachment {att_row['id']} to message {row['id']}\n {att_row['file_name']}"
+                            )
                             message["attachments"].append(
                                 {
                                     "id": att_row["id"],
@@ -848,7 +896,7 @@ class DatabaseManager:
             List of matching messages
         """
 
-        def _search():
+        def _search() -> list[dict]:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
@@ -885,9 +933,9 @@ class DatabaseManager:
                         (query, limit),
                     )
 
-                messages = []
+                messages: list[dict] = []
                 for row in cursor.fetchall():
-                    message = {
+                    message: dict = {
                         "id": row["id"],
                         "thread_id": row["thread_id"],
                         "sender": row["sender"],
@@ -896,7 +944,9 @@ class DatabaseManager:
                         "timestamp": row["timestamp"],
                         "edited_at": row["edited_at"],
                         "is_edited": bool(row["is_edited"]),
-                        "metadata": (json.loads(row["metadata"]) if row["metadata"] else None),
+                        "metadata": (
+                            json.loads(row["metadata"]) if row["metadata"] else None
+                        ),
                         "thread_name": row["thread_name"],
                         "rank": row["rank"],
                         "attachments": [],
@@ -930,7 +980,9 @@ class DatabaseManager:
 
         return self._execute_with_retry(_search)
 
-    def update_message(self, message_id: int, content: Optional[str] = None, metadata: Optional[dict] = None) -> bool:
+    def update_message(
+        self, message_id: int, content: Optional[str] = None, metadata: Optional[dict] = None
+    ) -> bool:
         """
         Update a message with new content or metadata.
 
@@ -943,12 +995,12 @@ class DatabaseManager:
             True if successful
         """
 
-        def _update():
+        def _update() -> bool:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
-                updates = []
-                params = []
+                updates: list[str] = []
+                params: list[Any] = []
 
                 if content is not None:
                     updates.append("content = ?")
@@ -964,7 +1016,9 @@ class DatabaseManager:
                 params.append(message_id)
 
                 # Construct the query safely
-                query = f"UPDATE messages SET {', '.join(updates)} WHERE id = ?"  # nosec B608
+                query = (
+                    f"UPDATE messages SET {', '.join(updates)} WHERE id = ?"  # nosec B608
+                )
                 cursor.execute(query, params)
 
                 conn.commit()
@@ -983,7 +1037,7 @@ class DatabaseManager:
             Setting value or all settings
         """
 
-        def _get():
+        def _get() -> Union[dict, Any]:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
@@ -1020,7 +1074,7 @@ class DatabaseManager:
                     """
                     )
 
-                    settings = {}
+                    settings: dict[str, Any] = {}
                     for row in cursor.fetchall():
                         value = row["value"]
                         if row["value_type"] == "json":
@@ -1030,7 +1084,9 @@ class DatabaseManager:
                         elif row["value_type"] == "float":
                             settings[row["key"]] = float(value) if value else 0.0
                         elif row["value_type"] == "bool":
-                            settings[row["key"]] = value.lower() == "true" if value else False
+                            settings[row["key"]] = (
+                                value.lower() == "true" if value else False
+                            )
                         else:
                             settings[row["key"]] = value
 
@@ -1038,7 +1094,9 @@ class DatabaseManager:
 
         return self._execute_with_retry(_get)
 
-    def set_user_setting(self, key: str, value: Any, value_type: str = "string", description: Optional[str] = None) -> bool:
+    def set_user_setting(
+        self, key: str, value: Any, value_type: str = "string", description: Optional[str] = None
+    ) -> bool:
         """
         Set a user setting.
 
@@ -1052,7 +1110,7 @@ class DatabaseManager:
             True if set successfully
         """
 
-        def _set():
+        def _set() -> bool:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
@@ -1091,7 +1149,7 @@ class DatabaseManager:
             Analytics record ID
         """
 
-        def _add():
+        def _add() -> int:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(
@@ -1102,7 +1160,10 @@ class DatabaseManager:
                     (thread_id, analytics_type, json.dumps(data)),
                 )
 
-                analytics_id = cursor.lastrowid
+                analytics_id_raw = cursor.lastrowid
+                if analytics_id_raw is None:
+                    raise DatabaseError("Failed to retrieve analytics ID after insertion.")
+                analytics_id: int = analytics_id_raw
                 conn.commit()
                 return analytics_id
 
@@ -1122,7 +1183,7 @@ class DatabaseManager:
             List of analytics records
         """
 
-        def _get():
+        def _get() -> list[dict]:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
@@ -1147,7 +1208,7 @@ class DatabaseManager:
                         (thread_id,),
                     )
 
-                analytics = []
+                analytics: list[dict] = []
                 for row in cursor.fetchall():
                     analytics.append(
                         {
@@ -1171,40 +1232,42 @@ class DatabaseManager:
             Dictionary with database statistics
         """
 
-        def _get_stats():
+        def _get_stats() -> dict:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
                 # Get thread counts
                 cursor.execute("SELECT COUNT(*) FROM threads WHERE is_active = 1")
-                active_threads = cursor.fetchone()[0]
+                active_threads: int = cursor.fetchone()[0]
 
                 cursor.execute("SELECT COUNT(*) FROM threads")
-                total_threads = cursor.fetchone()[0]
+                total_threads: int = cursor.fetchone()[0]
 
                 cursor.execute("SELECT COUNT(*) FROM threads WHERE is_archived = 1")
-                archived_threads = cursor.fetchone()[0]
+                archived_threads: int = cursor.fetchone()[0]
 
                 # Get message counts
                 cursor.execute("SELECT COUNT(*) FROM messages")
-                total_messages = cursor.fetchone()[0]
+                total_messages: int = cursor.fetchone()[0]
 
                 cursor.execute("SELECT sender, COUNT(*) FROM messages GROUP BY sender")
-                sender_counts = dict(cursor.fetchall())
+                sender_counts: dict[str, int] = dict(cursor.fetchall())
 
                 # Get attachment counts
                 cursor.execute("SELECT COUNT(*) FROM attachments")
-                total_attachments = cursor.fetchone()[0]
+                total_attachments: int = cursor.fetchone()[0]
 
                 # Get analytics counts
                 cursor.execute("SELECT COUNT(*) FROM conversation_analytics")
-                total_analytics = cursor.fetchone()[0]
+                total_analytics: int = cursor.fetchone()[0]
 
                 # Get database size
-                db_size = self.db_path.stat().st_size if self.db_path.exists() else 0
+                db_size: int = (
+                    self.db_path.stat().st_size if self.db_path.exists() else 0
+                )
 
                 # Get WAL file size
-                wal_size = 0
+                wal_size: int = 0
                 wal_path = self.db_path.with_suffix(".db-wal")
                 if wal_path.exists():
                     wal_size = wal_path.stat().st_size
@@ -1264,7 +1327,7 @@ class DatabaseManager:
             Number of deleted messages
         """
 
-        def _cleanup():
+        def _cleanup() -> int:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(
@@ -1275,7 +1338,7 @@ class DatabaseManager:
                     (f"-{days_old} days",),
                 )
 
-                deleted_count = cursor.rowcount
+                deleted_count: int = cursor.rowcount
                 conn.commit()
                 return deleted_count
 
@@ -1300,10 +1363,10 @@ class DatabaseManager:
             logger.error(f"Failed to vacuum database: {e}")
             return False
 
-    def close_connections(self):
+    def close_connections(self) -> None:
         """Close all active database connections."""
         with self._lock:
-            for conn in self._connection_pool.values():
+            for conn in list(self._connection_pool.values()):  # Iterate over a copy
                 try:
                     conn.close()
                 except Exception as e:
