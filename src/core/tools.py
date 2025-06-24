@@ -86,7 +86,7 @@ import logging
 import os
 import re
 from datetime import datetime
-from typing import Optional
+from typing import Callable, Optional
 
 from .chat_manager import ChatManager
 from .file_handler import JeevesFileHandler
@@ -171,8 +171,6 @@ class JeevesTools:
                 thread_details.append(f"ID {thread['id']}: '{thread['name']}' (last activity: {thread['last_activity']})")
 
             raise ValueError(f"Multiple threads found matching '{thread_identifier}':\n" + "\n".join(thread_details) + "\n\nPlease specify the exact thread ID or use a more specific name.")
-
-        return None
 
     def rename_chat_thread(self, thread_identifier: Optional[str], new_name: str) -> str:
         """
@@ -423,7 +421,7 @@ class JeevesTools:
             logger.error(f"Error getting conversation summary: {e}", exc_info=True)
             return f"Error: {str(e)}"
 
-    def get_registered_tools(self) -> dict[str, callable]:
+    def get_registered_tools(self) -> dict[str, Callable]:
         """
         Get all registered tools with their descriptions.
 

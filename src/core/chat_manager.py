@@ -115,7 +115,7 @@ class ChatManager:
             logger.error(f"Failed to get thread {thread_id}: {e}")
             return None
 
-    def find_threads_by_name(self, name: str, active_only: bool = True) -> list[dict[str, Any]]:
+    def find_threads_by_name(self, name: str, active_only: bool = True) -> list[dict[str, int]]:
         """
         Find threads by name (case-insensitive partial match).
 
