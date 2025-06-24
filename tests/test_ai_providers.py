@@ -439,14 +439,14 @@ class TestGeminiProvider:
         """Test Gemini provider initialization."""
         config = {
             "api_key": "test_key",
-            "model": "gemini-2.0-flash",
+            "model": "gemini-2.5-flash-lite-preview-06-17",
             "max_output_tokens": 1024,
             "temperature": 0.7,
         }
         provider = GeminiProvider(config)
 
         assert provider.provider_name == "GeminiProvider"
-        assert provider.model_name == "gemini-2.0-flash"
+        assert provider.model_name == "gemini-2.5-flash-lite-preview-06-17"
         assert provider.max_output_tokens == 1024
         assert provider.temperature == 0.7
         assert provider.is_initialized is False
@@ -455,7 +455,7 @@ class TestGeminiProvider:
         """Test Gemini provider with default configuration."""
         provider = GeminiProvider()
 
-        assert provider.model_name == "gemini-2.0-flash"
+        assert provider.model_name == "gemini-2.5-flash-lite-preview-06-17"
         assert provider.max_output_tokens == 2048
         assert provider.temperature == 0.7
         assert provider.top_p == 0.95
@@ -642,7 +642,7 @@ class TestGeminiProvider:
         """Test getting Gemini provider information."""
         config = {
             "api_key": "test_key",
-            "model": "gemini-2.0-flash",
+            "model": "gemini-2.5-flash-lite-preview-06-17",
             "max_output_tokens": 1024,
             "temperature": 0.7,
         }
@@ -651,7 +651,7 @@ class TestGeminiProvider:
         info = provider.get_provider_info()
 
         assert info["name"] == "GeminiProvider"
-        assert info["model_name"] == "gemini-2.0-flash"
+        assert info["model_name"] == "gemini-2.5-flash-lite-preview-06-17"
         assert info["max_output_tokens"] == 1024
         assert info["temperature"] == 0.7
         assert info["top_p"] == 0.95

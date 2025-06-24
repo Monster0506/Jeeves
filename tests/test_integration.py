@@ -363,7 +363,7 @@ class TestEndToEndIntegration:
         # Setup mock Gemini client
         mock_client = Mock()
         mock_client_class.return_value = mock_client
-        mock_models = [Mock(name="gemini-2.0-flash")]
+        mock_models = [Mock(name="gemini-2.5-flash-lite-preview-06-17")]
         mock_client.models.list.return_value = mock_models
 
         # Mock the response generation

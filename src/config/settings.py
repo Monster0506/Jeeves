@@ -306,7 +306,7 @@ AI_PROVIDER_SETTINGS = {
     "providers": {
         "gemini": {
             "enabled": True,
-            "model": "gemini-2.0-flash",
+            "model": "gemini-2.5-flash-lite-preview-06-17",
             "max_output_tokens": 2048,
             "temperature": 0.7,
             "top_p": 0.95,

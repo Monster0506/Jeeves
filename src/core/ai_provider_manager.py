@@ -42,7 +42,7 @@ class AIProviderManager:
     def _get_gemini_config(self) -> dict[str, Any]:
         """Get Gemini provider configuration."""
         return {
-            "model": "gemini-2.0-flash",
+            "model": "gemini-2.5-flash-lite-preview-06-17",
             "max_output_tokens": 2048,
             "temperature": 0.7,
             "top_p": 0.95,

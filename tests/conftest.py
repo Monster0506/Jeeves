@@ -57,7 +57,7 @@ def gemini_provider(mock_gemini_api_key):
     """Create a Gemini provider instance for testing."""
     config = {
         "api_key": mock_gemini_api_key,
-        "model": "gemini-2.0-flash",
+        "model": "gemini-2.5-flash-lite-preview-06-17",
         "max_output_tokens": 1024,
         "temperature": 0.7,
         "top_p": 0.95,

@@ -22,7 +22,7 @@ class GeminiProvider(BaseAIProvider):
         Args:
             config: Configuration dictionary with the following keys:
                 - api_key: Gemini API key (optional, can use GOOGLE_API_KEY env var)
-                - model: Model name (default: 'gemini-2.0-flash')
+                - model: Model name (default: 'gemini-2.5-flash-lite-preview-06-17')
                 - max_output_tokens: Maximum tokens for response (default: 2048)
                 - temperature: Response creativity (0.0-1.0, default: 0.7)
                 - top_p: Nucleus sampling parameter (0.0-1.0, default: 0.95)
@@ -34,7 +34,7 @@ class GeminiProvider(BaseAIProvider):
         """
         super().__init__(config if config else {})
         self.client: Optional[Any] = None
-        self.model_name = self.config.get("model", "gemini-2.0-flash")
+        self.model_name = self.config.get("model", "gemini-2.5-flash-lite-preview-06-17")
         self.max_output_tokens = self.config.get("max_output_tokens", 2048)
         self.temperature = self.config.get("temperature", 0.7)
         self.top_p = self.config.get("top_p", 0.95)
@@ -63,7 +63,7 @@ class GeminiProvider(BaseAIProvider):
 
         # Default configuration
         self.default_config = {
-            "model": "gemini-2.0-flash",
+            "model": "gemini-2.5-flash-lite-preview-06-17",
             "max_output_tokens": 2048,
             "temperature": 0.7,
             "top_p": 0.95,
