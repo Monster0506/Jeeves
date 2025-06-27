@@ -1,5 +1,6 @@
+from typing import Any, Callable
+
 import customtkinter as ctk
-from typing import Callable, Any
 
 
 class FinderPanel(ctk.CTkFrame):
