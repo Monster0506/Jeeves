@@ -862,38 +862,26 @@ class DatabaseManager:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
+                sql_query = """
+                    SELECT m.id, m.thread_id, m.sender, m.content, m.content_type,
+                           m.timestamp, m.edited_at, m.is_edited, m.metadata,
+                           t.name as thread_name,
+                           rank
+                    FROM search_index s
+                    JOIN messages m ON s.message_id = m.id
+                    JOIN threads t ON m.thread_id = t.id
+                    WHERE s.content MATCH ?
+                """
+                params = [query]
+
                 if thread_id:
-                    cursor.execute(
-                        """
-                        SELECT m.id, m.thread_id, m.sender, m.content, m.content_type,
-                               m.timestamp, m.edited_at, m.is_edited, m.metadata,
-                               t.name as thread_name,
-                               rank
-                        FROM search_index s
-                        JOIN messages m ON s.message_id = m.id
-                        JOIN threads t ON m.thread_id = t.id
-                        WHERE s.content MATCH ? AND m.thread_id = ?
-                        ORDER BY rank
-                        LIMIT ?
-                    """,
-                        (query, thread_id, limit),
-                    )
-                else:
-                    cursor.execute(
-                        """
-                        SELECT m.id, m.thread_id, m.sender, m.content, m.content_type,
-                               m.timestamp, m.edited_at, m.is_edited, m.metadata,
-                               t.name as thread_name,
-                               rank
-                        FROM search_index s
-                        JOIN messages m ON s.message_id = m.id
-                        JOIN threads t ON m.thread_id = t.id
-                        WHERE s.content MATCH ?
-                        ORDER BY rank
-                        LIMIT ?
-                    """,
-                        (query, limit),
-                    )
+                    sql_query += " AND m.thread_id = ?"
+                    params.append(str(thread_id))
+
+                sql_query += " ORDER BY rank LIMIT ?"
+                params.append(str(limit))
+
+                cursor.execute(sql_query, params)
 
                 messages: list[dict] = []
                 for row in cursor.fetchall():
@@ -940,7 +928,12 @@ class DatabaseManager:
 
         return self._execute_with_retry(_search)
 
-    def update_message(self, message_id: int, content: Optional[str] = None, metadata: Optional[dict] = None) -> bool:
+    def update_message(
+        self,
+        message_id: int,
+        content: Optional[str] = None,
+        metadata: Optional[dict] = None,
+    ) -> bool:
         """
         Update a message with new content or metadata.
 
@@ -1048,7 +1041,13 @@ class DatabaseManager:
 
         return self._execute_with_retry(_get)
 
-    def set_user_setting(self, key: str, value: Any, value_type: str = "string", description: Optional[str] = None) -> bool:
+    def set_user_setting(
+        self,
+        key: str,
+        value: Any,
+        value_type: str = "string",
+        description: Optional[str] = None,
+    ) -> bool:
         """
         Set a user setting.
 

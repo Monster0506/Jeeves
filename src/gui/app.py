@@ -16,9 +16,11 @@ from ..config.settings import APP_SETTINGS, COLORS
 from ..core.ai_engine import AIEngine
 from ..core.chat_manager import ChatManager
 from ..core.database import DatabaseManager
+from ..core.file_handler import JeevesFileHandler
 from ..utils import normalize_mime_type
 from ..utils.dialogs import show_error, show_info
 from .components import ChatDisplay, Sidebar
+from .finder_panel import FinderPanel
 
 logger = logging.getLogger(__name__)
 ctk.deactivate_automatic_dpi_awareness()
@@ -32,6 +34,7 @@ class JeevesApp:
         self.db_manager = DatabaseManager()
         self.chat_manager = ChatManager(self.db_manager)
         self.ai_engine = AIEngine(self.chat_manager)
+        self.file_handler = JeevesFileHandler()
 
         # Setup CustomTkinter
         ctk.set_appearance_mode("dark")
@@ -180,6 +183,9 @@ class JeevesApp:
         self.sidebar.grid_remove()
         self.sidebar_visible = False
 
+        # Finder panel
+        self.finder_panel = FinderPanel(self.root, on_search=self._perform_search)
+
     def _setup_bindings(self) -> None:
         """Setup keyboard and window bindings."""
         # Bind window close event
@@ -190,6 +196,7 @@ class JeevesApp:
         self.root.bind("<Control-f>", lambda e: self._on_search_messages())
         self.root.bind("<Control-e>", lambda e: self._on_export_chat())
         self.root.bind("<Control-q>", lambda e: self._on_closing())
+        self.root.bind("<Escape>", lambda e: self.finder_panel.hide())
 
     def _load_initial_data(self) -> None:
         """Load initial data from database."""
@@ -481,14 +488,29 @@ class JeevesApp:
             logger.error(f"Failed to export chat: {e}")
             show_error("Error", f"Failed to export chat: {e}")
 
+    def _perform_search(self, query: str) -> None:
+        """Perform a search and display the results in the finder panel."""
+        try:
+            results = []
+
+            # Search chat history
+            chat_results = self.chat_manager.search_messages(query)
+            for res in chat_results:
+                results.append(f"[CHAT] {res['thread_name']}: {res['content']}")
+
+            # Search files in sandbox
+            file_results = self.file_handler.search_file_contents(relative_root_path=".", pattern=query)
+            for res in file_results:
+                results.append(f"[FILE] {res['file_path']}:{res['line_number']} - {res['line_content']}")
+
+            self.finder_panel.show_results(results)
+        except Exception as e:
+            logger.error(f"Failed to perform search: {e}")
+            show_error("Error", f"Failed to perform search: {e}")
+
     def _on_search_messages(self) -> None:
         """Handle message search."""
-        try:
-            # For now, just show a placeholder
-            show_info("Search", "Message search feature coming soon!")
-        except Exception as e:
-            logger.error(f"Failed to search messages: {e}")
-            show_error("Error", f"Failed to search messages: {e}")
+        self.finder_panel.show()
 
     def _toggle_sidebar(self) -> None:
         """Toggle sidebar visibility."""

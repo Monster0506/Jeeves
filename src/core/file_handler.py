@@ -1795,7 +1795,13 @@ class JeevesFileHandler:
     # Error Handling & Logging (Placeholders/basic implementations)
     # For a real system, these would interact with a more persistent logging/auditing system.
 
-    def _log_operation(self, operation_type: str, status: str, path: str, details: Optional[dict] = None) -> None:
+    def _log_operation(
+        self,
+        operation_type: str,
+        status: str,
+        path: str,
+        details: Optional[dict] = None,
+    ) -> None:
         """Internal method to log operation history."""
 
         entry: OperationHistoryEntry = {

@@ -46,7 +46,12 @@ class Sidebar(ctk.CTkFrame):
 
         self._setup_ui(theme, font_large, font_normal)
 
-    def _setup_ui(self, theme: ColorsTheme, font_large: tuple[str, int, str], font_normal: tuple[str, int]) -> None:
+    def _setup_ui(
+        self,
+        theme: ColorsTheme,
+        font_large: tuple[str, int, str],
+        font_normal: tuple[str, int],
+    ) -> None:
         """Setup the user interface."""
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(2, weight=1)  # Give weight to the threads_frame row
@@ -130,7 +135,13 @@ class Sidebar(ctk.CTkFrame):
         except Exception as e:
             logger.error(f"Error updating thread buttons: {e}")
 
-    def _create_thread_button(self, thread: dict[str, Any], index: int, theme: ColorsTheme, font_normal: tuple[str, int]) -> Optional[ctk.CTkButton]:
+    def _create_thread_button(
+        self,
+        thread: dict[str, Any],
+        index: int,
+        theme: ColorsTheme,
+        font_normal: tuple[str, int],
+    ) -> Optional[ctk.CTkButton]:
         try:
             button_frame = ctk.CTkFrame(self.threads_frame, fg_color=theme["bg_sidebar"], corner_radius=0)
             button_frame.grid(row=index, column=0, sticky="ew", pady=8, padx=16)  # Consistent spacing

@@ -293,7 +293,12 @@ class ChatManager:
             logger.error(f"Failed to add AI message: {e}")
             raise
 
-    def add_system_message(self, content: str, content_type: str = "text", metadata: Optional[dict[str, Any]] = None) -> int:
+    def add_system_message(
+        self,
+        content: str,
+        content_type: str = "text",
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> int:
         """
         Add a system message to the current thread.
 
@@ -397,16 +402,13 @@ class ChatManager:
 
         Args:
             query: Search query
-            thread_id: Limit to specific thread (optional)
+            thread_id: Limit to specific thread (optional, searches all threads if None)
             limit: Maximum results
             include_attachments: Include attachment data
 
         Returns:
             List of matching messages
         """
-        if thread_id is None:
-            thread_id = self.current_thread_id
-
         try:
             return self.db.search_messages(query, thread_id, limit, include_attachments)
         except DatabaseError as e:
@@ -534,7 +536,13 @@ class ChatManager:
             logger.error(f"Failed to get user settings: {e}")
             return {} if key is None else None
 
-    def set_user_setting(self, key: str, value: Any, value_type: str = "string", description: Optional[str] = None) -> bool:
+    def set_user_setting(
+        self,
+        key: str,
+        value: Any,
+        value_type: str = "string",
+        description: Optional[str] = None,
+    ) -> bool:
         """
         Set a user setting.
 
